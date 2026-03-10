@@ -13,6 +13,8 @@ This is the main use case. Tell Claude what you want in plain language:
 > "What does my week look like — just work stuff?"
 > "Show me everything I have in March"
 > "What's coming up next?"
+> "Add a team standup tomorrow at 9am"
+> "Remove the budget review on Friday"
 
 Claude translates your words into the right commands, filters to the right calendars, and formats the results clearly.
 
@@ -66,8 +68,10 @@ calendar list <range> [--cal <subset>]        # Events in range
 calendar today [--cal <subset>]               # Today's events
 calendar week [--cal <subset>]                # This week's events
 calendar next [n] [--cal <subset>]            # Next N events (default 5)
-calendar search <query> [range] [--cal <subset>]
+calendar find <query> [range] [--cal <subset>]
 calendar show <title> [date]                  # Full event detail
+calendar add <title> [date] [time to time] [--cal <name>]
+calendar remove <title> [date] [--cal <name>]
 ```
 
 Bare range shorthands also work without the `list` subcommand:
@@ -150,8 +154,8 @@ Tuesday, March 10
 
 ## Known limitations
 
-- **Read-only** — creating or editing events is not yet supported
-- `show` matches by title substring (case-insensitive); first match wins
+- `add` creates events in the first calendar of the `--cal` set, or your default calendar
+- `show` and `remove` with multiple matches list candidates and ask you to narrow by date
 - Attendee details only available for events with invitations
 - External calendars must be configured in Calendar.app to be visible
 

@@ -31,8 +31,10 @@ func usage() -> Never {
       calendar today [--cal <subset>]             # Today's events
       calendar week [--cal <subset>]              # This week's events
       calendar next [n] [--cal <subset>]          # Next N events (default 5)
-      calendar search <query> [range] [--cal <subset>]
+      calendar find <query> [range] [--cal <subset>]
       calendar show <title> [date]                # Full event detail
+      calendar add <title> [date] [time to time] [--cal <name>]
+      calendar remove <title> [date] [--cal <name>]
 
     Range examples:
       today, tomorrow, yesterday
@@ -98,7 +100,10 @@ func fetchEvents(in range: ParsedRange, calendars: [EKCalendar]) -> [EKEvent] {
     let predicate = store.predicateForEvents(withStart: range.start,
                                              end: range.end,
                                              calendars: calendars.isEmpty ? nil : calendars)
-    return store.events(matching: predicate).sorted { $0.startDate < $1.startDate }
+    let sorted = store.events(matching: predicate).sorted { $0.startDate < $1.startDate }
+    // Deduplicate recurring-event instances that appear twice (e.g. spanning midnight)
+    var seen = Set<String>()
+    return sorted.filter { seen.insert($0.eventIdentifier).inserted }
 }
 
 // MARK: - Output formatting
@@ -153,7 +158,9 @@ func eventLine(_ event: EKEvent) -> String {
     }
     var label = event.title ?? "(no title)"
     if let loc = event.location, !loc.isEmpty {
-        label += " · " + (loc.components(separatedBy: "\n").first ?? loc)
+        let firstLine = loc.components(separatedBy: "\n").first ?? loc
+        let truncated = firstLine.count > 50 ? String(firstLine.prefix(50)) + "…" : firstLine
+        label += " · " + truncated
     }
     return "\(calendarDot(event.calendar))\(timeCol)\(label)"
 }
@@ -189,6 +196,82 @@ func nextRelativeLabel(_ date: Date) -> String {
     }
     let f = DateFormatter(); f.dateFormat = "MMM d    "
     return f.string(from: date)
+}
+
+// MARK: - Event date/time parsing for `add`
+
+/// Parses the arguments after the title for `calendar add`.
+/// Handles:
+///   "march 15"                 → all-day event on March 15
+///   "tomorrow 2pm to 3pm"      → timed event, explicit end
+///   "today 9:30am to 11am"     → timed event, explicit end
+///   "monday at 2pm"            → 1-hour timed event
+struct EventDateTime {
+    let start:    Date
+    let end:      Date
+    let isAllDay: Bool
+}
+
+func parseEventDateTime(_ input: String) -> EventDateTime? {
+    let cal = Calendar.current
+    let now = Date()
+
+    let timeRegex = try! NSRegularExpression(
+        pattern: #"\b(\d{1,2})(?::(\d{2}))?\s*(am|pm)\b"#, options: .caseInsensitive)
+    let timeMatches = timeRegex.matches(in: input, range: NSRange(input.startIndex..., in: input))
+
+    func extractHourMinute(_ m: NSTextCheckingResult) -> (Int, Int)? {
+        guard let hourRange = Range(m.range(at: 1), in: input),
+              let hour = Int(input[hourRange]) else { return nil }
+        let minute: Int
+        if let minRange = Range(m.range(at: 2), in: input) { minute = Int(input[minRange]) ?? 0 }
+        else { minute = 0 }
+        var h = hour
+        if let apRange = Range(m.range(at: 3), in: input) {
+            let ap = input[apRange].lowercased()
+            if ap == "pm" && h < 12 { h += 12 }
+            if ap == "am" && h == 12 { h = 0 }
+        }
+        return (h, minute)
+    }
+
+    if timeMatches.isEmpty {
+        // All-day: parse entire input as a date
+        guard let date = parseSingleDate(input.lowercased().trimmingCharacters(in: .whitespaces),
+                                         cal: cal, now: now) else { return nil }
+        let start = cal.startOfDay(for: date)
+        let end   = cal.date(byAdding: DateComponents(day: 1, second: -1), to: start)!
+        return EventDateTime(start: start, end: end, isAllDay: true)
+    }
+
+    // Date part = everything before the first time token
+    let firstTimeRange = Range(timeMatches[0].range, in: input)!
+    let datePart = String(input[..<firstTimeRange.lowerBound])
+        .replacingOccurrences(of: #"\bat\b"#, with: "", options: .regularExpression)
+        .trimmingCharacters(in: .whitespaces)
+    let baseDate: Date
+    if datePart.isEmpty {
+        baseDate = now
+    } else {
+        guard let d = parseSingleDate(datePart.lowercased(), cal: cal, now: now) else { return nil }
+        baseDate = d
+    }
+
+    guard let (startH, startM) = extractHourMinute(timeMatches[0]) else { return nil }
+    var startComps = cal.dateComponents([.year, .month, .day], from: baseDate)
+    startComps.hour = startH; startComps.minute = startM
+    let start = cal.date(from: startComps)!
+
+    let end: Date
+    if timeMatches.count >= 2, let (endH, endM) = extractHourMinute(timeMatches[1]) {
+        var endComps = startComps
+        endComps.hour = endH; endComps.minute = endM
+        end = cal.date(from: endComps)!
+    } else {
+        end = cal.date(byAdding: .hour, value: 1, to: start)!
+    }
+
+    return EventDateTime(start: start, end: end, isAllDay: false)
 }
 
 // MARK: - Dispatch
@@ -269,7 +352,8 @@ store.requestFullAccessToEvents { granted, _ in
         let lookAhead = parseRange("90d")!
         let calendars = resolveCalendars(calFilter)
         let all       = fetchEvents(in: lookAhead, calendars: calendars)
-        let upcoming  = Array(all.prefix(n))
+        let now       = Date()
+        let upcoming  = Array(all.filter { $0.endDate > now }.prefix(n))
         if upcoming.isEmpty {
             print("No upcoming events in the next 90 days")
         } else {
@@ -285,10 +369,10 @@ store.requestFullAccessToEvents { granted, _ in
         }
         semaphore.signal()
 
-    case "search":
+    case "find":
         guard args.count > 1 else { fail("provide a search query") }
         let calFilter  = extractCalFilter()
-        let remaining  = Array(args.dropFirst())
+        let remaining  = Array(args.dropFirst())  // drop "find"
 
         // Try to find a trailing range argument — last token(s) that form a valid range
         var query: String
@@ -329,12 +413,23 @@ store.requestFullAccessToEvents { granted, _ in
 
         let all      = store.calendars(for: .event)
         let events   = fetchEvents(in: range, calendars: all)
-        guard let event = events.first(where: {
+        let lower    = title.lowercased()
+        let matches  = events.filter {
             ($0.title ?? "").caseInsensitiveCompare(title) == .orderedSame ||
-            ($0.title ?? "").lowercased().contains(title.lowercased())
-        }) else {
-            fail("Not found: \(title)")
+            ($0.title ?? "").lowercased().contains(lower)
         }
+        guard !matches.isEmpty else { fail("Not found: \(title)") }
+        if matches.count > 1 {
+            let df = DateFormatter(); df.dateFormat = "EEE MMM d"
+            print("Multiple events match '\(title)':")
+            for e in matches {
+                let timeStr = e.isAllDay ? "all day" : formatTime(e.startDate)
+                print("  \(df.string(from: e.startDate))  \(timeStr)  \(e.title ?? "")")
+            }
+            print("Add a date to narrow the search, e.g.: calendar show \"\(title)\" tomorrow")
+            exit(1)
+        }
+        let event = matches[0]
 
         let cal = Calendar.current
         print(event.title ?? "(no title)")
@@ -384,6 +479,74 @@ store.requestFullAccessToEvents { granted, _ in
             }
         }
 
+        semaphore.signal()
+
+    case "add":
+        guard args.count > 1 else { fail("provide an event title") }
+        let calFilter = extractCalFilter()
+        let title     = args[1]
+        let dateStr   = Array(args.dropFirst(2)).joined(separator: " ")
+        let calendars = resolveCalendars(calFilter)
+
+        guard let edt = parseEventDateTime(dateStr.isEmpty ? "today" : dateStr) else {
+            fail("unrecognised date/time: \(dateStr)")
+        }
+
+        // Pick calendar: first in resolved set
+        guard let targetCal = calendars.first ?? store.defaultCalendarForNewEvents else {
+            fail("no calendar available")
+        }
+
+        let event        = EKEvent(eventStore: store)
+        event.title      = title
+        event.calendar   = targetCal
+        event.isAllDay   = edt.isAllDay
+        event.startDate  = edt.start
+        event.endDate    = edt.end
+
+        do {
+            try store.save(event, span: .thisEvent, commit: true)
+            let df = DateFormatter()
+            df.dateFormat = "EEE MMM d"
+            let timeDetail = edt.isAllDay ? "all day" : "\(formatTime(edt.start)) – \(formatTime(edt.end))"
+            print("Added: \(title) · \(df.string(from: edt.start)) \(timeDetail) (\(targetCal.title))")
+        } catch {
+            fail("Could not save event: \(error.localizedDescription)")
+        }
+        semaphore.signal()
+
+    case "remove":
+        guard args.count > 1 else { fail("provide an event title") }
+        let calFilter = extractCalFilter()
+        let title     = args[1]
+        let rangeStr  = args.count > 2 ? Array(args.dropFirst(2)).joined(separator: " ") : nil
+        let range     = rangeStr.flatMap { parseRange($0) } ?? parseRange("30d")!
+        let calendars = resolveCalendars(calFilter)
+        let events    = fetchEvents(in: range, calendars: calendars)
+        let lower     = title.lowercased()
+        let matches   = events.filter {
+            ($0.title ?? "").caseInsensitiveCompare(title) == .orderedSame ||
+            ($0.title ?? "").lowercased().contains(lower)
+        }
+        guard !matches.isEmpty else { fail("Not found: \(title)") }
+        if matches.count > 1 {
+            let df = DateFormatter(); df.dateFormat = "EEE MMM d"
+            print("Multiple events match '\(title)':")
+            for e in matches {
+                let timeStr = e.isAllDay ? "all day" : formatTime(e.startDate)
+                print("  \(df.string(from: e.startDate))  \(timeStr)  \(e.title ?? "")")
+            }
+            print("Add a date to narrow the search, e.g.: calendar remove \"\(title)\" tomorrow")
+            exit(1)
+        }
+        let event = matches[0]
+        do {
+            try store.remove(event, span: .thisEvent, commit: true)
+            let df = DateFormatter(); df.dateFormat = "EEE MMM d"
+            print("Removed: \(event.title ?? "") (\(df.string(from: event.startDate)))")
+        } catch {
+            fail("Could not remove event: \(error.localizedDescription)")
+        }
         semaphore.signal()
 
     default:

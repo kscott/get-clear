@@ -44,8 +44,10 @@ calendar list <range> [--cal <subset>]
 calendar today [--cal <subset>]
 calendar week [--cal <subset>]
 calendar next [n] [--cal <subset>]
-calendar search <query> [range] [--cal <subset>]
+calendar find <query> [range] [--cal <subset>]
 calendar show <title> [date]
+calendar add <title> [date] [time to time] [--cal <name>]
+calendar remove <title> [date] [--cal <name>]
 ```
 
 Bare range shorthands also work: `calendar monday`, `calendar 7d`, `calendar "march 15"`, etc.
@@ -77,8 +79,8 @@ church   = ["Trinity UMC"]
 
 ## Known limitations
 
-- Read-only — EventKit event creation/editing is not yet implemented
-- `show` matches by title substring (case-insensitive); first match wins
+- `add` targets the first calendar in the `--cal` set, or the system default
+- `show` and `remove` list candidates when multiple events match; narrow with a date
 - Attendee info only present for events with invitations (not personal events)
 - Requires macOS 14+
 
