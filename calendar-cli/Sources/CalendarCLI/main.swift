@@ -27,14 +27,19 @@ func usage() -> Never {
     Usage:
       calendar open                               # Open the Calendar app
       calendar calendars                          # List all available calendars
-      calendar list <range> [--cal <subset>]      # Events in range
-      calendar today [--cal <subset>]             # Today's events
-      calendar week [--cal <subset>]              # This week's events
-      calendar next [n] [--cal <subset>]          # Next N events (default 5)
-      calendar find <query> [range] [--cal <subset>]
+      calendar list <range>                       # Events in range
+      calendar today                              # Today's events
+      calendar week                               # This week's events
+      calendar next [n]                           # Next N events (default 5)
+      calendar find <query> [range]
       calendar show <title> [date]                # Full event detail
-      calendar add <title> [date] [time to time] [--cal <name>]
-      calendar remove <title> [date] [--cal <name>]
+      calendar add <title> [date] [time to time]
+      calendar remove <title> [date]
+
+    Prefix a subset name to filter by calendar group:
+      calendar work today
+      calendar personal week
+      calendar work next 5
 
     Range examples:
       today, tomorrow, yesterday
@@ -46,10 +51,6 @@ func usage() -> Never {
       "next monday to friday"                    (relative range)
       7d, 30d                                    (N days from today)
 
-    Calendar filter (--cal):
-      --cal work                                 (named subset from config)
-      --cal "Work"                               (literal calendar name)
-
     Config: ~/.config/calendar-cli/config.toml
       [subsets]
       work     = ["Work", "Meetings"]
@@ -60,22 +61,25 @@ func usage() -> Never {
     exit(0)
 }
 
-// MARK: - --cal flag extraction
-
-if let idx = args.firstIndex(of: "--cal"), idx + 1 < args.count {
-    // extracted below after config load
-}
-
 // MARK: - Helpers
 
 let config = loadConfig()
 
-func extractCalFilter() -> String? {
-    guard let idx = args.firstIndex(of: "--cal"), idx + 1 < args.count else { return nil }
-    let val = args[idx + 1]
-    args.remove(at: idx + 1)
-    args.remove(at: idx)
-    return val
+// MARK: - Calendar filter extraction (positional prefix)
+
+let knownCommands: Set<String> = [
+    "open", "calendars", "list", "today", "week", "next",
+    "find", "show", "add", "remove",
+    "help", "--help", "-h", "version", "--version", "-v"
+]
+
+/// If the first arg is a known config subset, extract it as the calendar filter.
+/// `calendar work today` → calFilter = "work", args becomes ["today", ...]
+var calFilter: String? = nil
+if let first = args.first,
+   !knownCommands.contains(first.lowercased()),
+   config.subsets[first.lowercased()] != nil {
+    calFilter = args.removeFirst()
 }
 
 func resolveCalendars(_ filter: String?) -> [EKCalendar] {
@@ -304,7 +308,6 @@ store.requestFullAccessToEvents { granted, _ in
 
     case "list":
         guard args.count > 1 else { fail("provide a range (e.g. today, week, 7d, \"march 15 to march 20\")") }
-        let calFilter = extractCalFilter()
         let rangeStr  = args.dropFirst().joined(separator: " ")
         guard let range = parseRange(rangeStr) else { fail("unrecognised range: \(rangeStr)") }
         let calendars = resolveCalendars(calFilter)
@@ -319,7 +322,6 @@ store.requestFullAccessToEvents { granted, _ in
         semaphore.signal()
 
     case "today":
-        let calFilter = extractCalFilter()
         let range     = parseRange("today")!
         let calendars = resolveCalendars(calFilter)
         let events    = fetchEvents(in: range, calendars: calendars)
@@ -332,7 +334,6 @@ store.requestFullAccessToEvents { granted, _ in
         semaphore.signal()
 
     case "week":
-        let calFilter = extractCalFilter()
         let range     = parseRange("week")!
         let calendars = resolveCalendars(calFilter)
         let events    = fetchEvents(in: range, calendars: calendars)
@@ -344,7 +345,6 @@ store.requestFullAccessToEvents { granted, _ in
         semaphore.signal()
 
     case "next":
-        let calFilter = extractCalFilter()
         let n: Int
         if args.count > 1, let num = Int(args[1]) {
             n = num
@@ -373,7 +373,6 @@ store.requestFullAccessToEvents { granted, _ in
 
     case "find":
         guard args.count > 1 else { fail("provide a search query") }
-        let calFilter  = extractCalFilter()
         let remaining  = Array(args.dropFirst())  // drop "find"
 
         // Try to find a trailing range argument — last token(s) that form a valid range
@@ -485,7 +484,6 @@ store.requestFullAccessToEvents { granted, _ in
 
     case "add":
         guard args.count > 1 else { fail("provide an event title") }
-        let calFilter = extractCalFilter()
         let title     = args[1]
         let dateStr   = Array(args.dropFirst(2)).joined(separator: " ")
         let calendars = resolveCalendars(calFilter)
@@ -519,7 +517,6 @@ store.requestFullAccessToEvents { granted, _ in
 
     case "remove":
         guard args.count > 1 else { fail("provide an event title") }
-        let calFilter = extractCalFilter()
         let title     = args[1]
         let rangeStr  = args.count > 2 ? Array(args.dropFirst(2)).joined(separator: " ") : nil
         let range     = rangeStr.flatMap { parseRange($0) } ?? parseRange("30d")!
@@ -554,7 +551,6 @@ store.requestFullAccessToEvents { granted, _ in
     default:
         // Try treating the bare command as a range shorthand: "calendar today", "calendar week",
         // "calendar monday", "calendar march 15", "calendar 7d", etc.
-        let calFilter  = extractCalFilter()
         let rangeStr   = args.joined(separator: " ")
         if let range = parseRange(rangeStr) {
             let calendars = resolveCalendars(calFilter)
