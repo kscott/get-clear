@@ -51,8 +51,7 @@ let keysToFetch: [CNKeyDescriptor] = [
     CNContactOrganizationNameKey as CNKeyDescriptor,
     CNContactEmailAddressesKey as CNKeyDescriptor,
     CNContactPhoneNumbersKey as CNKeyDescriptor,
-    // CNContactNoteKey requires com.apple.developer.contacts.notes entitlement (macOS 13+)
-    // Restore once binary is signed with that entitlement — see contacts #12, #13
+    CNContactNoteKey as CNKeyDescriptor,
 ]
 
 func allContacts() -> [CNContact] {
@@ -68,7 +67,7 @@ func toRecord(_ c: CNContact) -> ContactRecord {
         emails:  c.emailAddresses.map { (cleanLabel($0.label ?? ""), $0.value as String) },
         phones:  c.phoneNumbers.map   { (cleanLabel($0.label ?? ""), $0.value.stringValue) },
         company: c.organizationName,
-        note:    ""  // note requires entitlement — see contacts #12, #13
+        note:    c.note
     )
 }
 
@@ -220,7 +219,7 @@ store.requestAccess(for: .contacts) { granted, _ in
             contact.phoneNumbers = [CNLabeledValue(label: CNLabelPhoneNumberMain,
                                                    value: CNPhoneNumber(stringValue: phone))]
         }
-        // note write requires entitlement — omitted until binary is signed (contacts #12, #13)
+        if !note.isEmpty { contact.note = note }
 
         let request = CNSaveRequest()
         request.add(contact, toContainerWithIdentifier: nil)
@@ -229,6 +228,7 @@ store.requestAccess(for: .contacts) { granted, _ in
             var parts = ["Added: \(name)"]
             if !email.isEmpty { parts.append("email \(email)") }
             if !phone.isEmpty { parts.append("phone \(phone)") }
+            if !note.isEmpty  { parts.append("+ note") }
             print(parts.joined(separator: " · "))
         } catch {
             fail("Could not save contact: \(error.localizedDescription)")
@@ -244,9 +244,15 @@ store.requestAccess(for: .contacts) { granted, _ in
         var changes: [String] = []
         let work = Array(args.dropFirst(2)).joined(separator: " ")
         if !work.isEmpty {
-            if let _ = work.range(of: #"\bnotes?\b"#, options: .regularExpression) {
-                // note write requires entitlement — see contacts #12, #13
-                changes.append("note (skipped — requires entitlement)")
+            if let r = work.range(of: #"\bnotes?\b"#, options: .regularExpression) {
+                let val = String(work[r.upperBound...]).trimmingCharacters(in: .whitespaces)
+                if val.lowercased() == "none" {
+                    mutable.note = ""
+                    changes.append("note cleared")
+                } else {
+                    mutable.note = val
+                    changes.append("note updated")
+                }
             }
             if let r = work.range(of: #"\bemail\b"#, options: .regularExpression) {
                 let val = String(work[r.upperBound...]).trimmingCharacters(in: .whitespaces)
