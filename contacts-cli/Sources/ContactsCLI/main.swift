@@ -37,6 +37,8 @@ func usage() -> Never {
       contacts rename <name> <new-name>         # Rename a contact
       contacts remove <name>                    # Remove a contact
       contacts remove <name> from <group>       # Remove contact from a group
+
+    Feedback: https://github.com/kscott/get-clear/issues
     """)
     exit(0)
 }
