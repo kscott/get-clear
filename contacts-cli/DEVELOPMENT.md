@@ -26,24 +26,31 @@ The tool uses positional arguments and natural language keywords — not flags.
 
 **Correct:**
 ```
-contacts create "Jane Doe" Acme email jane@acme.com phone 555-1234
-contacts edit "Jane" note met at the conference last week
+contacts add "Jane Doe" email jane@acme.com phone 555-1234
+contacts add "Jane Doe" to "Acme Corp"
+contacts change "Jane" note met at the conference last week
+contacts rename "Jane Doe" "Jane Smith"
+contacts remove "Jane Doe" from "Acme Corp"
+contacts remove "Jane Doe"
 ```
 
 **Avoid:**
 ```
-contacts create "Jane Doe" --company Acme --email jane@acme.com   # don't do this
+contacts add "Jane Doe" --email jane@acme.com   # don't do this
 ```
 
-The one exception is `--name` in the `edit` command. It's necessary because there's no unambiguous way to distinguish the existing name (used to find the contact) from a new name (what to rename it to) positionally.
+There are no flags. `rename` is a dedicated command for changing a contact's name
+(identity). `change` modifies attributes. `to`/`from` keywords disambiguate group
+membership from contact-level operations.
 
 ## Argument parsing conventions
 
 - **Name** is always `args[1]` — required, user should quote it for names with spaces
 - **Keywords** `email`, `phone`, `note` can appear in any order within the remaining args
 - **Note** captures to end of string — extract first, then parse remaining for email/phone
-- **company** for create — positional; any remaining text not matched by email/phone/note keywords
-- **`none` as value** in edit — clears the field: `email none`, `phone none`, `note none`
+- **`none` as value** in change — clears the field: `email none`, `phone none`, `note none`
+- **`to <group>`** after name in add — signals group membership, not contact creation
+- **`from <group>`** after name in remove — signals group membership removal, not contact deletion
 
 ## Natural language over syntax
 
@@ -83,8 +90,12 @@ Commands confirm what they did. Format:
 
 | Command | Output |
 |---------|--------|
-| `create` | `Created: <name> · email <e> · phone <p> · <company> · + note` |
-| `edit` | `Updated "<name>": <change>, <change>` |
+| `add` | `Added: <name>[ · email <e>][ · phone <p>][ · + note]` |
+| `add to group` | `Added <name> to <group>` |
+| `change` | `Updated "<name>": <change>, <change>` |
+| `rename` | `Renamed: "<old>" → "<new>"` |
+| `remove` | `Removed: <name>` |
+| `remove from group` | `Removed <name> from <group>` |
 | `show` | Multi-line card: name, Company, Email, Phone, Note |
 | `search` | `  Name <email> — Company` per result |
 | `list` | `  Name <email>` per member |

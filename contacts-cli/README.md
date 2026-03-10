@@ -1,6 +1,6 @@
 # contacts-cli
 
-Fast CLI for Apple Contacts via CNContactStore. Search, show, export, create, and edit contacts directly from the terminal.
+Fast CLI for Apple Contacts via CNContactStore. Search, show, export, and manage contacts directly from the terminal.
 
 ## Installation
 
@@ -22,8 +22,12 @@ contacts list <group>               # Everyone in a group
 contacts export <group>             # Paste-ready "Name <email>, ..." string
 contacts search <query>             # Search name, email, phone, company
 contacts show <name>                # Full contact card
-contacts create <name> [company] [email E] [phone P] [note free text]
-contacts edit <name> [email E] [phone P] [--name "New Name"] [note free text]
+contacts add <name> [email E] [phone P] [note free text]
+contacts add <name> to <group>
+contacts change <name> [email E] [phone P] [note free text]
+contacts rename <name> <new-name>
+contacts remove <name>
+contacts remove <name> from <group>
 ```
 
 ## Examples
@@ -40,15 +44,22 @@ contacts show "Alice Smith"
 # Export a group for pasting into To/Cc
 contacts export "Board Members"
 
-# Create
-contacts create "Jane Doe" Acme email jane@acme.com phone 555-1234 note met at conference
+# Add
+contacts add "Jane Doe" email jane@acme.com phone 555-1234 note met at conference
+contacts add "Jane Doe" to "Acme"
 
-# Edit — only specified fields are updated
-contacts edit "Jane Doe" --name "Jane Smith"
-contacts edit "Jane" email jane.smith@acme.com
-contacts edit "Jane" note now at new company
-contacts edit "Jane" phone none    # removes phone
-contacts edit "Jane" email none    # removes all email
+# Change — only specified fields are updated
+contacts change "Jane Doe" email jane.smith@acme.com
+contacts change "Jane" note now at new company
+contacts change "Jane" phone none    # removes phone
+contacts change "Jane" email none    # removes all email
+
+# Rename (changes identity)
+contacts rename "Jane Doe" "Jane Smith"
+
+# Remove
+contacts remove "Jane Doe"
+contacts remove "Jane Doe" from "Acme"
 ```
 
 ## Build & test
@@ -77,11 +88,11 @@ swift test
 - **Contacts framework over AppleScript** — faster, non-blocking, fully scriptable
 - **ContactsLib separated from ContactsCLI** — allows unit testing without entitlements or permissions
 - **Custom test runner instead of XCTest** — works with CLT only, no full Xcode needed
-- **Keyword-based argument parsing** — natural language, no flags (except `--name` in edit)
+- **Keyword-based argument parsing** — natural language, no flags
 - **Fuzzy matching** — partial names, email fragments, phone digits all work
+- **`to`/`from` keywords** disambiguate group membership: `add X to <group>`, `remove X from <group>`
 
 ## Known limitations
 
-- Write operations (create/edit) require Full Contacts access (not just read)
+- Write operations require Full Contacts access (not just read)
 - Phone numbers are stored with a single "main" label; multi-number contacts show the first
-- Contact groups (lists) are read-only — group membership cannot be modified via CNContactStore without additional entitlements

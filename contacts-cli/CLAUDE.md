@@ -27,8 +27,12 @@ contacts list <group>
 contacts export <group>
 contacts search <query>
 contacts show <name>
-contacts create <name> [company] [email E] [phone P] [note free text]
-contacts edit <name> [email E] [phone P] [--name "New Name"] [note free text]
+contacts add <name> [email E] [phone P] [note free text]
+contacts add <name> to <group>
+contacts change <name> [email E] [phone P] [note free text]
+contacts rename <name> <new-name>
+contacts remove <name>
+contacts remove <name> from <group>
 ```
 
 ## Key decisions
@@ -36,18 +40,23 @@ contacts edit <name> [email E] [phone P] [--name "New Name"] [note free text]
 - **Contacts framework over AppleScript** — faster, non-blocking, fully scriptable
 - **ContactsLib separated from ContactsCLI** — allows unit testing without entitlements or permissions
 - **Custom test runner instead of XCTest** — works with CLT only, no full Xcode needed
-- **Keyword-based argument parsing** — natural language, no flags (except `--name` in edit)
+- **Keyword-based argument parsing** — natural language, no flags
 - **Fuzzy name matching** — `matchContacts()` scores by quality: exact > prefix > substring > email > company > phone
+- **`to`/`from` keywords** — disambiguate group membership from contact operations
 
-## Optional fields (create/edit)
+## Optional fields (add/change)
 
 Keywords in any order; `note` captures to end of string and must be last:
 
 ```
-contacts create "Jane Doe" Acme email jane@acme.com phone 555-1234 note met at conference
-contacts edit "Jane Doe" email jane@acme.com --name "Jane Smith"
-contacts edit "Jane" note none   # clears the note
-contacts edit "Jane" email none  # removes all email addresses
+contacts add "Jane Doe" email jane@acme.com phone 555-1234 note met at conference
+contacts add "Jane Doe" to "Acme Corp"
+contacts change "Jane Doe" email jane.smith@acme.com
+contacts rename "Jane Doe" "Jane Smith"
+contacts change "Jane" note none   # clears the note
+contacts change "Jane" email none  # removes all email addresses
+contacts remove "Jane Doe" from "Acme Corp"
+contacts remove "Jane Doe"
 ```
 
 ## Adding a new command
