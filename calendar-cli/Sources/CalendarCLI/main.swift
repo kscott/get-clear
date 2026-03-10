@@ -119,20 +119,43 @@ func formatTime(_ date: Date) -> String {
     timeFormatter.string(from: date)
 }
 
+// MARK: - Color
+
+/// Returns an ANSI true-color foreground escape for the calendar's color, or "" if unavailable.
+/// Respects the NO_COLOR environment variable convention.
+func calendarDot(_ calendar: EKCalendar) -> String {
+    guard ProcessInfo.processInfo.environment["NO_COLOR"] == nil else { return "  " }
+    guard let cg = calendar.cgColor else { return "  " }
+    let colorSpace = cg.colorSpace?.model
+    let components = cg.components ?? []
+    let r, g, b: Int
+    if colorSpace == .rgb, components.count >= 3 {
+        r = Int(components[0] * 255)
+        g = Int(components[1] * 255)
+        b = Int(components[2] * 255)
+    } else if colorSpace == .monochrome, components.count >= 1 {
+        let w = Int(components[0] * 255)
+        r = w; g = w; b = w
+    } else {
+        return "  "
+    }
+    return "\u{001B}[38;2;\(r);\(g);\(b)m●\u{001B}[0m "
+}
+
 func eventLine(_ event: EKEvent) -> String {
     let timeCol: String
     if event.isAllDay {
-        timeCol = "  All day              "
+        timeCol = " All day              "
     } else {
         let start = formatTime(event.startDate)
         let end   = formatTime(event.endDate)
-        timeCol = String(format: "  %8@ – %-8@  ", start as CVarArg, end as CVarArg)
+        timeCol = String(format: " %8@ – %-8@  ", start as CVarArg, end as CVarArg)
     }
     var label = event.title ?? "(no title)"
     if let loc = event.location, !loc.isEmpty {
         label += " · " + (loc.components(separatedBy: "\n").first ?? loc)
     }
-    return "\(timeCol) \(label)"
+    return "\(calendarDot(event.calendar))\(timeCol)\(label)"
 }
 
 func printGrouped(_ events: [EKEvent]) {
@@ -189,7 +212,7 @@ store.requestFullAccessToEvents { granted, _ in
         for source in grouped.keys.sorted() {
             print(source)
             for cal in (grouped[source] ?? []).sorted(by: { $0.title < $1.title }) {
-                print("  \(cal.title)")
+                print("  \(calendarDot(cal))\(cal.title)")
             }
         }
         semaphore.signal()
@@ -257,7 +280,7 @@ store.requestFullAccessToEvents { granted, _ in
                 if let loc = event.location, !loc.isEmpty {
                     label += " · " + (loc.components(separatedBy: "\n").first ?? loc)
                 }
-                print("  \(dateLabel)  \(timeStr)   \(label)")
+                print("\(calendarDot(event.calendar)) \(dateLabel)  \(timeStr)   \(label)")
             }
         }
         semaphore.signal()
