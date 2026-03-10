@@ -20,7 +20,7 @@ contacts open                       # Open the Contacts app
 contacts lists                      # Show all contact groups
 contacts list <group>               # Everyone in a group
 contacts export <group>             # Paste-ready "Name <email>, ..." string
-contacts search <query>             # Search name, email, phone, company
+contacts find <query>             # Find by name, email, phone, company
 contacts show <name>                # Full contact card
 contacts add <name> [email E] [phone P] [note free text]
 contacts add <name> to <group>
@@ -34,9 +34,9 @@ contacts remove <name> from <group>
 
 ```bash
 # Search
-contacts search alice
-contacts search "@acme.com"
-contacts search "555-1234"
+contacts find alice
+contacts find "@acme.com"
+contacts find "555-1234"
 
 # Show a full contact card
 contacts show "Alice Smith"

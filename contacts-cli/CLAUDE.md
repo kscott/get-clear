@@ -25,7 +25,7 @@ contacts open
 contacts lists
 contacts list <group>
 contacts export <group>
-contacts search <query>
+contacts find <query>
 contacts show <name>
 contacts add <name> [email E] [phone P] [note free text]
 contacts add <name> to <group>

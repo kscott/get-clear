@@ -29,7 +29,7 @@ func usage() -> Never {
       contacts lists                            # Show all contact groups
       contacts list <group>                     # Everyone in a group
       contacts export <group>                   # Paste-ready "Name <email>, ..." string
-      contacts search <query>                   # Search name, email, phone, company
+      contacts find <query>                     # Find by name, email, phone, company
       contacts show <name>                      # Full contact card
       contacts add <name> [email E] [phone P] [note free text]
       contacts add <name> to <group>            # Add contact to a group
@@ -136,7 +136,7 @@ store.requestAccess(for: .contacts) { granted, _ in
         print(exportAddresses(records))
         semaphore.signal()
 
-    case "search":
+    case "find":
         guard args.count > 1 else { fail("provide a search query") }
         let query   = args.dropFirst().joined(separator: " ")
         let records = allContacts().map(toRecord)
