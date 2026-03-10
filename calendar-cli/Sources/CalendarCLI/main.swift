@@ -77,14 +77,21 @@ func extractCalFilter() -> String? {
 func resolveCalendars(_ filter: String?) -> [EKCalendar] {
     let all = store.calendars(for: .event)
     guard let filter else { return all }
-    if let names = config.subsets[filter.lowercased()] {
-        let matched = all.filter { names.contains($0.title) }
-        if matched.isEmpty { fail("No calendars matched subset '\(filter)'") }
-        return matched
+    let tokens = filter.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }
+    var seen = Set<String>()
+    var result: [EKCalendar] = []
+    for token in tokens {
+        if let names = config.subsets[token.lowercased()] {
+            let matched = all.filter { names.contains($0.title) && !seen.contains($0.calendarIdentifier) }
+            if matched.isEmpty { fail("No calendars matched subset '\(token)'") }
+            matched.forEach { seen.insert($0.calendarIdentifier); result.append($0) }
+        } else {
+            let matched = all.filter { $0.title == token && !seen.contains($0.calendarIdentifier) }
+            if matched.isEmpty { fail("Calendar not found: \(token)") }
+            matched.forEach { seen.insert($0.calendarIdentifier); result.append($0) }
+        }
     }
-    let matched = all.filter { $0.title == filter }
-    if matched.isEmpty { fail("Calendar not found: \(filter)") }
-    return matched
+    return result
 }
 
 func fetchEvents(in range: ParsedRange, calendars: [EKCalendar]) -> [EKEvent] {
