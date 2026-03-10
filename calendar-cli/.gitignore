@@ -1,0 +1,4 @@
+# Compiled binary — build locally with `./calendar setup`
+calendar-bin
+.DS_Store
+.build/
