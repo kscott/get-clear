@@ -64,14 +64,23 @@ calendar                                      # Show help
 calendar --version                            # Show version
 calendar open                                 # Open Calendar.app
 calendar calendars                            # List all available calendars
-calendar list <range> [--cal <subset>]        # Events in range
-calendar today [--cal <subset>]               # Today's events
-calendar week [--cal <subset>]                # This week's events
-calendar next [n] [--cal <subset>]            # Next N events (default 5)
-calendar find <query> [range] [--cal <subset>]
+calendar list <range>                         # Events in range
+calendar today                                # Today's events
+calendar week                                 # This week's events
+calendar next [n]                             # Next N events (default 5)
+calendar find <query> [range]
 calendar show <title> [date]                  # Full event detail
-calendar add <title> [date] [time to time] [--cal <name>]
-calendar remove <title> [date] [--cal <name>]
+calendar add <title> [date] [time to time]
+calendar remove <title> [date]
+```
+
+Prefix a subset name to filter by calendar group:
+
+```bash
+calendar work today
+calendar personal week
+calendar work next 5
+calendar work find standup
 ```
 
 Bare range shorthands also work without the `list` subcommand:
@@ -97,18 +106,6 @@ calendar "next monday to friday"
 | N-day window | `7d`, `30d` (today through today+N-1) |
 | Explicit range | `march 15 to march 20` |
 | Relative range | `next monday to friday` |
-
-### Calendar filter (--cal)
-
-Filter results to a named subset or a specific calendar:
-
-```bash
-calendar week --cal work
-calendar today --cal personal
-calendar next 10 --cal work,sports     # comma-separated, no spaces
-```
-
-`--cal` accepts either a named subset from your config file, or a literal calendar name.
 
 ### Config file
 
@@ -154,7 +151,7 @@ Tuesday, March 10
 
 ## Known limitations
 
-- `add` creates events in the first calendar of the `--cal` set, or your default calendar
+- `add` creates events in the first calendar of the subset filter, or your default calendar
 - `show` and `remove` with multiple matches list candidates and ask you to narrow by date
 - Attendee details only available for events with invitations
 - External calendars must be configured in Calendar.app to be visible

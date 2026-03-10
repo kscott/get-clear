@@ -32,7 +32,7 @@ See [DEVELOPMENT.md](DEVELOPMENT.md) for coding conventions, interface design ru
 - **Custom test runner instead of XCTest** — works with CLT only, no full Xcode needed
 - **`store.events(matching:)` is synchronous** — unlike reminders (async fetch), event queries are sync after access is granted; the semaphore is only needed for the access callback
 - **External calendars work** — EventKit sees any calendar configured in Calendar.app (Google, Exchange, etc.)
-- **Named subsets in config** — `~/.config/calendar-cli/config.toml` maps subset names to calendar title lists; `--cal` accepts either a subset name or a literal calendar name
+- **Named subsets in config** — `~/.config/calendar-cli/config.toml` maps subset names to calendar title lists; prefix the subset name before the command: `calendar work today`, `calendar personal week`
 - **`calendar` bare command + range** — unrecognised commands are tried as range shorthands; `calendar monday`, `calendar 7d`, `calendar "march 15"` all work without an explicit `list`
 
 ## Commands
@@ -40,15 +40,17 @@ See [DEVELOPMENT.md](DEVELOPMENT.md) for coding conventions, interface design ru
 ```
 calendar open
 calendar calendars
-calendar list <range> [--cal <subset>]
-calendar today [--cal <subset>]
-calendar week [--cal <subset>]
-calendar next [n] [--cal <subset>]
-calendar find <query> [range] [--cal <subset>]
+calendar list <range>
+calendar today
+calendar week
+calendar next [n]
+calendar find <query> [range]
 calendar show <title> [date]
-calendar add <title> [date] [time to time] [--cal <name>]
-calendar remove <title> [date] [--cal <name>]
+calendar add <title> [date] [time to time]
+calendar remove <title> [date]
 ```
+
+Prefix a subset name to filter: `calendar work today`, `calendar personal week`, `calendar work next 5`
 
 Bare range shorthands also work: `calendar monday`, `calendar 7d`, `calendar "march 15"`, etc.
 
@@ -65,9 +67,9 @@ monday … sunday           (next occurrence, or today if today matches)
 "march 15 to march 20"    (explicit range, any two single-date expressions)
 ```
 
-## Calendar filter (--cal)
+## Calendar filter (positional prefix)
 
-`--cal` accepts either a named subset (from config.toml) or a literal calendar title. Subset matching is case-insensitive.
+Prefix a subset name (from config.toml) before the command. Subset matching is case-insensitive.
 
 Config file: `~/.config/calendar-cli/config.toml`
 ```toml
@@ -79,7 +81,7 @@ church   = ["Trinity UMC"]
 
 ## Known limitations
 
-- `add` targets the first calendar in the `--cal` set, or the system default
+- `add` targets the first calendar in the subset filter, or the system default
 - `show` and `remove` list candidates when multiple events match; narrow with a date
 - Attendee info only present for events with invitations (not personal events)
 - Requires macOS 14+
