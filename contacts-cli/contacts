@@ -1,0 +1,39 @@
+#!/bin/bash
+# contacts — wrapper script for contacts-bin
+#
+# Source lives at:  ~/dev/contacts-cli/
+# Binary lives at:  ~/bin/contacts-bin
+# Symlink at:       ~/bin/contacts -> ~/dev/contacts-cli/contacts
+#
+# To set up on a new machine:
+#   ~/dev/contacts-cli/contacts setup
+#
+# To run tests:
+#   ~/dev/contacts-cli/contacts test
+
+SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
+BINARY="$HOME/bin/contacts-bin"
+SYMLINK="$HOME/bin/contacts"
+
+if [[ "$1" == "setup" ]]; then
+  echo "Building $SCRIPT_DIR..."
+  swift build -c release --package-path "$SCRIPT_DIR" 2>&1 || { echo "Build failed."; exit 1; }
+  echo "Build OK."
+
+  cp "$SCRIPT_DIR/.build/release/contacts-bin" "$BINARY" || { echo "Copy failed."; exit 1; }
+  echo "Installed binary to $BINARY."
+
+  echo "Creating symlink $SYMLINK -> $SCRIPT_DIR/contacts..."
+  ln -sf "$SCRIPT_DIR/contacts" "$SYMLINK" || { echo "Symlink failed."; exit 1; }
+  echo "Done. Run 'contacts' to get started."
+  exit 0
+fi
+
+if [[ "$1" == "test" ]]; then
+  swift build --package-path "$SCRIPT_DIR" 2>&1 || { echo "Build failed."; exit 1; }
+  BIN_PATH="$(swift build --package-path "$SCRIPT_DIR" --show-bin-path 2>/dev/null)"
+  "$BIN_PATH/contacts-tests"
+  exit $?
+fi
+
+exec "$BINARY" "$@"

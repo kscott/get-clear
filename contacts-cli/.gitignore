@@ -1,0 +1,4 @@
+# Compiled binary — build locally with `./contacts setup`
+contacts-bin
+.DS_Store
+.build/
