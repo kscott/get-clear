@@ -54,6 +54,8 @@ func usage() -> Never {
       [subsets]
       work     = ["Work", "Meetings"]
       personal = ["Home", "Family"]
+
+    Feedback: https://github.com/kscott/get-clear/issues
     """)
     exit(0)
 }
