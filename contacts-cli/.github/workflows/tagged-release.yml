@@ -35,7 +35,7 @@ jobs:
       - name: Install intermediate certificate
         run: |
           curl -s -O https://www.apple.com/certificateauthority/DeveloperIDG2CA.cer
-          security add-trusted-cert -d -r trustAsRoot -k build.keychain DeveloperIDG2CA.cer
+          security import DeveloperIDG2CA.cer -k build.keychain
 
       - name: Sign binary
         run: |
