@@ -79,6 +79,14 @@ Sent. One thought, one action, done.
 
 ---
 
+## Two ways to use it
+
+**Directly** — learn the vocabulary, type the commands. Fast, precise, no dependency on anything except your Mac. `reminders add "Call Sarah" friday priority high` is readable enough to type and remember.
+
+**With Claude** — tell Claude what you need in plain language. It handles the commands. Less to memorize, more conversational, same results.
+
+Both modes are first-class. The tools work without Claude today. Claude makes them faster and easier — but the foundation stands on its own.
+
 ## Requirements
 
 - macOS 14 (Sonoma) or later
