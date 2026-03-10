@@ -239,3 +239,26 @@ That's a stronger position. The foundation stands on its own. The AI makes it be
 
 The measure: if you handed someone the command reference with no other explanation, could they use it? If yes, the design is right.
 
+
+---
+
+## On how this was built
+
+*A note worth keeping.*
+
+Someone could look at this and say it was a manic session of vibe coding. They would be right. That's not the point.
+
+The code in Get Clear was not hand-written line by line. Claude wrote it. That is not a confession — it's a feature. The heart of this project is not the technology, not the Swift, not the EventKit API calls. It's the *why*. Figuring out how to reach the state of clear, and what it would take to get there. Tools and code are a way to get to it, but not the reason on their own.
+
+The old barrier was: *do you have the technical skills to build the thing you can see?* That barrier is largely gone. What remains is the harder question: *do you know what to build, and why?*
+
+The energy here went into the why. The vocabulary. The feeling. The design decisions that make the tools feel right. Every word got pushed on until it was honest. The name took all morning because the wrong name would have been a lie about what the project actually is. The feedback loop came from understanding what motivation actually needs, not what a feature list says.
+
+That's not accidental. That's craft. Just not the craft people are used to valuing.
+
+The code is correct because the thinking behind it is correct. The suite feels coherent because the principles were worked out before the implementation. Claude handled the Swift. The rest was the work.
+
+That's what's new. You don't have to know how to build the thing to build it anymore. You have to know *what* to build. You have to know *why*. You have to care enough to push on the words until they're true.
+
+Most people can't do that part. You did.
+
