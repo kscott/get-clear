@@ -39,7 +39,6 @@ jobs:
       - name: Sign binary
         run: |
           codesign --force --sign "Developer ID Application: Kenneth Scott (6Q96Q79QN8)" \
-            --entitlements contacts.entitlements \
             --options runtime \
             .build/release/contacts-bin
 
