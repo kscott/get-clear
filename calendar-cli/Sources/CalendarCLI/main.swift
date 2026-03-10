@@ -194,8 +194,8 @@ func nextRelativeLabel(_ date: Date) -> String {
 // MARK: - Dispatch
 
 guard let cmd = args.first else { usage() }
-if cmd == "--version" || cmd == "-v" { print(version); exit(0) }
-if cmd == "--help"    || cmd == "-h" { usage() }
+if cmd == "--version" || cmd == "-v" || cmd == "version" { print(version); exit(0) }
+if cmd == "--help"    || cmd == "-h" || cmd == "help"    { usage() }
 
 store.requestFullAccessToEvents { granted, _ in
     guard granted else { fail("Calendar access denied") }
