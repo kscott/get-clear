@@ -25,14 +25,18 @@ func usage() -> Never {
     contacts \(version) — CLI for Apple Contacts
 
     Usage:
-      contacts open                       # Open the Contacts app
-      contacts lists                      # Show all contact groups
-      contacts list <group>               # Everyone in a group
-      contacts export <group>             # Paste-ready "Name <email>, ..." string
-      contacts search <query>             # Search name, email, phone, company
-      contacts show <name>                # Full contact card
-      contacts create <name> [company] [email E] [phone P] [note free text]
-      contacts edit <name> [email E] [phone P] [--name "New Name"] [note free text]
+      contacts open                             # Open the Contacts app
+      contacts lists                            # Show all contact groups
+      contacts list <group>                     # Everyone in a group
+      contacts export <group>                   # Paste-ready "Name <email>, ..." string
+      contacts search <query>                   # Search name, email, phone, company
+      contacts show <name>                      # Full contact card
+      contacts add <name> [email E] [phone P] [note free text]
+      contacts add <name> to <group>            # Add contact to a group
+      contacts change <name> [email E] [phone P] [note free text]
+      contacts rename <name> <new-name>         # Rename a contact
+      contacts remove <name>                    # Remove a contact
+      contacts remove <name> from <group>       # Remove contact from a group
     """)
     exit(0)
 }
@@ -85,8 +89,8 @@ func printCard(_ c: CNContact) {
 // MARK: - Dispatch
 
 guard let cmd = args.first else { usage() }
-if cmd == "--version" || cmd == "-v" { print(version); exit(0) }
-if cmd == "--help"    || cmd == "-h" { usage() }
+if cmd == "--version" || cmd == "-v" || cmd == "version" { print(version); exit(0) }
+if cmd == "--help"    || cmd == "-h" || cmd == "help"    { usage() }
 
 store.requestAccess(for: .contacts) { granted, _ in
     guard granted else { fail("Contacts access denied") }
@@ -156,57 +160,56 @@ store.requestAccess(for: .contacts) { granted, _ in
         printCard(contact)
         semaphore.signal()
 
-    case "create":
+    case "add":
         guard args.count > 1 else { fail("provide a contact name") }
-        var remaining = Array(args.dropFirst())
+        let name      = args[1]
+        let remaining = Array(args.dropFirst(2))
 
-        // Extract --name flag (not needed for create, name is positional)
-        let name  = remaining[0]
-        remaining = Array(remaining.dropFirst())
-
-        // Parse keywords: email, phone, note (note must be last)
-        var company = ""
-        var email   = ""
-        var phone   = ""
-        var note    = ""
-
-        let work = remaining.joined(separator: " ")
-
-        if let r = work.range(of: #"\bnotes?\b"#, options: .regularExpression) {
-            note = String(work[r.upperBound...]).trimmingCharacters(in: .whitespaces)
-            var trimmed = String(work[..<r.lowerBound]).trimmingCharacters(in: .whitespaces)
-
-            if let er = trimmed.range(of: #"\bemail\b"#, options: .regularExpression) {
-                let after = String(trimmed[er.upperBound...]).trimmingCharacters(in: .whitespaces)
-                email = after.components(separatedBy: " ").first ?? ""
-                trimmed = String(trimmed[..<er.lowerBound]).trimmingCharacters(in: .whitespaces)
+        // "add <name> to <group>" — group membership
+        if remaining.first == "to" {
+            let groupName = Array(remaining.dropFirst()).joined(separator: " ")
+            guard !groupName.isEmpty else { fail("provide a group name after 'to'") }
+            guard let contact = cnContact(named: name) else { fail("Not found: \(name)") }
+            guard let group = ((try? store.groups(matching: nil)) ?? []).first(where: {
+                $0.name.caseInsensitiveCompare(groupName) == .orderedSame
+            }) else { fail("Group not found: \(groupName)") }
+            let request = CNSaveRequest()
+            request.addMember(contact, to: group)
+            do {
+                try store.execute(request)
+                print("Added \(name) to \(group.name)")
+            } catch {
+                fail("Could not add to group: \(error.localizedDescription)")
             }
-            if let pr = trimmed.range(of: #"\bphone\b"#, options: .regularExpression) {
-                let after = String(trimmed[pr.upperBound...]).trimmingCharacters(in: .whitespaces)
-                phone = after.components(separatedBy: " ").first ?? ""
-                trimmed = String(trimmed[..<pr.lowerBound]).trimmingCharacters(in: .whitespaces)
-            }
-            company = trimmed
-        } else {
-            var trimmed = work
-            if let er = trimmed.range(of: #"\bemail\b"#, options: .regularExpression) {
-                let after = String(trimmed[er.upperBound...]).trimmingCharacters(in: .whitespaces)
-                email = after.components(separatedBy: " ").first ?? ""
-                trimmed = String(trimmed[..<er.lowerBound]).trimmingCharacters(in: .whitespaces)
-            }
-            if let pr = trimmed.range(of: #"\bphone\b"#, options: .regularExpression) {
-                let after = String(trimmed[pr.upperBound...]).trimmingCharacters(in: .whitespaces)
-                phone = after.components(separatedBy: " ").first ?? ""
-                trimmed = String(trimmed[..<pr.lowerBound]).trimmingCharacters(in: .whitespaces)
-            }
-            company = trimmed
+            semaphore.signal()
+            return
+        }
+
+        // "add <name> [email E] [phone P] [note text]" — create contact
+        var email = ""
+        var phone = ""
+        var note  = ""
+        let work  = remaining.joined(separator: " ")
+
+        var trimmed = work
+        if let r = trimmed.range(of: #"\bnotes?\b"#, options: .regularExpression) {
+            note    = String(trimmed[r.upperBound...]).trimmingCharacters(in: .whitespaces)
+            trimmed = String(trimmed[..<r.lowerBound]).trimmingCharacters(in: .whitespaces)
+        }
+        if let r = trimmed.range(of: #"\bemail\b"#, options: .regularExpression) {
+            email   = String(trimmed[r.upperBound...]).trimmingCharacters(in: .whitespaces)
+                        .components(separatedBy: " ").first ?? ""
+            trimmed = String(trimmed[..<r.lowerBound]).trimmingCharacters(in: .whitespaces)
+        }
+        if let r = trimmed.range(of: #"\bphone\b"#, options: .regularExpression) {
+            phone   = String(trimmed[r.upperBound...]).trimmingCharacters(in: .whitespaces)
+                        .components(separatedBy: " ").first ?? ""
         }
 
         let nameParts = name.components(separatedBy: " ")
         let contact   = CNMutableContact()
-        contact.givenName       = nameParts.first ?? ""
-        contact.familyName      = nameParts.count > 1 ? nameParts.dropFirst().joined(separator: " ") : ""
-        contact.organizationName = company
+        contact.givenName  = nameParts.first ?? ""
+        contact.familyName = nameParts.count > 1 ? nameParts.dropFirst().joined(separator: " ") : ""
         if !email.isEmpty {
             contact.emailAddresses = [CNLabeledValue(label: CNLabelWork, value: email as NSString)]
         }
@@ -220,40 +223,24 @@ store.requestAccess(for: .contacts) { granted, _ in
         request.add(contact, toContainerWithIdentifier: nil)
         do {
             try store.execute(request)
-            var parts = ["Created: \(name)"]
-            if !email.isEmpty   { parts.append("email \(email)") }
-            if !phone.isEmpty   { parts.append("phone \(phone)") }
-            if !company.isEmpty { parts.append(company) }
-            if !note.isEmpty    { parts.append("+ note") }
+            var parts = ["Added: \(name)"]
+            if !email.isEmpty { parts.append("email \(email)") }
+            if !phone.isEmpty { parts.append("phone \(phone)") }
+            if !note.isEmpty  { parts.append("+ note") }
             print(parts.joined(separator: " · "))
         } catch {
             fail("Could not save contact: \(error.localizedDescription)")
         }
         semaphore.signal()
 
-    case "edit":
+    case "change":
         guard args.count > 1 else { fail("provide a contact name") }
-        var editArgs = Array(args)
-        var newName: String? = nil
-        if let idx = editArgs.firstIndex(of: "--name"), idx + 1 < editArgs.count {
-            newName = editArgs[idx + 1]
-            editArgs.remove(at: idx + 1)
-            editArgs.remove(at: idx)
-        }
-
-        let query = editArgs[1]
+        let query = args[1]
         guard let contact = cnContact(named: query) else { fail("Not found: \(query)") }
         let mutable = contact.mutableCopy() as! CNMutableContact
 
         var changes: [String] = []
-        if let newName {
-            let parts = newName.components(separatedBy: " ")
-            mutable.givenName  = parts.first ?? ""
-            mutable.familyName = parts.count > 1 ? parts.dropFirst().joined(separator: " ") : ""
-            changes.append("name → \"\(newName)\"")
-        }
-
-        let work = editArgs.dropFirst(2).joined(separator: " ")
+        let work = Array(args.dropFirst(2)).joined(separator: " ")
         if !work.isEmpty {
             if let r = work.range(of: #"\bnotes?\b"#, options: .regularExpression) {
                 let noteVal = String(work[r.upperBound...]).trimmingCharacters(in: .whitespaces)
@@ -290,7 +277,7 @@ store.requestAccess(for: .contacts) { granted, _ in
             }
         }
 
-        guard !changes.isEmpty else { fail("nothing to change — specify email, phone, note, or --name") }
+        guard !changes.isEmpty else { fail("nothing to change — specify email, phone, or note") }
 
         let request = CNSaveRequest()
         request.update(mutable)
@@ -299,6 +286,61 @@ store.requestAccess(for: .contacts) { granted, _ in
             print("Updated \"\(query)\": \(changes.joined(separator: ", "))")
         } catch {
             fail("Could not save: \(error.localizedDescription)")
+        }
+        semaphore.signal()
+
+    case "rename":
+        guard args.count > 2 else { fail("provide existing name and new name") }
+        let oldName = args[1]
+        let newName = args[2]
+        guard let contact = cnContact(named: oldName) else { fail("Not found: \(oldName)") }
+        let mutable = contact.mutableCopy() as! CNMutableContact
+        let parts = newName.components(separatedBy: " ")
+        mutable.givenName  = parts.first ?? ""
+        mutable.familyName = parts.count > 1 ? parts.dropFirst().joined(separator: " ") : ""
+        let renameRequest = CNSaveRequest()
+        renameRequest.update(mutable)
+        do {
+            try store.execute(renameRequest)
+            print("Renamed: \"\(oldName)\" → \"\(newName)\"")
+        } catch {
+            fail("Could not rename: \(error.localizedDescription)")
+        }
+        semaphore.signal()
+
+    case "remove":
+        guard args.count > 1 else { fail("provide a contact name") }
+        let name      = args[1]
+        let remaining = Array(args.dropFirst(2))
+
+        // "remove <name> from <group>" — group membership
+        if remaining.first == "from" {
+            let groupName = Array(remaining.dropFirst()).joined(separator: " ")
+            guard !groupName.isEmpty else { fail("provide a group name after 'from'") }
+            guard let contact = cnContact(named: name) else { fail("Not found: \(name)") }
+            guard let group = ((try? store.groups(matching: nil)) ?? []).first(where: {
+                $0.name.caseInsensitiveCompare(groupName) == .orderedSame
+            }) else { fail("Group not found: \(groupName)") }
+            let request = CNSaveRequest()
+            request.removeMember(contact, from: group)
+            do {
+                try store.execute(request)
+                print("Removed \(name) from \(group.name)")
+            } catch {
+                fail("Could not remove from group: \(error.localizedDescription)")
+            }
+        } else {
+            // "remove <name>" — delete contact
+            guard let contact = cnContact(named: name) else { fail("Not found: \(name)") }
+            let mutable = contact.mutableCopy() as! CNMutableContact
+            let request = CNSaveRequest()
+            request.delete(mutable)
+            do {
+                try store.execute(request)
+                print("Removed: \(name)")
+            } catch {
+                fail("Could not remove contact: \(error.localizedDescription)")
+            }
         }
         semaphore.signal()
 
