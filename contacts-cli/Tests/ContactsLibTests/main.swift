@@ -35,11 +35,11 @@ final class TestRunner: @unchecked Sendable {
 
 // MARK: - Fixtures
 
-let alice   = ContactRecord(name: "Alice Smith",   emails: [("work", "alice@example.com")],   phones: [("main", "555-1234")], company: "Acme",  note: "")
-let bob     = ContactRecord(name: "Bob Jones",     emails: [("work", "bob@jones.org")],        phones: [],                    company: "BJCO",  note: "")
-let charlie = ContactRecord(name: "Charlie Brown", emails: [("home", "cbrown@peanuts.com")],   phones: [("main", "555-9999")], company: "",      note: "")
-let noEmail = ContactRecord(name: "Dana White",    emails: [],                                  phones: [("main", "303-555-0000")], company: "", note: "")
-let orgOnly = ContactRecord(name: "",              emails: [("work", "info@initech.com")],      phones: [],                    company: "Initech", note: "")
+let alice   = ContactRecord(name: "Alice Smith",   emails: [("work", "alice@example.com")],   phones: [("main", "555-1234")],  company: "Acme")
+let bob     = ContactRecord(name: "Bob Jones",     emails: [("work", "bob@jones.org")],        phones: [],                    company: "BJCO")
+let charlie = ContactRecord(name: "Charlie Brown", emails: [("home", "cbrown@peanuts.com")],   phones: [("main", "555-9999")], company: "")
+let noEmail = ContactRecord(name: "Dana White",    emails: [],                                  phones: [("main", "303-555-0000")], company: "")
+let orgOnly = ContactRecord(name: "",              emails: [("work", "info@initech.com")],      phones: [],                    company: "Initech")
 
 let all = [alice, bob, charlie, noEmail, orgOnly]
 
@@ -87,9 +87,9 @@ t.suite("matchContacts — phone matching") {
 
 t.suite("matchContacts — sort order") {
     let contacts = [
-        ContactRecord(name: "Smith Jr",  emails: [], phones: [], company: "", note: ""),
-        ContactRecord(name: "Smith",     emails: [], phones: [], company: "", note: ""),
-        ContactRecord(name: "John Smith",emails: [], phones: [], company: "", note: ""),
+        ContactRecord(name: "Smith Jr",  emails: [], phones: [],  company: ""),
+        ContactRecord(name: "Smith",     emails: [], phones: [],  company: ""),
+        ContactRecord(name: "John Smith",emails: [], phones: [],  company: ""),
     ]
     let r = matchContacts("smith", in: contacts)
     t.expect("exact name before prefix before substring", r[0].name == "Smith" && r[1].name == "Smith Jr" && r[2].name == "John Smith")

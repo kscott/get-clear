@@ -31,9 +31,9 @@ func usage() -> Never {
       contacts export <group>                   # Paste-ready "Name <email>, ..." string
       contacts find <query>                     # Find by name, email, phone, company
       contacts show <name>                      # Full contact card
-      contacts add <name> [email E] [phone P] [note free text]
+      contacts add <name> [email E] [phone P]
       contacts add <name> to <group>            # Add contact to a group
-      contacts change <name> [email E] [phone P] [note free text]
+      contacts change <name> [email E] [phone P]
       contacts rename <name> <new-name>         # Rename a contact
       contacts remove <name>                    # Remove a contact
       contacts remove <name> from <group>       # Remove contact from a group
@@ -51,8 +51,6 @@ let keysToFetch: [CNKeyDescriptor] = [
     CNContactOrganizationNameKey as CNKeyDescriptor,
     CNContactEmailAddressesKey as CNKeyDescriptor,
     CNContactPhoneNumbersKey as CNKeyDescriptor,
-    // CNContactNoteKey requires com.apple.developer.contacts.notes entitlement (macOS 13+)
-    // Entitlement requires signed + notarized binary — see contacts #12, #13 and get-clear #8
 ]
 
 func allContacts() -> [CNContact] {
@@ -67,8 +65,7 @@ func toRecord(_ c: CNContact) -> ContactRecord {
         name:    [c.givenName, c.familyName].filter { !$0.isEmpty }.joined(separator: " "),
         emails:  c.emailAddresses.map { (cleanLabel($0.label ?? ""), $0.value as String) },
         phones:  c.phoneNumbers.map   { (cleanLabel($0.label ?? ""), $0.value.stringValue) },
-        company: c.organizationName,
-        note:    ""  // note requires signed + notarized binary — see contacts #12, #13
+        company: c.organizationName
     )
 }
 
@@ -86,7 +83,6 @@ func printCard(_ c: CNContact) {
     if !r.company.isEmpty && !r.name.isEmpty { print("  Company:  \(r.company)") }
     for (label, value) in r.emails { print("  Email:    \(value)\(label.isEmpty ? "" : " (\(label))")") }
     for (label, value) in r.phones { print("  Phone:    \(value)\(label.isEmpty ? "" : " (\(label))")") }
-    if !r.note.isEmpty { print("  Note:     \(r.note)") }
 }
 
 // MARK: - Dispatch
@@ -191,14 +187,9 @@ store.requestAccess(for: .contacts) { granted, _ in
         // "add <name> [email E] [phone P] [note text]" — create contact
         var email = ""
         var phone = ""
-        var note  = ""
         let work  = remaining.joined(separator: " ")
 
         var trimmed = work
-        if let r = trimmed.range(of: #"\bnotes?\b"#, options: .regularExpression) {
-            note    = String(trimmed[r.upperBound...]).trimmingCharacters(in: .whitespaces)
-            trimmed = String(trimmed[..<r.lowerBound]).trimmingCharacters(in: .whitespaces)
-        }
         if let r = trimmed.range(of: #"\bemail\b"#, options: .regularExpression) {
             email   = String(trimmed[r.upperBound...]).trimmingCharacters(in: .whitespaces)
                         .components(separatedBy: " ").first ?? ""
@@ -220,8 +211,6 @@ store.requestAccess(for: .contacts) { granted, _ in
             contact.phoneNumbers = [CNLabeledValue(label: CNLabelPhoneNumberMain,
                                                    value: CNPhoneNumber(stringValue: phone))]
         }
-        // note write requires signed + notarized binary — see contacts #12, #13
-
         let request = CNSaveRequest()
         request.add(contact, toContainerWithIdentifier: nil)
         do {
@@ -244,10 +233,6 @@ store.requestAccess(for: .contacts) { granted, _ in
         var changes: [String] = []
         let work = Array(args.dropFirst(2)).joined(separator: " ")
         if !work.isEmpty {
-            if let _ = work.range(of: #"\bnotes?\b"#, options: .regularExpression) {
-                // note write requires signed + notarized binary — see contacts #12, #13
-                changes.append("note (skipped — requires notarized binary)")
-            }
             if let r = work.range(of: #"\bemail\b"#, options: .regularExpression) {
                 let val = String(work[r.upperBound...]).trimmingCharacters(in: .whitespaces)
                             .components(separatedBy: " ").first ?? ""

@@ -10,18 +10,15 @@ public struct ContactRecord {
     public let emails: [(label: String, value: String)]
     public let phones: [(label: String, value: String)]
     public let company: String
-    public let note: String
 
     public init(name: String,
                 emails: [(label: String, value: String)],
                 phones: [(label: String, value: String)],
-                company: String,
-                note: String) {
+                company: String) {
         self.name    = name
         self.emails  = emails
         self.phones  = phones
         self.company = company
-        self.note    = note
     }
 
     /// Primary email — first in list, or empty string if none.
