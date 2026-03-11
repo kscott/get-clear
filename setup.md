@@ -118,6 +118,52 @@ All five working — you're set up.
 
 ---
 
+## Signing and distribution infrastructure
+
+Signed, notarized binaries are published automatically to GitHub Releases on every push to main. This requires signing credentials stored in two places: the local Keychain (for running the sync script) and GitHub Actions secrets (for CI builds).
+
+### First-time setup (one machine, done)
+
+The following are already stored in the local Keychain under service `get-clear-signing`:
+
+| Account | What it is |
+|---|---|
+| `p12-base64` | Base64-encoded Developer ID Application certificate (.p12) |
+| `p12-password` | Password protecting the .p12 |
+| `notarytool-password` | App-specific password for `xcrun notarytool` |
+| `apple-id` | Apple ID (ken@optikos.net) |
+| `team-id` | Apple Developer Team ID (6Q96Q79QN8) |
+
+### Syncing secrets to GitHub
+
+To push credentials to all five repos:
+
+```bash
+~/dev/get-clear/scripts/sync-secrets
+```
+
+Run this after any credential rotation. Claude can run it too.
+
+### When credentials need to change
+
+**Certificate expired or revoked:**
+1. Open Xcode → Settings → Accounts → Manage Certificates → create new Developer ID Application cert
+2. Export from Keychain Access: right-click cert → Export → save as `.p12` with a password
+3. Update Keychain and sync:
+```bash
+security add-generic-password -s "get-clear-signing" -a "p12-base64"   -w "$(base64 -i /path/to/new.p12)" -U
+security add-generic-password -s "get-clear-signing" -a "p12-password" -w "your-password" -U
+~/dev/get-clear/scripts/sync-secrets
+```
+
+**App-specific password rotated** (appleid.apple.com → Sign-In and Security → App-Specific Passwords):
+```bash
+security add-generic-password -s "get-clear-signing" -a "notarytool-password" -w "xxxx-xxxx-xxxx-xxxx" -U
+~/dev/get-clear/scripts/sync-secrets
+```
+
+---
+
 ## Tokens by machine
 
 | Machine | Token name | Notes |
