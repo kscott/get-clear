@@ -52,7 +52,7 @@ let keysToFetch: [CNKeyDescriptor] = [
     CNContactEmailAddressesKey as CNKeyDescriptor,
     CNContactPhoneNumbersKey as CNKeyDescriptor,
     // CNContactNoteKey requires com.apple.developer.contacts.notes entitlement (macOS 13+)
-    // Entitlement requires Apple approval — see contacts #12, #13 and get-clear #8
+    // Entitlement requires signed + notarized binary — see contacts #12, #13 and get-clear #8
 ]
 
 func allContacts() -> [CNContact] {
@@ -68,7 +68,7 @@ func toRecord(_ c: CNContact) -> ContactRecord {
         emails:  c.emailAddresses.map { (cleanLabel($0.label ?? ""), $0.value as String) },
         phones:  c.phoneNumbers.map   { (cleanLabel($0.label ?? ""), $0.value.stringValue) },
         company: c.organizationName,
-        note:    ""  // note requires Apple-approved entitlement — see contacts #12, #13
+        note:    ""  // note requires signed + notarized binary — see contacts #12, #13
     )
 }
 
@@ -220,7 +220,7 @@ store.requestAccess(for: .contacts) { granted, _ in
             contact.phoneNumbers = [CNLabeledValue(label: CNLabelPhoneNumberMain,
                                                    value: CNPhoneNumber(stringValue: phone))]
         }
-        // note write requires Apple-approved entitlement — see contacts #12, #13
+        // note write requires signed + notarized binary — see contacts #12, #13
 
         let request = CNSaveRequest()
         request.add(contact, toContainerWithIdentifier: nil)
@@ -245,8 +245,8 @@ store.requestAccess(for: .contacts) { granted, _ in
         let work = Array(args.dropFirst(2)).joined(separator: " ")
         if !work.isEmpty {
             if let _ = work.range(of: #"\bnotes?\b"#, options: .regularExpression) {
-                // note write requires Apple-approved entitlement — see contacts #12, #13
-                changes.append("note (skipped — requires entitlement)")
+                // note write requires signed + notarized binary — see contacts #12, #13
+                changes.append("note (skipped — requires notarized binary)")
             }
             if let r = work.range(of: #"\bemail\b"#, options: .regularExpression) {
                 let val = String(work[r.upperBound...]).trimmingCharacters(in: .whitespaces)
