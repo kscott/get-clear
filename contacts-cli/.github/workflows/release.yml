@@ -54,7 +54,6 @@ jobs:
             --password "$NOTARYTOOL_PASSWORD" \
             --team-id "$NOTARYTOOL_TEAM_ID" \
             --wait
-          xcrun stapler staple .build/release/contacts-bin
 
       - name: Copy binary
         run: cp .build/release/contacts-bin contacts-bin
