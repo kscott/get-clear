@@ -31,6 +31,9 @@ jobs:
               --output payload/usr/local/bin/$tool
             chmod +x payload/usr/local/bin/$tool
           done
+          mkdir -p payload/usr/local/share/get-clear
+          cp scripts/uninstall payload/usr/local/share/get-clear/uninstall.sh
+          chmod +x payload/usr/local/share/get-clear/uninstall.sh
 
       - name: Build component package
         run: |

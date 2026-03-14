@@ -1,0 +1,46 @@
+#!/usr/bin/env bash
+# Get Clear — uninstaller
+#
+# Removes all five Get Clear tools from /usr/local/bin and forgets the PKG receipt.
+# Requires sudo (writing to /usr/local/bin).
+#
+# Usage:
+#   sudo ~/dev/get-clear/scripts/uninstall
+#   sudo /usr/local/share/get-clear/uninstall.sh   (if installed via PKG)
+
+set -euo pipefail
+
+if [[ "$EUID" -ne 0 ]]; then
+  exec sudo "$0" "$@"
+fi
+
+TOOLS=(reminders calendar contacts mail sms)
+BIN_DIR="/usr/local/bin"
+
+echo "Uninstalling Get Clear..."
+echo ""
+
+for tool in "${TOOLS[@]}"; do
+  target="$BIN_DIR/$tool"
+  if [[ -f "$target" ]]; then
+    rm "$target"
+    echo "  removed $target"
+  else
+    echo "  not found: $target"
+  fi
+done
+
+# Remove the shared directory if installed via PKG
+if [[ -d "/usr/local/share/get-clear" ]]; then
+  rm -rf "/usr/local/share/get-clear"
+  echo "  removed /usr/local/share/get-clear"
+fi
+
+# Forget the PKG receipt
+if pkgutil --pkg-info com.kenscott.get-clear &>/dev/null; then
+  pkgutil --forget com.kenscott.get-clear
+  echo "  package receipt removed"
+fi
+
+echo ""
+echo "Done. Get Clear uninstalled."
