@@ -33,7 +33,7 @@ func usage() -> Never {
       contacts show <name>                      # Full contact card
       contacts add <name> [email E] [phone P]
       contacts add <name> to <group>            # Add contact to a group
-      contacts change <name> [email E] [phone P]
+      contacts change <name> [add|remove] [email E] [phone P]
       contacts rename <name> <new-name>         # Rename a contact
       contacts remove <name>                    # Remove a contact
       contacts remove <name> from <group>       # Remove contact from a group
@@ -227,13 +227,39 @@ store.requestAccess(for: .contacts) { granted, _ in
     case "change":
         guard args.count > 1 else { fail("provide a contact name") }
         let query = args[1]
-        guard let contact = cnContact(named: query) else { fail("Not found: \(query)") }
+        guard let found = cnContact(named: query) else { fail("Not found: \(query)") }
+        // Re-fetch by identifier for a fresh copy — avoids CoreData merge conflict (error 134092)
+        guard let contact = try? store.unifiedContact(withIdentifier: found.identifier,
+                                                      keysToFetch: keysToFetch) else {
+            fail("Could not re-fetch contact")
+        }
         let mutable = contact.mutableCopy() as! CNMutableContact
 
         var changes: [String] = []
         let work = Array(args.dropFirst(2)).joined(separator: " ")
         if !work.isEmpty {
-            if let r = work.range(of: #"\bemail\b"#, options: .regularExpression) {
+            // email: "add email E" / "remove email E" / "email E" / "email none"
+            if let r = work.range(of: #"\badd email\b"#, options: .regularExpression) {
+                let val = String(work[r.upperBound...]).trimmingCharacters(in: .whitespaces)
+                            .components(separatedBy: " ").first ?? ""
+                if !val.isEmpty {
+                    mutable.emailAddresses.append(
+                        CNLabeledValue(label: CNLabelWork, value: val as NSString))
+                    changes.append("email +\(val)")
+                }
+            } else if let r = work.range(of: #"\bremove email\b"#, options: .regularExpression) {
+                let val = String(work[r.upperBound...]).trimmingCharacters(in: .whitespaces)
+                            .components(separatedBy: " ").first ?? ""
+                let before = mutable.emailAddresses.count
+                mutable.emailAddresses.removeAll {
+                    ($0.value as String).caseInsensitiveCompare(val) == .orderedSame
+                }
+                if mutable.emailAddresses.count < before {
+                    changes.append("email -\(val)")
+                } else {
+                    fail("Email not found: \(val)")
+                }
+            } else if let r = work.range(of: #"\bemail\b"#, options: .regularExpression) {
                 let val = String(work[r.upperBound...]).trimmingCharacters(in: .whitespaces)
                             .components(separatedBy: " ").first ?? ""
                 if val.lowercased() == "none" {
@@ -244,7 +270,30 @@ store.requestAccess(for: .contacts) { granted, _ in
                     changes.append("email → \(val)")
                 }
             }
-            if let r = work.range(of: #"\bphone\b"#, options: .regularExpression) {
+
+            // phone: "add phone P" / "remove phone P" / "phone P" / "phone none"
+            if let r = work.range(of: #"\badd phone\b"#, options: .regularExpression) {
+                let val = String(work[r.upperBound...]).trimmingCharacters(in: .whitespaces)
+                            .components(separatedBy: " ").first ?? ""
+                if !val.isEmpty {
+                    mutable.phoneNumbers.append(
+                        CNLabeledValue(label: CNLabelPhoneNumberMain,
+                                       value: CNPhoneNumber(stringValue: val)))
+                    changes.append("phone +\(val)")
+                }
+            } else if let r = work.range(of: #"\bremove phone\b"#, options: .regularExpression) {
+                let val = String(work[r.upperBound...]).trimmingCharacters(in: .whitespaces)
+                            .components(separatedBy: " ").first ?? ""
+                let before = mutable.phoneNumbers.count
+                mutable.phoneNumbers.removeAll {
+                    $0.value.stringValue.caseInsensitiveCompare(val) == .orderedSame
+                }
+                if mutable.phoneNumbers.count < before {
+                    changes.append("phone -\(val)")
+                } else {
+                    fail("Phone not found: \(val)")
+                }
+            } else if let r = work.range(of: #"\bphone\b"#, options: .regularExpression) {
                 let val = String(work[r.upperBound...]).trimmingCharacters(in: .whitespaces)
                             .components(separatedBy: " ").first ?? ""
                 if val.lowercased() == "none" {
@@ -258,13 +307,17 @@ store.requestAccess(for: .contacts) { granted, _ in
             }
         }
 
-        guard !changes.isEmpty else { fail("nothing to change — specify email, phone, or note") }
+        guard !changes.isEmpty else {
+            fail("nothing to change — specify [add|remove] email or [add|remove] phone")
+        }
 
-        let request = CNSaveRequest()
-        request.update(mutable)
+        let changeRequest = CNSaveRequest()
+        changeRequest.update(mutable)
         do {
-            try store.execute(request)
+            try store.execute(changeRequest)
             print("Updated \"\(query)\": \(changes.joined(separator: ", "))")
+        } catch let error as NSError where error.code == 134092 {
+            fail("Conflict saving contact — please try again")
         } catch {
             fail("Could not save: \(error.localizedDescription)")
         }
