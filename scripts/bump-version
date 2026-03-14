@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+# bump-version — update the Get Clear suite version and push
+#
+# Usage:
+#   ./scripts/bump-version 1.1.0
+
+set -euo pipefail
+
+NEW="$1"
+
+if [[ -z "$NEW" ]]; then
+  echo "Usage: ./scripts/bump-version <version>"
+  echo "Current: $(cat VERSION)"
+  exit 1
+fi
+
+OLD=$(cat VERSION)
+
+if [[ "$NEW" == "$OLD" ]]; then
+  echo "Already at $NEW — nothing to do."
+  exit 0
+fi
+
+echo "$NEW" > VERSION
+git add VERSION
+git commit -m "Bump version to $NEW"
+git push origin main
+
+echo "Done: $OLD → $NEW"
+echo "CI will build and publish get-clear.pkg as 'Get Clear $NEW'."
