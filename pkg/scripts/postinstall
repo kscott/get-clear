@@ -1,0 +1,11 @@
+#!/bin/bash
+# Post-install: open the Get Clear setup guide in the user's browser.
+# Runs as root; use sudo -u to open under the actual user's session.
+
+if [[ -n "${INSTALLER_USER:-}" ]]; then
+    sudo -u "$INSTALLER_USER" open "https://github.com/kscott/get-clear#get-started" 2>/dev/null || true
+elif [[ -n "${USER:-}" && "$USER" != "root" ]]; then
+    sudo -u "$USER" open "https://github.com/kscott/get-clear#get-started" 2>/dev/null || true
+fi
+
+exit 0

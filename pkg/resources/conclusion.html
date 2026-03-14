@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<body style="font-family: -apple-system, Helvetica Neue, sans-serif; font-size: 13px; padding: 16px; line-height: 1.5;">
+
+<h2 style="margin-top: 0;">Almost there</h2>
+
+<p>Get Clear is installed. Two steps to finish:</p>
+
+<ol>
+  <li style="margin-bottom: 12px;">
+    <strong>Connect mail</strong><br>
+    Go to <strong>Fastmail → Settings → Privacy &amp; Security → API tokens</strong>, create a new token with JMAP scope, then open Terminal and run:<br>
+    <code>mail setup &lt;your-token&gt;</code>
+  </li>
+  <li style="margin-bottom: 12px;">
+    <strong>Name your calendars</strong><br>
+    Run <code>calendar calendars</code> to see your calendar names, then create<br>
+    <code>~/.config/calendar-cli/config.toml</code> to define named groups like <em>work</em> and <em>personal</em>.
+  </li>
+</ol>
+
+<p>Each tool will ask for macOS permissions on first use — just approve them:</p>
+<p><code>reminders list &nbsp;·&nbsp; calendar today &nbsp;·&nbsp; contacts lists &nbsp;·&nbsp; sms open</code></p>
+
+<p>Full guide: <a href="https://github.com/kscott/get-clear">github.com/kscott/get-clear</a></p>
+
+</body>
+</html>

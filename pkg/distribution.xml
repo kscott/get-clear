@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<installer-gui-script minSpecVersion="2">
+    <title>Get Clear</title>
+    <welcome file="welcome.html" mime-type="text/html"/>
+    <conclusion file="conclusion.html" mime-type="text/html"/>
+    <options customize="never" require-scripts="true" rootVolumeOnly="true"/>
+    <domains enable_localSystem="true"/>
+    <choices-outline>
+        <line choice="default">
+            <line choice="com.kenscott.get-clear"/>
+        </line>
+    </choices-outline>
+    <choice id="default"/>
+    <choice id="com.kenscott.get-clear" visible="false">
+        <pkg-ref id="com.kenscott.get-clear"/>
+    </choice>
+    <pkg-ref id="com.kenscott.get-clear" version="1" onConclusion="none">get-clear-component.pkg</pkg-ref>
+</installer-gui-script>

@@ -1,0 +1,95 @@
+name: Build and Release PKG
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set version
+        run: echo "VERSION=$(date -u +%Y.%m.%d)" >> $GITHUB_ENV
+
+      - name: Download binaries
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p payload/usr/local/bin
+          for tool in reminders calendar contacts mail sms; do
+            echo "Downloading $tool..."
+            gh release download latest \
+              --repo kscott/${tool}-cli \
+              --pattern "${tool}-bin" \
+              --output payload/usr/local/bin/$tool
+            chmod +x payload/usr/local/bin/$tool
+          done
+
+      - name: Build component package
+        run: |
+          pkgbuild \
+            --root payload \
+            --scripts pkg/scripts \
+            --identifier com.kenscott.get-clear \
+            --version "$VERSION" \
+            --install-location / \
+            get-clear-component.pkg
+
+      - name: Build distribution package
+        run: |
+          productbuild \
+            --distribution pkg/distribution.xml \
+            --resources pkg/resources \
+            --package-path . \
+            get-clear-unsigned.pkg
+
+      - name: Import Developer ID Installer certificate
+        env:
+          P12_DATA: ${{ secrets.DEVELOPER_ID_INSTALLER_P12 }}
+          P12_PASSWORD: ${{ secrets.DEVELOPER_ID_INSTALLER_P12_PASSWORD }}
+        run: |
+          KEYCHAIN=build.keychain
+          security create-keychain -p "" $KEYCHAIN
+          security default-keychain -s $KEYCHAIN
+          security unlock-keychain -p "" $KEYCHAIN
+          echo "$P12_DATA" | base64 --decode > /tmp/installer.p12
+          security import /tmp/installer.p12 -k $KEYCHAIN -P "$P12_PASSWORD" -T /usr/bin/productsign
+          security set-key-partition-list -S apple-tool:,apple: -s -k "" $KEYCHAIN
+          rm /tmp/installer.p12
+
+      - name: Sign package
+        run: |
+          productsign \
+            --sign "Developer ID Installer: Kenneth Scott (6Q96Q79QN8)" \
+            get-clear-unsigned.pkg \
+            get-clear.pkg
+
+      - name: Notarize and staple
+        env:
+          NOTARYTOOL_APPLE_ID: ${{ secrets.NOTARYTOOL_APPLE_ID }}
+          NOTARYTOOL_PASSWORD: ${{ secrets.NOTARYTOOL_PASSWORD }}
+          NOTARYTOOL_TEAM_ID: ${{ secrets.NOTARYTOOL_TEAM_ID }}
+        run: |
+          xcrun notarytool submit get-clear.pkg \
+            --apple-id "$NOTARYTOOL_APPLE_ID" \
+            --password "$NOTARYTOOL_PASSWORD" \
+            --team-id "$NOTARYTOOL_TEAM_ID" \
+            --wait
+          xcrun stapler staple get-clear.pkg
+
+      - name: Update rolling release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: "Get Clear ${{ env.VERSION }}"
+          body: "Installs all five Get Clear tools to /usr/local/bin. Double-click get-clear.pkg to install."
+          prerelease: false
+          files: get-clear.pkg
+          make_latest: true

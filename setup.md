@@ -128,15 +128,34 @@ The following are already stored in the local Keychain under service `get-clear-
 
 | Account | What it is |
 |---|---|
-| `p12-base64` | Base64-encoded Developer ID Application certificate (.p12) |
-| `p12-password` | Password protecting the .p12 |
+| `p12-base64` | Base64-encoded Developer ID **Application** cert (.p12) — used by each tool's CI |
+| `p12-password` | Password protecting the Application .p12 |
 | `notarytool-password` | App-specific password for `xcrun notarytool` |
 | `apple-id` | Apple ID (ken@optikos.net) |
 | `team-id` | Apple Developer Team ID (6Q96Q79QN8) |
+| `installer-p12-base64` | Base64-encoded Developer ID **Installer** cert (.p12) — used by the PKG CI |
+| `installer-p12-password` | Password protecting the Installer .p12 |
+
+**Creating the Developer ID Installer cert (one-time, not yet done):**
+
+This is a separate cert from the Application cert. PKG signing requires it.
+
+1. Go to [developer.apple.com](https://developer.apple.com) → Certificates → `+`
+2. Choose **Developer ID Installer** → Continue
+3. Generate a CSR in Keychain Access → Certificate Assistant → Request a Certificate From a Certificate Authority → save to disk
+4. Upload the CSR, download the resulting `.cer`, double-click to install
+5. In Keychain Access: right-click the new cert → Export → save as `.p12` with a password
+6. Store and sync:
+
+```bash
+security add-generic-password -s "get-clear-signing" -a "installer-p12-base64"   -w "$(base64 -i /path/to/installer.p12)" -U
+security add-generic-password -s "get-clear-signing" -a "installer-p12-password" -w "your-password" -U
+~/dev/get-clear/scripts/sync-secrets
+```
 
 ### Syncing secrets to GitHub
 
-To push credentials to all five repos:
+To push credentials to all tool repos and the umbrella repo:
 
 ```bash
 ~/dev/get-clear/scripts/sync-secrets
