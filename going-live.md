@@ -101,6 +101,18 @@ quickly once real people use them.
   - Tab-complete commands, list names, calendar subsets
   - Important for the "direct use" mode where people learn the vocabulary
 
+- [ ] **mail: no-backend fallback** (new)
+  - If no JMAP token is configured, `mail send` falls back instead of erroring:
+    - Single recipient → `open mailto:...` — opens the user's default mail client pre-filled
+    - Multiple recipients or long body → copy to clipboard in paste-ready format
+  - Auto-detected from whether `mail setup` has been run — user never has to think about it
+  - This makes mail work for everyone on day one, regardless of email provider
+
+- [ ] **mail draft command** (new)
+  - Explicit "stage it, don't send it" workflow — always uses mailto:/clipboard path
+  - Works even with JMAP configured, for people who want to review before sending
+  - Covers distro list composition: resolves a contacts group → paste-ready To: block
+
 - [ ] **Close resolved GitHub issues**
   - contacts #3 — multi-value email/phone — fixed ✓
   - contacts #14 — CoreData 134092 — fixed ✓ (if issue was filed; check)
@@ -150,6 +162,7 @@ Good problems to have. Build after real users are using the tools and giving fee
 | PKG won't build | Developer ID Installer cert |
 | Nothing to point people to | README.md |
 | Experience gaps | calendar setup command; full install walkthrough |
+| mail broken for non-Fastmail users | No-backend fallback (mailto: / clipboard) |
 | Missing feedback loop | Activity log + done report |
 
 The curl installer works today. The PKG works as soon as the cert exists.
