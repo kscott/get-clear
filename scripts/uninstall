@@ -2,13 +2,24 @@
 # Get Clear — uninstaller
 #
 # Removes all five Get Clear tools from /usr/local/bin and forgets the PKG receipt.
-# Requires sudo (writing to /usr/local/bin).
+# Optionally removes configuration files and saved credentials.
 #
 # Usage:
-#   sudo ~/dev/get-clear/scripts/uninstall
-#   sudo /usr/local/share/get-clear/uninstall.sh   (if installed via PKG)
+#   ~/dev/get-clear/scripts/uninstall           # prompts about config/credentials
+#   ~/dev/get-clear/scripts/uninstall --purge   # removes everything without prompting
+#   /usr/local/share/get-clear/uninstall.sh     # same, if installed via PKG
 
 set -euo pipefail
+
+PURGE=false
+if [[ "${1:-}" == "--purge" ]]; then
+  PURGE=true
+fi
+
+# Escalate to sudo only for the parts that need it (bin + receipt)
+# Config removal runs as the original user ($SUDO_USER or $USER)
+REAL_USER="${SUDO_USER:-$USER}"
+REAL_HOME=$(dscl . -read /Users/"$REAL_USER" NFSHomeDirectory 2>/dev/null | awk '{print $2}' || echo "$HOME")
 
 if [[ "$EUID" -ne 0 ]]; then
   exec sudo "$0" "$@"
@@ -20,6 +31,7 @@ BIN_DIR="/usr/local/bin"
 echo "Uninstalling Get Clear..."
 echo ""
 
+# Remove binaries
 for tool in "${TOOLS[@]}"; do
   target="$BIN_DIR/$tool"
   if [[ -f "$target" ]]; then
@@ -30,7 +42,7 @@ for tool in "${TOOLS[@]}"; do
   fi
 done
 
-# Remove the shared directory if installed via PKG
+# Remove the shared directory (includes this uninstall script if run from PKG install)
 if [[ -d "/usr/local/share/get-clear" ]]; then
   rm -rf "/usr/local/share/get-clear"
   echo "  removed /usr/local/share/get-clear"
@@ -40,6 +52,44 @@ fi
 if pkgutil --pkg-info com.kenscott.get-clear &>/dev/null; then
   pkgutil --forget com.kenscott.get-clear
   echo "  package receipt removed"
+fi
+
+# Config and credentials
+if [[ "$PURGE" == false ]]; then
+  echo ""
+  printf "  Remove configuration files and saved credentials? [y/N] "
+  read -r answer < /dev/tty
+  [[ "$answer" =~ ^[Yy]$ ]] && PURGE=true
+fi
+
+if [[ "$PURGE" == true ]]; then
+  echo ""
+
+  # Mail Keychain token
+  if sudo -u "$REAL_USER" security delete-generic-password -s "mail-cli" &>/dev/null; then
+    echo "  removed mail credentials from Keychain"
+  fi
+
+  # Mail config
+  MAIL_CONFIG="$REAL_HOME/.config/mail-cli"
+  if [[ -d "$MAIL_CONFIG" ]]; then
+    rm -rf "$MAIL_CONFIG"
+    echo "  removed $MAIL_CONFIG"
+  fi
+
+  # Calendar config
+  CAL_CONFIG="$REAL_HOME/.config/calendar-cli"
+  if [[ -d "$CAL_CONFIG" ]]; then
+    rm -rf "$CAL_CONFIG"
+    echo "  removed $CAL_CONFIG"
+  fi
+
+  # Activity log (future)
+  GC_LOG="$REAL_HOME/.local/share/get-clear"
+  if [[ -d "$GC_LOG" ]]; then
+    rm -rf "$GC_LOG"
+    echo "  removed $GC_LOG"
+  fi
 fi
 
 echo ""
