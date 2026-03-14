@@ -5,23 +5,16 @@ is in the hands of real people.
 
 ---
 
-## Phase 0 — Unblock the PKG build
+## Phase 0 — Unblock the PKG build ✅
 
-CI will fail until this is done. Nothing else in the pipeline is blocked by it — but
-the signed PKG won't exist until it's complete.
+Complete as of 2026-03-14.
 
-- [ ] **Create Developer ID Installer cert**
-  - developer.apple.com → Certificates → `+` → Developer ID Installer
-  - Generate CSR in Keychain Access → Certificate Assistant → save to disk
-  - Upload CSR, download `.cer`, double-click to install
-  - Keychain Access → right-click cert → Export → save as `.p12` with password
-  - Store and sync:
-    ```bash
-    security add-generic-password -s "get-clear-signing" -a "installer-p12-base64"   -w "$(base64 -i ~/installer.p12)" -U
-    security add-generic-password -s "get-clear-signing" -a "installer-p12-password" -w "your-password" -U
-    ~/dev/get-clear/scripts/sync-secrets
-    ```
-  - Push any change to get-clear/main to trigger CI and confirm the PKG is built, signed, and stapled
+- [x] **Create Developer ID Installer cert** — created, imported, backed up to Secure Documents disk image
+- [x] **Store in Keychain, sync to GitHub** — `get-clear-signing` Keychain entries updated, `sync-secrets` run
+- [x] **CI green, PKG ships** — signed, notarized, stapled `get-clear.pkg 1.0.0` live at GitHub releases
+- [x] **Stapler bug fixed across all five tool repos** — contacts, reminders, calendar, mail, sms
+- [x] **Semantic versioning** — `VERSION` file + `scripts/bump-version`
+- [x] **Uninstaller** — `scripts/uninstall`; prompts to remove config/credentials; bundled in PKG at `/usr/local/share/get-clear/uninstall.sh`
 
 ---
 
@@ -75,7 +68,7 @@ Nothing embarrassing should make it to a real person. Test this end to end.
 
 - [ ] **Verify calendar without config**
   - `calendar today` (no config.toml) → shows all calendars — acceptable
-  - `calendar work today` (no config.toml) → "No calendars matched subset 'work'" — acceptable, but note that conclusion.html and README need to make config setup obvious
+  - `calendar work today` (no config.toml) → "No calendars matched subset 'work'" — acceptable, but conclusion.html and README need to make config setup obvious
 
 ---
 
@@ -159,11 +152,10 @@ Good problems to have. Build after real users are using the tools and giving fee
 
 | Blocker | What's needed |
 |---|---|
-| PKG won't build | Developer ID Installer cert |
+| ~~PKG won't build~~ | ~~Developer ID Installer cert~~ ✅ |
 | Nothing to point people to | README.md |
 | Experience gaps | calendar setup command; full install walkthrough |
 | mail broken for non-Fastmail users | No-backend fallback (mailto: / clipboard) |
 | Missing feedback loop | Activity log + done report |
 
-The curl installer works today. The PKG works as soon as the cert exists.
-The README is the unlock for sharing either one.
+The PKG is built, signed, and live. The README is the unlock for sharing it.
