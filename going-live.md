@@ -106,9 +106,9 @@ quickly once real people use them.
   - Works even with JMAP configured, for people who want to review before sending
   - Covers distro list composition: resolves a contacts group → paste-ready To: block
 
-- [ ] **Close resolved GitHub issues**
-  - contacts #3 — multi-value email/phone — fixed ✓
-  - contacts #14 — CoreData 134092 — fixed ✓ (if issue was filed; check)
+- [x] **Close resolved GitHub issues**
+  - contacts #3 — multi-value email/phone — closed ✓
+  - contacts #14 — CoreData 134092 — never filed; fix shipped in same session as #3
 
 ---
 
