@@ -8,6 +8,7 @@ import Foundation
 import AppKit
 import Contacts
 import ContactsLib
+import GetClearKit
 
 let version = "1.0.0"
 
@@ -16,7 +17,7 @@ let semaphore = DispatchSemaphore(value: 0)
 let args      = Array(CommandLine.arguments.dropFirst())
 
 func fail(_ msg: String) -> Never {
-    fputs("Error: \(msg)\n", stderr)
+    fputs("\(ANSI.red("Error:")) \(msg)\n", stderr)
     exit(1)
 }
 
@@ -79,10 +80,10 @@ func cnContact(named query: String) -> CNContact? {
 func printCard(_ c: CNContact) {
     let r = toRecord(c)
     let name = r.name.isEmpty ? c.organizationName : r.name
-    print(name)
-    if !r.company.isEmpty && !r.name.isEmpty { print("  Company:  \(r.company)") }
-    for (label, value) in r.emails { print("  Email:    \(value)\(label.isEmpty ? "" : " (\(label))")") }
-    for (label, value) in r.phones { print("  Phone:    \(value)\(label.isEmpty ? "" : " (\(label))")") }
+    print(ANSI.bold(name))
+    if !r.company.isEmpty && !r.name.isEmpty { print("  \(ANSI.dim("Company:"))  \(r.company)") }
+    for (label, value) in r.emails { print("  \(ANSI.dim("Email:"))    \(value)\(label.isEmpty ? "" : ANSI.dim(" (\(label))"))")  }
+    for (label, value) in r.phones { print("  \(ANSI.dim("Phone:"))    \(value)\(label.isEmpty ? "" : ANSI.dim(" (\(label))"))")  }
 }
 
 // MARK: - Dispatch
@@ -118,7 +119,7 @@ store.requestAccess(for: .contacts) { granted, _ in
             let r = toRecord(c)
             let nameStr = r.name.isEmpty ? c.organizationName : r.name
             let emailStr = r.primaryEmail.isEmpty ? "(no email)" : r.primaryEmail
-            print("  \(nameStr) <\(emailStr)>")
+            print("  \(ANSI.bold(nameStr)) \(ANSI.dim("<\(emailStr)>"))")
         }
         semaphore.signal()
 
@@ -147,7 +148,7 @@ store.requestAccess(for: .contacts) { granted, _ in
                 let nameStr  = r.name.isEmpty ? r.company : r.name
                 let emailStr = r.primaryEmail.isEmpty ? "" : " <\(r.primaryEmail)>"
                 let compStr  = (!r.company.isEmpty && !r.name.isEmpty) ? " — \(r.company)" : ""
-                print("  \(nameStr)\(emailStr)\(compStr)")
+                print("  \(ANSI.bold(nameStr))\(emailStr)\(ANSI.dim(compStr))")
             }
         }
         semaphore.signal()
