@@ -4,9 +4,20 @@
 // Contacts access for name/phone resolution, osascript for sending via Messages.app.
 // Phone normalization and matching delegated to MessagesLib.
 
+import Darwin
 import Foundation
 import Contacts
 import MessagesLib
+
+// MARK: - ANSI color
+
+private let ansiEnabled: Bool = {
+    ProcessInfo.processInfo.environment["NO_COLOR"] == nil &&
+    isatty(STDOUT_FILENO) != 0
+}()
+
+private func bold(_ s: String) -> String { ansiEnabled ? "\u{1B}[1m\(s)\u{1B}[0m" : s }
+private func dim(_ s: String)  -> String { ansiEnabled ? "\u{1B}[2m\(s)\u{1B}[0m" : s }
 
 let version = "1.0.0"
 let args    = Array(CommandLine.arguments.dropFirst())
@@ -147,7 +158,7 @@ store.requestAccess(for: .contacts) { granted, _ in
                 throw SMSError.notFound(query)
             }
             try sendViaMessages(to: target.address, message: message)
-            print("Sent to \(target.name) (\(target.address))")
+            print("Sent to \(bold(target.name)) \(dim("(\(target.address))"))")
 
         default:
             usage()
