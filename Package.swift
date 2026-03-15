@@ -1,0 +1,16 @@
+// swift-tools-version: 5.9
+import PackageDescription
+
+let package = Package(
+    name: "get-clear",
+    platforms: [.macOS(.v14)],
+    products: [
+        .library(name: "GetClearKit", targets: ["GetClearKit"]),
+    ],
+    targets: [
+        .target(
+            name: "GetClearKit",
+            path: "Sources/GetClearKit"
+        ),
+    ]
+)
