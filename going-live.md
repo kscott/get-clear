@@ -84,11 +84,11 @@ quickly once real people use them.
   - This is the feedback loop. Without it, the suite helps you do things but doesn't
     show you that you're doing them. Load-bearing for the vision.
 
-- [ ] **calendar setup** (calendar #11)
+- [x] **calendar setup** (calendar #11)
   - Guided, interactive config.toml creation: `calendar setup`
-  - Shows available calendars, asks which to group as work/personal
-  - Removes the manual TOML step for non-technical users
-  - Blocked on: nothing — ready to build
+  - Shows available calendars numbered with true-color dots
+  - Accepts number or name input; writes `[subsets]` TOML
+  - Shipped 2026-03-15
 
 - [x] **Shell completions** (get-clear #4)
   - zsh completions for all five tools
@@ -107,22 +107,24 @@ quickly once real people use them.
   - Works even with JMAP configured, for people who want to review before sending
   - Covers distro list composition: resolves a contacts group → paste-ready To: block
 
-- [ ] **Color output pass** (get-clear #10)
-  - contacts-cli done: bold names, dim metadata, red errors, isatty + NO_COLOR
-  - Remaining: reminders, calendar, mail, sms — same pattern
-  - Fix isatty bug in reminders + calendar (currently only check NO_COLOR, not whether stdout is a pipe)
+- [x] **Color output pass** (get-clear #10)
+  - All five tools: bold names/titles, dim metadata, red errors
+  - isatty + NO_COLOR detection — ANSI suppressed when piped
+  - Shipped 2026-03-15; closed get-clear #10
 
-- [ ] **GetClearKit: shared fail()** (get-clear #11)
-  - Red-prefixed error output, shared across all tools
-  - Replaces ad-hoc error printing in each tool
+- [x] **GetClearKit: shared fail()** (get-clear #12)
+  - `Fail.swift` in GetClearKit — red-prefixed error, exit non-zero
+  - All five tools wired; shipped 2026-03-15; closed get-clear #12
 
-- [ ] **GetClearKit: shared date parsing** (get-clear #12)
-  - Natural language date parsing currently duplicated between reminders and calendar
-  - Move to GetClearKit; both tools depend on it
+- [x] **GetClearKit: shared date parsing** (get-clear #11)
+  - `DateParser.swift` — ParsedDate, parseDate(), formatDate()
+  - `RangeParser.swift` — ParsedRange, parseRange(), parseSingleDate(), formatRangeDescription()
+  - 185 tests in GetClearKit test suite; RemindersLib + CalendarLib stubs removed
+  - Shipped 2026-03-15; closed get-clear #11
 
-- [ ] **GetClearKit: standard flag handling** (get-clear #13)
-  - `--version` / `--help` dispatch shared across all tools
-  - Removes boilerplate from each tool's main.swift
+- [x] **GetClearKit: standard flag handling** (get-clear #13)
+  - `Flags.swift` — isVersionFlag(), isHelpFlag() shared across all tools
+  - Shipped 2026-03-15; closed get-clear #13
 
 - [ ] **Update notifier** (new)
   - Check-on-invocation: reads cached notify file, prints one-liner if behind, fires background check at most once per 24h
@@ -182,6 +184,6 @@ Good problems to have. Build after real users are using the tools and giving fee
 | 3 | Missing feedback loop | Activity log + done report |
 | 3 | mail broken for non-Fastmail users | No-backend fallback (mailto: / clipboard) |
 | 3 | Experience gaps | calendar setup command |
-| 3 | Incomplete vision | Color output, GetClearKit migrations (#10–13) |
+| 3 | ~~Incomplete vision~~ | ~~Color output, GetClearKit migrations (#10–13)~~ ✅ |
 
 The PKG is built, signed, and live. Phases 1–3 must all be complete before sharing with real people.
