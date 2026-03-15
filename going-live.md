@@ -106,6 +106,17 @@ quickly once real people use them.
   - Works even with JMAP configured, for people who want to review before sending
   - Covers distro list composition: resolves a contacts group → paste-ready To: block
 
+- [ ] **Color output pass** (get-clear #10)
+  - contacts-cli done: bold names, dim metadata, red errors, isatty + NO_COLOR
+  - Remaining: reminders, calendar, mail, sms — same pattern
+  - Fix isatty bug in reminders + calendar (currently only check NO_COLOR, not whether stdout is a pipe)
+
+- [ ] **Update notifier** (new)
+  - Check-on-invocation: reads cached notify file, prints one-liner if behind, fires background check at most once per 24h
+  - Uses `pkgutil --pkg-info com.kenscott.get-clear` for installed version — naturally skips on dev machine
+  - Check script bundled in PKG at `/usr/local/share/get-clear/check-update.sh`; each binary launches it in background
+  - Will live in GetClearKit once built
+
 - [x] **Close resolved GitHub issues**
   - contacts #3 — multi-value email/phone — closed ✓
   - contacts #14 — CoreData 134092 — never filed; fix shipped in same session as #3
