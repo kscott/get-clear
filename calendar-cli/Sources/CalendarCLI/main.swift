@@ -4,22 +4,17 @@
 // Handles argument parsing and all EventKit/AppKit interactions.
 // Range and config parsing are delegated to CalendarLib so they can be unit tested.
 
-import Darwin
 import Foundation
 import AppKit
 import EventKit
 import CalendarLib
+import GetClearKit
 
 let version = "1.0.0"
 
 let store     = EKEventStore()
 let semaphore = DispatchSemaphore(value: 0)
 var args      = Array(CommandLine.arguments.dropFirst())
-
-func fail(_ msg: String) -> Never {
-    fputs("Error: \(msg)\n", stderr)
-    exit(1)
-}
 
 func usage() -> Never {
     print("""
@@ -132,20 +127,10 @@ func formatTime(_ date: Date) -> String {
     timeFormatter.string(from: date)
 }
 
-// MARK: - ANSI color
-
-private let ansiEnabled: Bool = {
-    ProcessInfo.processInfo.environment["NO_COLOR"] == nil &&
-    isatty(STDOUT_FILENO) != 0
-}()
-
-private func bold(_ s: String) -> String { ansiEnabled ? "\u{1B}[1m\(s)\u{1B}[0m" : s }
-private func dim(_ s: String)  -> String { ansiEnabled ? "\u{1B}[2m\(s)\u{1B}[0m" : s }
-
 /// Returns an ANSI true-color foreground escape for the calendar's color, or "" if unavailable.
 /// Respects NO_COLOR and isatty — no color codes when piping output.
 func calendarDot(_ calendar: EKCalendar) -> String {
-    guard ansiEnabled else { return "  " }
+    guard ANSI.enabled else { return "  " }
     guard let cg = calendar.cgColor else { return "  " }
     let colorSpace = cg.colorSpace?.model
     let components = cg.components ?? []
@@ -172,11 +157,11 @@ func eventLine(_ event: EKEvent) -> String {
         let end   = formatTime(event.endDate)
         timeCol = String(format: " %8@ – %-8@  ", start as CVarArg, end as CVarArg)
     }
-    var label = bold(event.title ?? "(no title)")
+    var label = ANSI.bold(event.title ?? "(no title)")
     if let loc = event.location, !loc.isEmpty {
         let firstLine = loc.components(separatedBy: "\n").first ?? loc
         let truncated = firstLine.count > 50 ? String(firstLine.prefix(50)) + "…" : firstLine
-        label += dim(" · " + truncated)
+        label += ANSI.dim(" · " + truncated)
     }
     return "\(calendarDot(event.calendar))\(timeCol)\(label)"
 }
@@ -187,7 +172,7 @@ func printGrouped(_ events: [EKEvent]) {
     let days    = grouped.keys.sorted()
     for (i, day) in days.enumerated() {
         if i > 0 { print("") }
-        print(bold(dayHeaderFormatter.string(from: day)))
+        print(ANSI.bold(dayHeaderFormatter.string(from: day)))
         for event in (grouped[day] ?? []).sorted(by: { $0.startDate < $1.startDate }) {
             print(eventLine(event))
         }
@@ -293,8 +278,8 @@ func parseEventDateTime(_ input: String) -> EventDateTime? {
 // MARK: - Dispatch
 
 guard let cmd = args.first else { usage() }
-if cmd == "--version" || cmd == "-v" || cmd == "version" { print(version); exit(0) }
-if cmd == "--help"    || cmd == "-h" || cmd == "help"    { usage() }
+if isVersionFlag(cmd) { print(version); exit(0) }
+if isHelpFlag(cmd)    { usage() }
 
 store.requestFullAccessToEvents { granted, _ in
     guard granted else { fail("Calendar access denied") }

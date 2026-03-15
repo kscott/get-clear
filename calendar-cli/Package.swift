@@ -4,6 +4,9 @@ import PackageDescription
 let package = Package(
     name: "calendar-cli",
     platforms: [.macOS(.v14)],
+    dependencies: [
+        .package(url: "https://github.com/kscott/get-clear", branch: "main"),
+    ],
     targets: [
         // Pure logic — no Apple framework dependencies, fully testable
         .target(
@@ -13,7 +16,10 @@ let package = Package(
         // Main binary — depends on CalendarLib plus EventKit/AppKit
         .executableTarget(
             name: "calendar-bin",
-            dependencies: ["CalendarLib"],
+            dependencies: [
+                "CalendarLib",
+                .product(name: "GetClearKit", package: "get-clear"),
+            ],
             path: "Sources/CalendarCLI",
             linkerSettings: [
                 .linkedFramework("EventKit"),
