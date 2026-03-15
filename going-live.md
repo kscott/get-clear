@@ -41,11 +41,12 @@ The PKG without a README to point at is useless. This is the story before the in
 Nothing embarrassing should make it to a real person. Test this end to end.
 
 - [ ] **Test PKG on a clean macOS account or VM**
+  - Create a new local user account (System Settings → Users & Groups) — simplest clean-slate option
   - Download get-clear.pkg from GitHub releases
   - Double-click, run through the installer
-  - Confirm all five tools land in `/usr/local/bin` and are executable
   - Confirm Gatekeeper accepts the signed + stapled PKG without a warning
   - Confirm postinstall opens the README in a browser
+  - **Note:** CI smoke test (release.yml) automatically confirms binaries install and execute on every release — this manual step focuses on Gatekeeper acceptance and permission prompts only
 
 - [ ] **Test curl installer on a clean shell**
   ```bash
@@ -111,6 +112,18 @@ quickly once real people use them.
   - Remaining: reminders, calendar, mail, sms — same pattern
   - Fix isatty bug in reminders + calendar (currently only check NO_COLOR, not whether stdout is a pipe)
 
+- [ ] **GetClearKit: shared fail()** (get-clear #11)
+  - Red-prefixed error output, shared across all tools
+  - Replaces ad-hoc error printing in each tool
+
+- [ ] **GetClearKit: shared date parsing** (get-clear #12)
+  - Natural language date parsing currently duplicated between reminders and calendar
+  - Move to GetClearKit; both tools depend on it
+
+- [ ] **GetClearKit: standard flag handling** (get-clear #13)
+  - `--version` / `--help` dispatch shared across all tools
+  - Removes boilerplate from each tool's main.swift
+
 - [ ] **Update notifier** (new)
   - Check-on-invocation: reads cached notify file, prints one-liner if behind, fires background check at most once per 24h
   - Uses `pkgutil --pkg-info com.kenscott.get-clear` for installed version — naturally skips on dev machine
@@ -161,12 +174,14 @@ Good problems to have. Build after real users are using the tools and giving fee
 
 ## Summary — what's actually blocking launch
 
-| Blocker | What's needed |
-|---|---|
-| ~~PKG won't build~~ | ~~Developer ID Installer cert~~ ✅ |
-| Nothing to point people to | README.md |
-| Experience gaps | calendar setup command; full install walkthrough |
-| mail broken for non-Fastmail users | No-backend fallback (mailto: / clipboard) |
-| Missing feedback loop | Activity log + done report |
+| Phase | Blocker | What's needed |
+|---|---|---|
+| 0 | ~~PKG won't build~~ | ~~Developer ID Installer cert~~ ✅ |
+| 1 | Nothing to point people to | README.md + why.md |
+| 2 | Install experience unvalidated | Clean-machine PKG + curl installer test |
+| 3 | Missing feedback loop | Activity log + done report |
+| 3 | mail broken for non-Fastmail users | No-backend fallback (mailto: / clipboard) |
+| 3 | Experience gaps | calendar setup command |
+| 3 | Incomplete vision | Color output, GetClearKit migrations (#10–13) |
 
-The PKG is built, signed, and live. The README is the unlock for sharing it.
+The PKG is built, signed, and live. Phases 1–3 must all be complete before sharing with real people.

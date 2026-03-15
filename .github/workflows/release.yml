@@ -100,3 +100,36 @@ jobs:
           prerelease: false
           files: get-clear.pkg
           make_latest: true
+
+  smoke-test:
+    runs-on: macos-latest
+    needs: build
+
+    steps:
+      - name: Download PKG
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release download latest \
+            --repo kscott/get-clear \
+            --pattern "get-clear.pkg" \
+            --output get-clear.pkg
+
+      - name: Install PKG
+        run: sudo installer -pkg get-clear.pkg -target /
+
+      - name: Smoke test — version flags
+        run: |
+          reminders --version
+          calendar --version
+          contacts --version
+          mail --version
+          sms --version
+
+      - name: Smoke test — basic commands
+        run: |
+          reminders help
+          calendar help
+          contacts help
+          mail help
+          sms help
