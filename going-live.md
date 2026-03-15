@@ -89,10 +89,10 @@ quickly once real people use them.
   - Removes the manual TOML step for non-technical users
   - Blocked on: nothing — ready to build
 
-- [ ] **Shell completions** (get-clear #4)
+- [x] **Shell completions** (get-clear #4)
   - zsh completions for all five tools
   - Tab-complete commands, list names, calendar subsets
-  - Important for the "direct use" mode where people learn the vocabulary
+  - PKG bundles to `/usr/local/share/zsh/site-functions/`; curl installer patches fpath
 
 - [ ] **mail: no-backend fallback** (new)
   - If no JMAP token is configured, `mail send` falls back instead of erroring:
