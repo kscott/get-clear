@@ -227,11 +227,16 @@ store.requestAccess(for: .contacts) { granted, _ in
     case "change":
         guard args.count > 1 else { fail("provide a contact name") }
         let query = args[1]
-        guard let found = cnContact(named: query) else { fail("Not found: \(query)") }
-        // Re-fetch by identifier for a fresh copy — avoids CoreData merge conflict (error 134092)
-        guard let contact = try? store.unifiedContact(withIdentifier: found.identifier,
-                                                      keysToFetch: keysToFetch) else {
-            fail("Could not re-fetch contact")
+        // Fetch non-unified contacts — unified contacts can't be saved back (CoreData 134092).
+        // unifyResults = false gives us the underlying writable record from its source container.
+        let nonUnifiedRequest = CNContactFetchRequest(keysToFetch: keysToFetch)
+        nonUnifiedRequest.unifyResults = false
+        var candidates: [CNContact] = []
+        try? store.enumerateContacts(with: nonUnifiedRequest) { c, _ in candidates.append(c) }
+        let matched = matchContacts(query, in: candidates.map(toRecord))
+        guard let first = matched.first else { fail("Not found: \(query)") }
+        guard let contact = candidates.first(where: { toRecord($0).name == first.name }) else {
+            fail("Not found: \(query)")
         }
         let mutable = contact.mutableCopy() as! CNMutableContact
 
@@ -311,15 +316,33 @@ store.requestAccess(for: .contacts) { granted, _ in
             fail("nothing to change — specify [add|remove] email or [add|remove] phone")
         }
 
-        let changeRequest = CNSaveRequest()
-        changeRequest.update(mutable)
-        do {
-            try store.execute(changeRequest)
+        // Some contacts exist in multiple containers (e.g. iCloud + Fastmail CardDAV).
+        // Modifying a linked contact can trigger CoreData 134092 due to cross-container
+        // reconciliation. Try each linked record until one saves successfully.
+        let linkedCandidates = candidates.filter { toRecord($0).name == first.name }
+        var saved = false
+        var lastError: Error? = nil
+        for source in linkedCandidates {
+            let m = source.mutableCopy() as! CNMutableContact
+            // Re-apply changes to this candidate's mutable copy
+            m.emailAddresses = mutable.emailAddresses
+            m.phoneNumbers   = mutable.phoneNumbers
+            let req = CNSaveRequest()
+            req.update(m)
+            do {
+                try store.execute(req)
+                saved = true
+                break
+            } catch {
+                lastError = error
+            }
+        }
+        if saved {
             print("Updated \"\(query)\": \(changes.joined(separator: ", "))")
-        } catch let error as NSError where error.code == 134092 {
-            fail("Conflict saving contact — please try again")
-        } catch {
-            fail("Could not save: \(error.localizedDescription)")
+        } else if let err = lastError as NSError?, err.code == 134092 {
+            fail("Conflict saving contact — iCloud sync may be in progress, try again shortly")
+        } else {
+            fail("Could not save: \(lastError?.localizedDescription ?? "unknown error")")
         }
         semaphore.signal()
 
