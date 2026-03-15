@@ -12,5 +12,11 @@ let package = Package(
             name: "GetClearKit",
             path: "Sources/GetClearKit"
         ),
+        // Test runner — no Xcode required; run via: swift run getclearkit-tests
+        .executableTarget(
+            name: "getclearkit-tests",
+            dependencies: ["GetClearKit"],
+            path: "Tests/GetClearKitTests"
+        ),
     ]
 )
