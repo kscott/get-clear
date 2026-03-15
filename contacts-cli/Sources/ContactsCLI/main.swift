@@ -319,12 +319,18 @@ store.requestAccess(for: .contacts) { granted, _ in
         // Some contacts exist in multiple containers (e.g. iCloud + Fastmail CardDAV).
         // Modifying a linked contact can trigger CoreData 134092 due to cross-container
         // reconciliation. Try each linked record until one saves successfully.
+        //
+        // The framework also prints CoreData noise to stderr asynchronously after a failed
+        // save — even after we'd normally restore stderr. Suppress stderr for the remainder
+        // of the process and route our own output through the saved fd directly.
         let linkedCandidates = candidates.filter { toRecord($0).name == first.name }
         var saved = false
         var lastError: Error? = nil
+        let savedStderrFd = dup(STDERR_FILENO)
+        freopen("/dev/null", "w", stderr)
+
         for source in linkedCandidates {
             let m = source.mutableCopy() as! CNMutableContact
-            // Re-apply changes to this candidate's mutable copy
             m.emailAddresses = mutable.emailAddresses
             m.phoneNumbers   = mutable.phoneNumbers
             let req = CNSaveRequest()
@@ -337,13 +343,24 @@ store.requestAccess(for: .contacts) { granted, _ in
                 lastError = error
             }
         }
-        if saved {
-            print("Updated \"\(query)\": \(changes.joined(separator: ", "))")
-        } else if let err = lastError as NSError?, err.code == 134092 {
-            fail("Conflict saving contact — iCloud sync may be in progress, try again shortly")
-        } else {
-            fail("Could not save: \(lastError?.localizedDescription ?? "unknown error")")
+
+        func emit(_ msg: String) {
+            var out = msg + "\n"
+            out.withUTF8 { write(saved ? STDOUT_FILENO : savedStderrFd, $0.baseAddress, $0.count) }
         }
+
+        if saved {
+            emit("Updated \"\(query)\": \(changes.joined(separator: ", "))")
+        } else if let err = lastError as NSError?, err.code == 134092 {
+            emit("Error: Conflict saving contact — iCloud sync may be in progress, try again shortly")
+            close(savedStderrFd)
+            exit(1)
+        } else {
+            emit("Error: Could not save: \(lastError?.localizedDescription ?? "unknown error")")
+            close(savedStderrFd)
+            exit(1)
+        }
+        close(savedStderrFd)
         semaphore.signal()
 
     case "rename":
