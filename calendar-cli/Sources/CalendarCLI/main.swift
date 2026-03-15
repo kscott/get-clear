@@ -4,6 +4,7 @@
 // Handles argument parsing and all EventKit/AppKit interactions.
 // Range and config parsing are delegated to CalendarLib so they can be unit tested.
 
+import Darwin
 import Foundation
 import AppKit
 import EventKit
@@ -131,12 +132,20 @@ func formatTime(_ date: Date) -> String {
     timeFormatter.string(from: date)
 }
 
-// MARK: - Color
+// MARK: - ANSI color
+
+private let ansiEnabled: Bool = {
+    ProcessInfo.processInfo.environment["NO_COLOR"] == nil &&
+    isatty(STDOUT_FILENO) != 0
+}()
+
+private func bold(_ s: String) -> String { ansiEnabled ? "\u{1B}[1m\(s)\u{1B}[0m" : s }
+private func dim(_ s: String)  -> String { ansiEnabled ? "\u{1B}[2m\(s)\u{1B}[0m" : s }
 
 /// Returns an ANSI true-color foreground escape for the calendar's color, or "" if unavailable.
-/// Respects the NO_COLOR environment variable convention.
+/// Respects NO_COLOR and isatty — no color codes when piping output.
 func calendarDot(_ calendar: EKCalendar) -> String {
-    guard ProcessInfo.processInfo.environment["NO_COLOR"] == nil else { return "  " }
+    guard ansiEnabled else { return "  " }
     guard let cg = calendar.cgColor else { return "  " }
     let colorSpace = cg.colorSpace?.model
     let components = cg.components ?? []
@@ -163,11 +172,11 @@ func eventLine(_ event: EKEvent) -> String {
         let end   = formatTime(event.endDate)
         timeCol = String(format: " %8@ – %-8@  ", start as CVarArg, end as CVarArg)
     }
-    var label = event.title ?? "(no title)"
+    var label = bold(event.title ?? "(no title)")
     if let loc = event.location, !loc.isEmpty {
         let firstLine = loc.components(separatedBy: "\n").first ?? loc
         let truncated = firstLine.count > 50 ? String(firstLine.prefix(50)) + "…" : firstLine
-        label += " · " + truncated
+        label += dim(" · " + truncated)
     }
     return "\(calendarDot(event.calendar))\(timeCol)\(label)"
 }
@@ -178,7 +187,7 @@ func printGrouped(_ events: [EKEvent]) {
     let days    = grouped.keys.sorted()
     for (i, day) in days.enumerated() {
         if i > 0 { print("") }
-        print(dayHeaderFormatter.string(from: day))
+        print(bold(dayHeaderFormatter.string(from: day)))
         for event in (grouped[day] ?? []).sorted(by: { $0.startDate < $1.startDate }) {
             print(eventLine(event))
         }
