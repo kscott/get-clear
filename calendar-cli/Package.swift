@@ -30,7 +30,10 @@ let package = Package(
         // with just the Swift CLI toolchain (no Xcode required)
         .executableTarget(
             name: "calendar-tests",
-            dependencies: ["CalendarLib"],
+            dependencies: [
+                "CalendarLib",
+                .product(name: "GetClearKit", package: "get-clear"),
+            ],
             path: "Tests/CalendarLibTests"
         ),
     ]

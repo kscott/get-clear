@@ -5,6 +5,7 @@
 
 import Foundation
 import CalendarLib
+import GetClearKit
 
 // MARK: - Minimal test harness
 
