@@ -34,6 +34,10 @@ jobs:
           mkdir -p payload/usr/local/share/get-clear
           cp scripts/uninstall payload/usr/local/share/get-clear/uninstall.sh
           chmod +x payload/usr/local/share/get-clear/uninstall.sh
+          mkdir -p payload/usr/local/share/zsh/site-functions
+          cp completions/_reminders completions/_calendar completions/_contacts \
+             completions/_mail completions/_sms \
+             payload/usr/local/share/zsh/site-functions/
 
       - name: Build component package
         run: |

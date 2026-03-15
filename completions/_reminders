@@ -1,0 +1,40 @@
+#compdef reminders
+
+_reminders() {
+  local -a commands
+  commands=(
+    'open:Open Reminders app'
+    'lists:Show all reminder lists'
+    'list:Show reminders in a list'
+    'find:Search reminders by title or notes'
+    'show:Show a specific reminder'
+    'add:Add a reminder'
+    'change:Change a reminder'\''s attributes'
+    'rename:Rename a reminder'
+    'done:Mark a reminder complete'
+    'remove:Remove a reminder'
+  )
+
+  if (( CURRENT == 2 )); then
+    _describe 'command' commands
+  elif (( CURRENT == 3 )); then
+    case $words[2] in
+      list)
+        local -a lists
+        lists=(${(f)"$(reminders lists 2>/dev/null)"})
+        _describe 'list' lists
+        ;;
+      show|change|rename|done|remove)
+        local -a titles
+        titles=(${(f)"$(reminders list 2>/dev/null \
+          | sed 's/\x1b\[[0-9;]*m//g' \
+          | sed 's/^[[:space:]]*●[[:space:]]*//' \
+          | sed 's/[[:space:]]*·.*//' \
+          | grep -v '^$')"})
+        _describe 'reminder' titles
+        ;;
+    esac
+  fi
+}
+
+_reminders "$@"

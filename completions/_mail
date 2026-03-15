@@ -1,0 +1,17 @@
+#compdef mail
+
+_mail() {
+  local -a commands
+  commands=(
+    'setup:Configure mail token and identities'
+    'send:Send an email'
+    'find:Search sent mail'
+    'open:Open Fastmail in browser'
+  )
+
+  if (( CURRENT == 2 )); then
+    _describe 'command' commands
+  fi
+}
+
+_mail "$@"

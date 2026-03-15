@@ -1,0 +1,40 @@
+#compdef contacts
+
+_contacts() {
+  local -a commands
+  commands=(
+    'open:Open Contacts app'
+    'lists:Show all contact groups'
+    'list:Show contacts in a group'
+    'export:Export group as paste-ready email list'
+    'find:Search contacts'
+    'show:Show a specific contact'
+    'add:Add a contact'
+    'change:Change a contact'\''s attributes'
+    'rename:Rename a contact'
+    'remove:Remove a contact'
+  )
+
+  if (( CURRENT == 2 )); then
+    _describe 'command' commands
+  elif (( CURRENT == 3 )); then
+    case $words[2] in
+      list|export)
+        local -a groups
+        groups=(${(f)"$(contacts lists 2>/dev/null)"})
+        _describe 'group' groups
+        ;;
+      show|change|rename|remove)
+        local -a names
+        names=(${(f)"$(contacts list 2>/dev/null \
+          | sed 's/\x1b\[[0-9;]*m//g' \
+          | sed 's/^[[:space:]]*//' \
+          | sed 's/ <.*//' \
+          | grep -v '^$')"})
+        _describe 'contact' names
+        ;;
+    esac
+  fi
+}
+
+_contacts "$@"

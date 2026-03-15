@@ -11,7 +11,9 @@ set -euo pipefail
 
 TOOLS=(reminders calendar contacts mail sms)
 BIN_DIR="${GET_CLEAR_BIN_DIR:-$HOME/.local/bin}"
+ZSH_COMPLETIONS_DIR="${GET_CLEAR_ZSH_COMPLETIONS_DIR:-$HOME/.local/share/zsh/site-functions}"
 BASE="https://github.com/kscott"
+RAW="https://raw.githubusercontent.com/kscott/get-clear/main"
 
 echo "Get Clear"
 echo ""
@@ -31,6 +33,36 @@ for tool in "${TOOLS[@]}"; do
 done
 
 echo ""
+
+# zsh completions
+if [[ -n "${ZSH_VERSION:-}" ]] || command -v zsh &>/dev/null; then
+    mkdir -p "$ZSH_COMPLETIONS_DIR"
+    for tool in "${TOOLS[@]}"; do
+        curl -fsSL -o "$ZSH_COMPLETIONS_DIR/_${tool}" "$RAW/completions/_${tool}" 2>/dev/null || true
+    done
+
+    SHELL_RC="$HOME/.zshrc"
+    if [[ -f "$SHELL_RC" ]] && ! grep -q "get-clear.*site-functions\|site-functions.*get-clear" "$SHELL_RC"; then
+        FPATH_LINE="fpath=($ZSH_COMPLETIONS_DIR \$fpath)"
+        if grep -q "^compinit" "$SHELL_RC"; then
+            # Insert fpath before the existing compinit call so it's in scope
+            sed -i '' "/^compinit/i\\
+# Get Clear — zsh completions\\
+$FPATH_LINE" "$SHELL_RC"
+        else
+            {
+                echo ""
+                echo "# Get Clear — zsh completions"
+                echo "$FPATH_LINE"
+                echo "autoload -Uz compinit && compinit"
+            } >> "$SHELL_RC"
+        fi
+        echo "  zsh completions installed — restart your shell to activate"
+    else
+        echo "  zsh completions installed to $ZSH_COMPLETIONS_DIR"
+    fi
+    echo ""
+fi
 
 # PATH check
 if [[ ":$PATH:" != *":$BIN_DIR:"* ]]; then

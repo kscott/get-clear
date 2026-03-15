@@ -1,0 +1,36 @@
+#compdef calendar
+
+_calendar() {
+  local -a commands subsets
+  commands=(
+    'open:Open Calendar app'
+    'calendars:List available calendars'
+    'list:List events in a date range'
+    'today:Show today'\''s events'
+    'week:Show this week'\''s events'
+    'next:Show next N upcoming events'
+    'find:Search events'
+    'show:Show a specific event'
+    'add:Add an event'
+    'remove:Remove an event'
+  )
+
+  local config=~/.config/calendar-cli/config.toml
+  if [[ -f $config ]]; then
+    subsets=(${(f)"$(awk -F'[[:space:]]*=' \
+      '/^\[subsets\]/{p=1;next} /^\[/{p=0} p && /=/{gsub(/[[:space:]]/,"",$1); print $1}' \
+      "$config" 2>/dev/null)"})
+  fi
+
+  if (( CURRENT == 2 )); then
+    (( ${#subsets} )) && _describe 'subset' subsets
+    _describe 'command' commands
+  elif (( CURRENT == 3 )); then
+    # If word[2] is a known subset, complete commands next
+    if [[ -n "${subsets[(r)$words[2]]}" ]]; then
+      _describe 'command' commands
+    fi
+  fi
+}
+
+_calendar "$@"

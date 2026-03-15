@@ -1,0 +1,15 @@
+#compdef sms
+
+_sms() {
+  local -a commands
+  commands=(
+    'send:Send an SMS or iMessage'
+    'open:Open Messages app'
+  )
+
+  if (( CURRENT == 2 )); then
+    _describe 'command' commands
+  fi
+}
+
+_sms "$@"
