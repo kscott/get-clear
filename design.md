@@ -163,6 +163,8 @@ A user should never have to know or care whether this is their first run or thei
 
 ## Command vocabulary
 
+**When a vocabulary choice is uncertain, test it by translating to other languages.** The right word survives translation — its meaning is grounded in human experience, not software convention. A word that only makes sense in English UI context is a word borrowed from the wrong register. `done` and `find` both passed this test; `complete` and `search` did not.
+
 Use the word you'd say to Claude in conversation:
 
 | Technical word | Suite word | Rationale |
@@ -238,6 +240,26 @@ recipient to a contact group — across tools, in one conversation.
 
 Build it as a standalone `mcp-cli-suite` project that shells out to the installed
 binaries. That way the CLIs stay clean and the MCP layer is independently deployable.
+
+---
+
+## Repo structure: 6 repos vs. monorepo
+
+Current structure: one repo per tool (`reminders-cli`, `calendar-cli`, etc.) plus the umbrella `get-clear` repo that hosts GetClearKit.
+
+**Why separate repos work:**
+- Per-tool versioning, changelogs, and GitHub issues — clean signal per project
+- Users can depend on one tool as a Swift package without pulling the others
+- Releases are per-tool; the PKG installer tags specific versions
+- PRs are scoped; changes to reminders don't appear in calendar history
+
+**Why a monorepo would be better:**
+- GetClearKit changes require push → wait for resolution → update each tool → push each tool. This propagation lag is the main pain point today
+- Cross-cutting work (color pass, flag handling, date parsing migration) spans 5+ repos — hard to review as a unit, easy to leave one tool behind
+- 5 `Package.swift` files to keep in sync; CI configured in 6 places
+- Issues land in the wrong repo; cross-repo references are awkward
+
+**Current verdict:** keep separate repos for now. The per-tool GitHub releases and issue tracking are worth more than the merge convenience at this stage. Revisit when GetClearKit churn settles down or when cross-cutting changes become the norm rather than the exception. Migrating is a one-time cost — rewriting git history, redirecting issue URLs, updating install scripts — so it's worth doing deliberately, not reactively.
 
 ---
 
