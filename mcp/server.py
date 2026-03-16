@@ -131,6 +131,7 @@ TOOLS = [
                 "priority": {"type": "string", "enum": ["high", "medium", "low", "none"]},
                 "url": {"type": "string", "description": "New URL, or 'none' to clear"},
                 "note": {"type": "string", "description": "New note text, or 'none' to clear"},
+                "target_list": {"type": "string", "description": "Move reminder to this list"},
             },
             "required": ["title"],
         },
@@ -384,12 +385,13 @@ def dispatch(name: str, args: dict) -> str:
 
     if name == "reminders_change":
         parts = ["change", args["title"]]
-        if args.get("list"):     parts.append(args["list"])
-        if args.get("date"):     parts.append(args["date"])
-        if args.get("repeat"):   parts += ["repeat", args["repeat"]]
-        if args.get("priority"): parts.append(args["priority"])
-        if args.get("url"):      parts += ["url", args["url"]]
-        if args.get("note"):     parts += ["note", args["note"]]  # must be last
+        if args.get("list"):        parts.append(args["list"])
+        if args.get("date"):        parts.append(args["date"])
+        if args.get("repeat"):      parts += ["repeat", args["repeat"]]
+        if args.get("priority"):    parts.append(args["priority"])
+        if args.get("url"):         parts += ["url", args["url"]]
+        if args.get("target_list"): parts += ["list", args["target_list"]]
+        if args.get("note"):        parts += ["note", args["note"]]  # must be last
         return run("reminders", *parts)
 
     if name == "reminders_rename":
