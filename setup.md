@@ -81,7 +81,22 @@ Adjust calendar names to match what's in Calendar.app on this machine. Run `cale
 
 ---
 
-## 5. LaunchAgent (daily auto-update)
+## 5. MCP server (Claude Code integration)
+
+Exposes all five tools to Claude directly, without constructing CLI commands.
+
+```bash
+cd ~/dev/get-clear/mcp
+python3 -m venv .venv
+.venv/bin/pip install mcp
+claude mcp add get-clear -- ~/dev/get-clear/mcp/.venv/bin/python3 ~/dev/get-clear/mcp/server.py
+```
+
+Restart Claude Code. See [mcp/README.md](mcp/README.md) for full details.
+
+---
+
+## 7. LaunchAgent (daily auto-update)
 
 Pulls all repos and rebuilds any tool that changed. Runs daily at 9am.
 
@@ -92,7 +107,7 @@ launchctl load ~/Library/LaunchAgents/com.kenscott.git-pull.plist
 
 ---
 
-## 6. First-run permissions
+## 8. First-run permissions
 
 Each tool will prompt for macOS permissions on first use. Just approve them:
 

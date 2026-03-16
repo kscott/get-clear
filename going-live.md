@@ -156,10 +156,11 @@ Good problems to have. Build after real users are using the tools and giving fee
   - Cache session and mailbox IDs instead of fetching on every command
   - Performance win, not correctness fix
 
-- [ ] **MCP server** (get-clear #3)
-  - Expose the full suite to Claude via MCP
-  - Lives in get-clear repo under `mcp/`
-  - Build after the tools themselves are stable
+- [x] **MCP server** (get-clear #3)
+  - 22 tools across all five CLIs; lives in `mcp/`
+  - Typed parameters eliminate CLI string-construction ambiguity
+  - Setup: `python3 -m venv .venv && .venv/bin/pip install mcp && claude mcp add get-clear ...`
+  - Shipped 2026-03-16
 
 - [ ] **Google Calendar** (calendar #12)
   - Same scope concern as Gmail — evaluate post-v1
