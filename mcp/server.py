@@ -313,7 +313,7 @@ TOOLS = [
     # ── Mail ──────────────────────────────────────────────────────────────────
     types.Tool(
         name="mail_send",
-        description="Send an email via Fastmail/JMAP. If given a contact name rather than an email address, call contacts_show first to confirm their email. Pass the email address directly to this tool.",
+        description="Send an email via Fastmail/JMAP. Before sending, display the to address, subject, and body to the user and wait for confirmation — email cannot be unsent. If given a contact name rather than an email address, call contacts_show first to confirm their email. Pass the email address directly to this tool.",
         inputSchema={
             "type": "object",
             "properties": {
@@ -342,7 +342,7 @@ TOOLS = [
     # ── SMS ───────────────────────────────────────────────────────────────────
     types.Tool(
         name="sms_send",
-        description="Send an SMS or iMessage via Messages.app. If given a contact name, always call contacts_show first to get their phone number. Pass the phone number directly to this tool — do not pass a name or email unless you have confirmed no phone number exists.",
+        description="Send an SMS or iMessage via Messages.app. Before sending, display the recipient and message to the user and wait for confirmation — messages cannot be unsent. If given a contact name, always call contacts_show first to get their phone number. Pass the phone number directly to this tool — do not pass a name or email unless you have confirmed no phone number exists.",
         inputSchema={
             "type": "object",
             "properties": {
