@@ -120,7 +120,7 @@ TOOLS = [
     ),
     types.Tool(
         name="reminders_change",
-        description="Update attributes of an existing reminder. Requires exact title (case-insensitive). Only specified fields are changed; omitted fields are left alone. Use 'none' to clear a field.",
+        description="Update attributes of an existing reminder. Before calling this, use reminders_show and display the current record to the user — this gives them a chance to confirm or cancel before the change is made. Only specified fields are changed; omitted fields are left alone. Use 'none' to clear a field.",
         inputSchema={
             "type": "object",
             "properties": {
@@ -163,7 +163,7 @@ TOOLS = [
     ),
     types.Tool(
         name="reminders_remove",
-        description="Remove a reminder permanently. Requires exact title (case-insensitive). Use reminders_find first if unsure of the exact title.",
+        description="Remove a reminder permanently. Before calling this, use reminders_show and display the full record to the user — this is their only chance to catch a mistake before the reminder is gone. Requires exact title (case-insensitive).",
         inputSchema={
             "type": "object",
             "properties": {
@@ -263,7 +263,7 @@ TOOLS = [
     ),
     types.Tool(
         name="contacts_change",
-        description="Update a contact's attributes. Use 'none' to clear a field.",
+        description="Update a contact's attributes. Before calling this, use contacts_show and display the current record to the user — gives them a chance to confirm before the change is made. Use 'none' to clear a field.",
         inputSchema={
             "type": "object",
             "properties": {
@@ -289,7 +289,7 @@ TOOLS = [
     ),
     types.Tool(
         name="contacts_remove",
-        description="Remove a contact.",
+        description="Remove a contact permanently. Before calling this, use contacts_show and display the full record to the user — this is their only chance to catch a mistake before the contact is deleted.",
         inputSchema={
             "type": "object",
             "properties": {
