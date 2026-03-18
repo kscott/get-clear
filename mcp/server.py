@@ -80,7 +80,7 @@ TOOLS = [
     ),
     types.Tool(
         name="reminders_find",
-        description="Search reminders by title or note content.",
+        description="Search reminders by title or note content using a partial/contains match. Use this to browse or locate a reminder. Before calling change, done, or remove, use reminders_show to get the exact title.",
         inputSchema={
             "type": "object",
             "properties": {
@@ -91,7 +91,7 @@ TOOLS = [
     ),
     types.Tool(
         name="reminders_show",
-        description="Show full details of a reminder by exact title.",
+        description="Show full details of a reminder. Requires an exact title (case-insensitive). Use reminders_find first if unsure of the exact title. Always call this before change, rename, done, or remove to confirm you have the right reminder.",
         inputSchema={
             "type": "object",
             "properties": {
@@ -120,7 +120,7 @@ TOOLS = [
     ),
     types.Tool(
         name="reminders_change",
-        description="Update attributes of an existing reminder. Only specified fields are changed. Use 'none' to clear a field.",
+        description="Update attributes of an existing reminder. Requires exact title (case-insensitive). Only specified fields are changed; omitted fields are left alone. Use 'none' to clear a field.",
         inputSchema={
             "type": "object",
             "properties": {
@@ -151,7 +151,7 @@ TOOLS = [
     ),
     types.Tool(
         name="reminders_done",
-        description="Mark a reminder as complete.",
+        description="Mark a reminder as complete. Requires exact title (case-insensitive). Use reminders_find first if unsure of the exact title.",
         inputSchema={
             "type": "object",
             "properties": {
@@ -163,7 +163,7 @@ TOOLS = [
     ),
     types.Tool(
         name="reminders_remove",
-        description="Remove a reminder.",
+        description="Remove a reminder permanently. Requires exact title (case-insensitive). Use reminders_find first if unsure of the exact title.",
         inputSchema={
             "type": "object",
             "properties": {
@@ -227,7 +227,7 @@ TOOLS = [
     # ── Contacts ──────────────────────────────────────────────────────────────
     types.Tool(
         name="contacts_find",
-        description="Search contacts by name, email, or phone.",
+        description="Search contacts by name, email, or phone. Use for browsing or confirming a contact exists. Before taking any action (send SMS, send email), always follow up with contacts_show to get the full contact record.",
         inputSchema={
             "type": "object",
             "properties": {
@@ -238,7 +238,7 @@ TOOLS = [
     ),
     types.Tool(
         name="contacts_show",
-        description="Show full details of a contact.",
+        description="Show full details of a contact: all phone numbers, emails, and notes. Always call this before sending a message or email to a contact — it ensures you have the right address. Prefer phone number for SMS; prefer email for mail. Fall back to the other only if one is missing.",
         inputSchema={
             "type": "object",
             "properties": {
@@ -313,11 +313,11 @@ TOOLS = [
     # ── Mail ──────────────────────────────────────────────────────────────────
     types.Tool(
         name="mail_send",
-        description="Send an email via Fastmail/JMAP.",
+        description="Send an email via Fastmail/JMAP. If given a contact name rather than an email address, call contacts_show first to confirm their email. Pass the email address directly to this tool.",
         inputSchema={
             "type": "object",
             "properties": {
-                "to": {"type": "string", "description": "Recipient name or email address"},
+                "to": {"type": "string", "description": "Email address (preferred) or contact name"},
                 "subject": {"type": "string"},
                 "body": {"type": "string", "description": "Email body text"},
                 "from_identity": {"type": "string", "description": "Sender identity (name or email), uses default if omitted"},
@@ -342,11 +342,11 @@ TOOLS = [
     # ── SMS ───────────────────────────────────────────────────────────────────
     types.Tool(
         name="sms_send",
-        description="Send an SMS or iMessage via Messages.app.",
+        description="Send an SMS or iMessage via Messages.app. If given a contact name, always call contacts_show first to get their phone number. Pass the phone number directly to this tool — do not pass a name or email unless you have confirmed no phone number exists.",
         inputSchema={
             "type": "object",
             "properties": {
-                "contact": {"type": "string", "description": "Contact name, phone number, or email"},
+                "contact": {"type": "string", "description": "Phone number (preferred), email, or contact name as last resort"},
                 "message": {"type": "string"},
             },
             "required": ["contact", "message"],
