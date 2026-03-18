@@ -313,7 +313,7 @@ TOOLS = [
     # ── Mail ──────────────────────────────────────────────────────────────────
     types.Tool(
         name="mail_send",
-        description="Send an email via Fastmail/JMAP. Before sending, display the to address, subject, and body to the user and wait for confirmation — email cannot be unsent. If given a contact name rather than an email address, call contacts_show first to confirm their email. Pass the email address directly to this tool.",
+        description="Send an email via Fastmail/JMAP. Before sending, display the to address, subject, body, and any attachments to the user and wait for confirmation — email cannot be unsent. If given a contact name rather than an email address, call contacts_show first to confirm their email. Pass the email address directly to this tool.",
         inputSchema={
             "type": "object",
             "properties": {
