@@ -138,6 +138,8 @@ Exit non-zero.
 - Brevity applies — errors are already friction; don't add to it
 - No stack traces in production output — those go to the error log, not the screen
 
+**Repeated syntax confusion is signal, not noise.** A pattern of the same syntax error — the same user, the same command, the same failure — points to a vocabulary gap or missing functionality. The tool is not supporting something people are trying to do. Error logs and telemetry must preserve enough context to surface these patterns. A cluster of syntax errors around a command is a feature request in disguise.
+
 ## Suite Architecture
 
 ### Repo Structure
