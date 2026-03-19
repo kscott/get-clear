@@ -1,4 +1,4 @@
-# Feature Specification: Activity Log and Done Report
+# Feature Specification: Activity Log, What, and Recap
 
 **Feature Branch**: `001-activity-log`
 **Created**: 2026-03-18
@@ -111,10 +111,10 @@ The user uses Get Clear tools throughout the day in different Claude conversatio
 ### Functional Requirements
 
 - **FR-001**: Every successful write command in all five tools (`add`, `remove`, `change`, `rename`, `done`, `send`) MUST write a timestamped log entry at the time the action completes.
-- **FR-002**: Read-only commands (`list`, `find`, `show`, `open`, `what`, `calendars`, `lists`) MUST NOT write log entries.
+- **FR-002**: Read-only commands (`list`, `find`, `show`, `open`, `what`, `recap`, `calendars`, `lists`) MUST NOT write log entries.
 - **FR-003**: Each log entry MUST record: timestamp (date and time), tool name, command name, a human-readable description of the record acted on (e.g., reminder title, event title, contact name, recipient), and — where the tool has a native container — the container name (reminders list, calendar name). Container name is the project signal: a reminder in "Trinity Council" is a Trinity Council task with no tagging required.
 - **FR-004**: Log entries MUST be written to a daily log file organized by date, so all of today's actions are retrievable from a single location.
-- **FR-005**: The `what` command MUST be available in all five tools and in a suite-level `get-clear what` entry point.
+- **FR-005**: The `what` command MUST be available in all five tools and in a suite-level `get-clear what` entry point. `recap` is suite-level only — it exists as `get-clear recap` and has no per-tool variant. The value of `recap` is the full picture across all tools; a per-tool recap would be too narrow to be meaningful.
 - **FR-006**: `<tool> what` MUST display all log entries for that tool from today, in chronological order.
 - **FR-007**: `get-clear what` MUST display all log entries across all five tools from today, in chronological order.
 - **FR-008**: Both `<tool> what` and `get-clear what` MUST accept an optional time range argument (default: today; also supports `yesterday`, `this week`, `last week`, named days, and date ranges).
@@ -124,22 +124,23 @@ The user uses Get Clear tools throughout the day in different Claude conversatio
 - **FR-009c**: `get-clear recap` output MUST be meaningful and satisfying to read at the CLI without Claude, and MUST also serve as useful structured input when Claude is asked to narrate or interpret the day.
 - **FR-009d**: `get-clear recap` MUST display a timespan derived from the first and last log entry timestamps of the requested period, rounded to the nearest 15 minutes — e.g., "9:00am → 4:45pm". Exact timestamps MUST NOT be shown. Rounding is intentional: it signals that the tool has not captured everything, and sets honest expectations about what the timespan represents. If only one log entry exists, display its rounded timestamp with no end. If no log entries exist, no timespan is shown.
 - **FR-010**: If no log entries exist for the requested range, the output MUST differ based on whether the range is today or a past period:
-  - **Today**: `recap` displays an encouraging message that holds the door open — no mention of absence, just the opportunity remaining. Exact phrasing: *"Quiet so far. Ready for the next thing."* The first sentence names the state without judgment. The second positions the tool as a partner poised to capture what comes next. `what` may use a plainer variant: "Nothing logged so far today."
-  - **Past ranges**: plain and factual — "Nothing logged yesterday." / "Nothing logged this week." No encouragement; that door is closed. Same rule applies to both `what` and `recap` for past ranges.
-  - Neither case is an error. Empty output with no message is never acceptable.
+  - **Today — `recap`**: displays an encouraging message that holds the door open — no mention of absence, just the opportunity remaining. Exact phrasing: *"Quiet so far. Ready for the next thing."*
+  - **Today — `what` and `<tool> what`**: plain but not alarming — "Nothing logged so far today." Per-tool variant: "Nothing logged in reminders today." (or whichever tool.) Behavior is identical to suite `what`, filtered to the tool.
+  - **Past ranges — all commands**: plain and factual — "Nothing logged yesterday." / "Nothing logged this week." No encouragement; that door is closed.
+  - Empty output with no message is never acceptable.
 - **FR-011**: Log entries MUST be written immediately when an action completes — not buffered or deferred to session end.
 - **FR-012**: Failed commands (those that exit with an error) MUST NOT write a log entry — only successful actions are recorded.
 - **FR-013**: The log storage location MUST be consistent and predictable so the suite-level `get-clear what` can aggregate from a single known location without tool-specific configuration.
 - **FR-014**: The log directory MUST be created automatically on first use — no manual setup required.
 - **FR-015**: When querying past calendar events for `recap`, timed events MUST use end-time comparison; all-day events MUST use date comparison. An all-day event is "occurred" if its calendar date falls within the query range, regardless of whether its exact end timestamp has passed.
-- **FR-017**: `recap` MUST suppress any record that was both added and removed within the query range, regardless of how much time elapsed between the two actions. A meeting added in the morning and cancelled after lunch is a changed commitment — it MUST NOT appear as a commitment kept. `what` is unaffected and always shows the complete record. This suppression is intentional quiet intelligence: the user who notices the cancelled meeting is absent from `recap` understands the tool is thinking about what actually held up, not just what happened. That recognition is a moment of trust.
 - **FR-016**: All timestamps MUST be generated from the system clock at the moment of command execution. No timestamp may be supplied by the calling process (e.g., Claude). This applies to log entry timestamps and to the "current time" used when evaluating which calendar events have occurred.
+- **FR-017**: `recap` MUST suppress any record that was both added and removed within the query range, regardless of how much time elapsed between the two actions. A meeting added in the morning and cancelled after lunch is a changed commitment — it MUST NOT appear as a commitment kept. `what` is unaffected and always shows the complete record. This suppression is intentional quiet intelligence: the user who notices the cancelled meeting is absent from `recap` understands the tool is thinking about what actually held up, not just what happened. That recognition is a moment of trust.
 
 ### Key Entities
 
 - **Log Entry**: A single recorded action. Attributes: timestamp, tool name, command name, human-readable description of the record acted on.
 - **Daily Log File**: The file containing all entries for a given calendar day. One file per day; all tools contribute to the same shared location.
-- **Done Report**: A cross-tool view of commitments kept: reminders marked `done`, mail sent, SMS sent, and calendar events that have occurred. The first three come from the write log; past calendar events are queried from the calendar at report time. Queryable by time range.
+- **Recap**: The suite-level view of commitments kept: reminders marked `done`, mail sent, SMS sent, and calendar events that have occurred. The first three come from the write log; past calendar events are queried from the calendar at report time. Suite-level only — no per-tool variant. Queryable by time range.
 
 ## Success Criteria *(mandatory)*
 
@@ -147,7 +148,7 @@ The user uses Get Clear tools throughout the day in different Claude conversatio
 
 - **SC-001**: Every successful write action across all five tools produces a log entry within the same second the action completes.
 - **SC-002**: `get-clear what` with no arguments returns all of today's entries in under one second, regardless of how many tools were used.
-- **SC-003**: A user can answer "what did I get done today?" without opening any app or recalling which session they used — the log is the complete record.
+- **SC-003**: A user can answer "what did I do today?" without opening any app or recalling which session they used — `what` is the complete record of actions across all tools and sessions.
 - **SC-004**: A user can answer "where did I keep my commitments this week?" with a single command and a time range argument — covering task completions, messages sent, and meetings attended — with no gaps caused by missed sessions.
 - **SC-005**: Log entries are written in plain language a non-technical user can understand without knowing the tool's internal syntax.
 - **SC-006**: The `what` command is consistent enough across all five tools that a user who knows `reminders what` can correctly use `calendar what` without reading documentation.
