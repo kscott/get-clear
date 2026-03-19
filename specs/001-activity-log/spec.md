@@ -112,7 +112,7 @@ The user uses Get Clear tools throughout the day in different Claude conversatio
 
 - **FR-001**: Every successful write command in all five tools (`add`, `remove`, `change`, `rename`, `done`, `send`) MUST write a timestamped log entry at the time the action completes.
 - **FR-002**: Read-only commands (`list`, `find`, `show`, `open`, `what`, `calendars`, `lists`) MUST NOT write log entries.
-- **FR-003**: Each log entry MUST record: timestamp (date and time), tool name, command name, and a human-readable description of the record acted on (e.g., reminder title, event title, contact name, recipient).
+- **FR-003**: Each log entry MUST record: timestamp (date and time), tool name, command name, a human-readable description of the record acted on (e.g., reminder title, event title, contact name, recipient), and — where the tool has a native container — the container name (reminders list, calendar name). Container name is the project signal: a reminder in "Trinity Council" is a Trinity Council task with no tagging required.
 - **FR-004**: Log entries MUST be written to a daily log file organized by date, so all of today's actions are retrievable from a single location.
 - **FR-005**: The `what` command MUST be available in all five tools and in a suite-level `get-clear what` entry point.
 - **FR-006**: `<tool> what` MUST display all log entries for that tool from today, in chronological order.
@@ -147,6 +147,12 @@ The user uses Get Clear tools throughout the day in different Claude conversatio
 - **SC-005**: Log entries are written in plain language a non-technical user can understand without knowing the tool's internal syntax.
 - **SC-006**: The `what` command is consistent enough across all five tools that a user who knows `reminders what` can correctly use `calendar what` without reading documentation.
 - **SC-007**: `get-clear recap` output reads as progress, not a ledger. The tone is affirmative — it surfaces what was done in a way that feels like a shoulder tap, not an audit. A user who runs it mid-afternoon should feel the weight of what they've already accomplished.
+
+## Design Notes
+
+**Lists as projects — no tags needed.** Reminders lists and calendar names are the project attribution layer. A reminder's list name is captured in the log entry and surfaces in `what` and `recap` output — no separate tagging system required. Calendar attribution is coarser ("Work", "Personal") but event titles carry meaning on their own, and Claude can make project associations from them when asked. The practical guidance: if project context matters for a type of work, use a more specific list rather than reaching for a tag.
+
+**The tag boundary.** This is not a tagging system. Log entries do not accept user-supplied tags or labels at write time. Project context comes from structure that already exists (lists, calendars) or from content that already has meaning (titles, recipients). Any future pressure toward tags should be resolved by making list structure more specific instead.
 
 ## Assumptions
 
