@@ -11,9 +11,21 @@ reminders what this week
 calendar what last week
 ```
 
-**Output format**: Chronological list, one entry per line. Each line: timestamp (time only for today, date+time for multi-day ranges) · command · description · container (if present).
+**Output format**: Chronological list, one entry per line. Each line: timestamp · command · description · container (if present).
 
+**Date header rule**: Today queries show no date header — the date is implicit, you're living in it. Any other range (yesterday, a specific past date, this week, last week) shows a date header, even for a single past day. Without a header, a past timestamp floats in time.
+
+Today:
 ```
+ 2:32pm  done   Call Sarah  [Ibotta]
+ 3:15pm  add    Review PR   [Ibotta]
+ 4:01pm  done   Review PR   [Ibotta]
+```
+
+Yesterday (or any past single day):
+```
+Tuesday March 18
+
  2:32pm  done   Call Sarah  [Ibotta]
  3:15pm  add    Review PR   [Ibotta]
  4:01pm  done   Review PR   [Ibotta]
@@ -35,14 +47,26 @@ get-clear what this week
 get-clear what last week
 ```
 
-**Output format**: Same as per-tool but includes tool name column. Grouped by date when range spans multiple days.
+**Output format**: Same as per-tool but includes tool name column. Same date header rule applies — no header for today, header for any other range.
 
+Today:
 ```
-Wednesday March 19
+ 2:32pm  reminders  done   Call Sarah       [Ibotta]
+ 3:15pm  reminders  add    Review PR        [Ibotta]
+ 4:47pm  mail       send   Alex Re: notes
+```
+
+Yesterday (or any past range):
+```
+Tuesday March 18
 
  2:32pm  reminders  done   Call Sarah       [Ibotta]
  3:15pm  reminders  add    Review PR        [Ibotta]
  4:47pm  mail       send   Alex Re: notes
+
+Wednesday March 19
+
+ 9:15am  reminders  add    Team standup prep  [Ibotta]
 ```
 
 **Empty state (today)**: `Nothing logged so far today.`
