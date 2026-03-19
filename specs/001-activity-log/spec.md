@@ -94,7 +94,7 @@ The user uses Get Clear tools throughout the day in different Claude conversatio
 - What happens if a write command fails — does it still log?
 - What does the output look like for a very active day (50+ actions)?
 - What if two write commands run in very quick succession — do both appear?
-- What happens when a reminder is added and then immediately removed — do both events appear? **Resolved:** `what` shows both (complete record). `recap` suppresses the pair — a commitment added and removed within the query range was cancelled, not kept. See FR-017.
+- What happens when a record is added and later removed within the same query range — does it appear in recap? **Resolved:** `what` shows both actions (complete record). `recap` suppresses the pair — added and removed in the same range means cancelled, not kept, regardless of how much time passed between the two. See FR-017.
 
 **Calendar: `what` vs. `recap`**
 - `calendar what` shows write actions through the CLI — events added or removed. An event that occurred today does not appear in `calendar what` unless it was also added or modified today via the tool. These are different questions: "what did I do to my calendar?" vs. "what happened on my calendar?"
@@ -132,7 +132,7 @@ The user uses Get Clear tools throughout the day in different Claude conversatio
 - **FR-013**: The log storage location MUST be consistent and predictable so the suite-level `get-clear what` can aggregate from a single known location without tool-specific configuration.
 - **FR-014**: The log directory MUST be created automatically on first use — no manual setup required.
 - **FR-015**: When querying past calendar events for `recap`, timed events MUST use end-time comparison; all-day events MUST use date comparison. An all-day event is "occurred" if its calendar date falls within the query range, regardless of whether its exact end timestamp has passed.
-- **FR-017**: `recap` MUST suppress add+remove pairs for the same record within the query range. A record added and removed in the same period represents a cancelled commitment — it MUST NOT appear as a commitment kept. `what` is unaffected and always shows the complete record.
+- **FR-017**: `recap` MUST suppress any record that was both added and removed within the query range, regardless of how much time elapsed between the two actions. A meeting added in the morning and cancelled after lunch is a changed commitment — it MUST NOT appear as a commitment kept. `what` is unaffected and always shows the complete record.
 - **FR-016**: All timestamps MUST be generated from the system clock at the moment of command execution. No timestamp may be supplied by the calling process (e.g., Claude). This applies to log entry timestamps and to the "current time" used when evaluating which calendar events have occurred.
 
 ### Key Entities
