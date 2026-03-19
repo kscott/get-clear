@@ -96,15 +96,15 @@ The user uses Get Clear tools throughout the day in different Claude conversatio
 - What if two write commands run in very quick succession — do both appear?
 - What happens when a reminder is added and then immediately removed — do both events appear?
 
-**Calendar: `what` vs. done report**
+**Calendar: `what` vs. `recap`**
 - `calendar what` shows write actions through the CLI — events added or removed. An event that occurred today does not appear in `calendar what` unless it was also added or modified today via the tool. These are different questions: "what did I do to my calendar?" vs. "what happened on my calendar?"
-- The done report's calendar contribution is queried from the calendar directly (not from the write log), so it captures occurrences regardless of whether the CLI was used to create them.
+- `recap`'s calendar contribution is queried from the calendar directly (not from the write log), so it captures occurrences regardless of whether the CLI was used to create them.
 
-**All-day events in the done report**
+**All-day events in `recap`**
 - Timed events use end time to determine whether they have occurred (end time is in the past).
 - All-day events MUST use date comparison, not end-time comparison. EventKit sets all-day event end times to midnight of the following day — a strict end-time check at 6pm would exclude a conference that ran all day. An all-day event is considered "occurred" if its calendar date falls within the query range.
 - An all-day event that is a deadline marker (e.g., "Project due") has occurred in the calendar sense, but whether the underlying commitment was met is reflected in reminders — not in the calendar event itself.
-- "Out of office" or vacation blocks appear as calendar events and will surface in the done report. This is acceptable — they represent a time commitment to yourself and others.
+- "Out of office" or vacation blocks appear as calendar events and will surface in `recap`. This is acceptable — they represent a time commitment to yourself and others.
 
 ## Requirements *(mandatory)*
 
@@ -131,7 +131,7 @@ The user uses Get Clear tools throughout the day in different Claude conversatio
 - **FR-012**: Failed commands (those that exit with an error) MUST NOT write a log entry — only successful actions are recorded.
 - **FR-013**: The log storage location MUST be consistent and predictable so the suite-level `get-clear what` can aggregate from a single known location without tool-specific configuration.
 - **FR-014**: The log directory MUST be created automatically on first use — no manual setup required.
-- **FR-015**: When querying past calendar events for the done report, timed events MUST use end-time comparison; all-day events MUST use date comparison. An all-day event is "occurred" if its calendar date falls within the query range, regardless of whether its exact end timestamp has passed.
+- **FR-015**: When querying past calendar events for `recap`, timed events MUST use end-time comparison; all-day events MUST use date comparison. An all-day event is "occurred" if its calendar date falls within the query range, regardless of whether its exact end timestamp has passed.
 - **FR-016**: All timestamps MUST be generated from the system clock at the moment of command execution. No timestamp may be supplied by the calling process (e.g., Claude). This applies to log entry timestamps and to the "current time" used when evaluating which calendar events have occurred.
 
 ### Key Entities
@@ -163,6 +163,6 @@ The user uses Get Clear tools throughout the day in different Claude conversatio
 - The log is local to the current machine. Cross-machine aggregation is out of scope.
 - The `get-clear` suite-level entry point is a new binary or script in the umbrella repo; its exact form is a planning-phase decision.
 - Log file retention is out of scope for v1 — files accumulate until the user cleans them up.
-- The done report is a filtered view of the shared log, not a separate data store.
+- `recap` is a structured view over the shared log (plus a live calendar query), not a separate data store.
 - Time range syntax for `what` reuses existing range parsing already in GetClearKit (`today`, `week`, `yesterday`, `monday`, date ranges).
 - The log records successful completions only; it is not a debug or audit trail.
