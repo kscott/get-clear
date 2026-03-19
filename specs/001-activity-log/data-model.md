@@ -10,13 +10,15 @@ The atomic unit written to the log file and read back by `what` and `recap`.
 | `tool` | string | Yes | One of: `reminders`, `calendar`, `contacts`, `mail`, `sms` |
 | `cmd` | string | Yes | The command executed: `add`, `remove`, `change`, `rename`, `done`, `send` |
 | `desc` | string | Yes | Human-readable description of the record acted on — the title, name, or recipient |
-| `container` | string or null | No | Reminders list name or calendar name; null for mail, sms, contacts |
+| `container` | string or null | No | The scoping container for the action. Reminders: always the list name. Calendar: always the calendar name. Contacts: group name when the action is group membership (`add to` / `remove from`), null for contact-level operations (`add`, `change`, `rename`, `remove`). Mail, SMS: always null. |
 
 **Serialized form** (JSON Lines — one object per line):
 ```json
 {"ts":"2026-03-19T21:32:00Z","tool":"reminders","cmd":"done","desc":"Call Sarah","container":"Ibotta"}
 {"ts":"2026-03-19T21:45:00Z","tool":"mail","cmd":"send","desc":"Alex Re: proposal","container":null}
 {"ts":"2026-03-19T22:10:00Z","tool":"calendar","cmd":"add","desc":"Sprint review","container":"Work"}
+{"ts":"2026-03-19T22:15:00Z","tool":"contacts","cmd":"add","desc":"Bob Smith","container":null}
+{"ts":"2026-03-19T22:16:00Z","tool":"contacts","cmd":"add","desc":"Bob Smith → Team Members","container":"Team Members"}
 ```
 
 **Validation rules**:
