@@ -118,6 +118,7 @@ The user uses Get Clear tools throughout the day in different Claude conversatio
 - **FR-013**: The log storage location MUST be consistent and predictable so the suite-level `get-clear what` can aggregate from a single known location without tool-specific configuration.
 - **FR-014**: The log directory MUST be created automatically on first use — no manual setup required.
 - **FR-015**: When querying past calendar events for the done report, timed events MUST use end-time comparison; all-day events MUST use date comparison. An all-day event is "occurred" if its calendar date falls within the query range, regardless of whether its exact end timestamp has passed.
+- **FR-016**: All timestamps MUST be generated from the system clock at the moment of command execution. No timestamp may be supplied by the calling process (e.g., Claude). This applies to log entry timestamps and to the "current time" used when evaluating which calendar events have occurred.
 
 ### Key Entities
 
