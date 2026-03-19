@@ -14,7 +14,11 @@
 
 Fields: `ts` (ISO 8601), `tool`, `cmd`, `desc` (human-readable description of the record), `container` (list/calendar name, nullable).
 
-**Alternatives considered**: TSV — simpler but harder to extend without breaking parsers. Plain text — requires regex, no structure. SQLite — overkill, adds a dependency.
+**Multi-day query performance**: Range queries open one file per day in the range (e.g., `what this week` = 7 files, ~21KB total). At personal-tool scale this is well under 1 second. Per-day files were chosen over a single rolling file or monthly files because log rotation (issue #18) is trivial — delete files older than N days.
+
+**Revisit if**: Query latency becomes noticeable for ranges > 90 days, or file count at open/read becomes measurable. When telemetry (issue #14) is built, `what`/`recap` query duration and files-opened count are the right metrics to track. If either trends upward, reconsider monthly files or a lightweight index.
+
+**Alternatives considered**: TSV — simpler but harder to extend without breaking parsers. Plain text — requires regex, no structure. SQLite — fast indexed queries but binary, not human-readable, overkill for this scale. Monthly files — fewer file opens for range queries but coarser rotation granularity.
 
 ---
 
