@@ -20,7 +20,7 @@ Time range defaults to today but accepts specifiers: `get-clear what yesterday`,
 **Acceptance Scenarios**:
 
 1. **Given** the user has added a reminder and sent an SMS today, **When** they run `get-clear what`, **Then** both actions appear in chronological order with timestamps and the tool name.
-2. **Given** no write actions have been taken today, **When** they run `get-clear what`, **Then** the output says no activity today (not an error).
+2. **Given** no write actions have been taken today, **When** they run `get-clear what`, **Then** the output says "Nothing logged so far today." (not an error).
 3. **Given** actions on two different days, **When** they run `get-clear what this week`, **Then** all actions from the current week appear grouped or labeled by date.
 4. **Given** actions across multiple days, **When** they run `get-clear what yesterday`, **Then** only yesterday's actions appear.
 
@@ -118,8 +118,8 @@ The user uses Get Clear tools throughout the day in different Claude conversatio
 - **FR-006**: `<tool> what` MUST display all log entries for that tool from today, in chronological order.
 - **FR-007**: `get-clear what` MUST display all log entries across all five tools from today, in chronological order.
 - **FR-008**: Both `<tool> what` and `get-clear what` MUST accept an optional time range argument (default: today; also supports `yesterday`, `this week`, `last week`, named days, and date ranges).
-- **FR-009**: `get-clear recap` MUST display a structured, human-readable summary of commitments kept — grouped by type (meetings attended, tasks completed, communications sent) — for the given time range (default: today). It MUST be runnable at any point in the day and always reflect activity so far, not a full-day projection.
-- **FR-009a**: `get-clear recap` MUST draw from four sources: reminders `done` commands (from the log), mail `send` commands (from the log), SMS `send` commands (from the log), and calendar events whose end time has passed (queried from the calendar at report time — not from the write log).
+- **FR-009**: `get-clear recap` MUST display a structured, human-readable summary of commitments kept — grouped by type (from your calendar, tasks completed, sent) — for the given time range (default: today). It MUST be runnable at any point in the day and always reflect activity so far, not a full-day projection.
+- **FR-009a**: `get-clear recap` MUST draw from four sources: reminders `done` commands (from the log), mail `send` commands (from the log), SMS `send` commands (from the log), and past calendar events queried from the calendar at report time — not from the write log. What constitutes "past" follows FR-015: end-time comparison for timed events, date comparison for all-day events.
 - **FR-009b**: `get-clear recap` MUST accept the same time range specifiers as `what` (default: today; also `yesterday`, `this week`, `last week`, named days, date ranges).
 - **FR-009c**: `get-clear recap` output MUST be meaningful and satisfying to read at the CLI without Claude, and MUST also serve as useful structured input when Claude is asked to narrate or interpret the day.
 - **FR-009d**: `get-clear recap` MUST display a timespan derived from the first and last log entry timestamps of the requested period, rounded to the nearest 15 minutes — e.g., "9:00am → 4:45pm". Exact timestamps MUST NOT be shown. Rounding is intentional: it signals that the tool has not captured everything, and sets honest expectations about what the timespan represents. If only one log entry exists, display its rounded timestamp with no end. If no log entries exist, no timespan is shown.
@@ -138,7 +138,7 @@ The user uses Get Clear tools throughout the day in different Claude conversatio
 
 ### Key Entities
 
-- **Log Entry**: A single recorded action. Attributes: timestamp, tool name, command name, human-readable description of the record acted on.
+- **Log Entry**: A single recorded action. Attributes: timestamp, tool name, command name, human-readable description of the record acted on, container name where applicable (reminders list, calendar name).
 - **Daily Log File**: The file containing all entries for a given calendar day. One file per day; all tools contribute to the same shared location.
 - **Recap**: The suite-level view of commitments kept: reminders marked `done`, mail sent, SMS sent, and calendar events that have occurred. The first three come from the write log; past calendar events are queried from the calendar at report time. Suite-level only — no per-tool variant. Queryable by time range.
 
@@ -166,5 +166,5 @@ The user uses Get Clear tools throughout the day in different Claude conversatio
 - The `get-clear` suite-level entry point is a new binary or script in the umbrella repo; its exact form is a planning-phase decision.
 - Log file retention is out of scope for v1 — files accumulate until the user cleans them up.
 - `recap` is a structured view over the shared log (plus a live calendar query), not a separate data store.
-- Time range syntax for `what` reuses existing range parsing already in GetClearKit (`today`, `week`, `yesterday`, `monday`, date ranges).
+- Time range parsing for `what` and `recap` is handled by GetClearKit's range parser. It is broad and accepting — natural language, forgiving of variations, erring toward inclusion. The spec does not enumerate specific formats; the parser is the authority on what it accepts.
 - The log records successful completions only; it is not a debug or audit trail.
