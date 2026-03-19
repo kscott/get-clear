@@ -146,6 +146,7 @@ The user uses Get Clear tools throughout the day in different Claude conversatio
 - **SC-004**: A user can answer "where did I keep my commitments this week?" with a single command and a time range argument — covering task completions, messages sent, and meetings attended — with no gaps caused by missed sessions.
 - **SC-005**: Log entries are written in plain language a non-technical user can understand without knowing the tool's internal syntax.
 - **SC-006**: The `what` command is consistent enough across all five tools that a user who knows `reminders what` can correctly use `calendar what` without reading documentation.
+- **SC-007**: `get-clear recap` output reads as progress, not a ledger. The tone is affirmative — it surfaces what was done in a way that feels like a shoulder tap, not an audit. A user who runs it mid-afternoon should feel the weight of what they've already accomplished.
 
 ## Assumptions
 

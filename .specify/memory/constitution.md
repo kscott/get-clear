@@ -42,6 +42,8 @@ Commands read as plain English, not POSIX syntax. The vocabulary mirrors how you
 
 **Vocabulary test:** When a word choice is uncertain, translate it. The right word survives translation — its meaning is grounded in human experience, not software convention. `done` → *fini/fatto*. `find` → *trouver/trovare/finden*. Both pass. `complete` and `search` do not.
 
+**Tone extends to output, not just commands.** The vocabulary discipline that produces `done` instead of `complete` applies equally to what the tools say back. Output that reads like a report is wrong in the same way a flag is wrong — it's the wrong register. `recap` output should feel like progress, not an audit. The affirmative tone is a design constraint, not a style preference.
+
 ### III. Add/Remove Symmetry (NON-NEGOTIABLE)
 
 Every command that adds something MUST have a corresponding remove. Add and remove MUST ship together — no add without its remove.
