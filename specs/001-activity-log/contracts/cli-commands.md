@@ -1,0 +1,96 @@
+# CLI Command Contracts
+
+## Per-tool: `<tool> what [range]`
+
+Available in all five tools. Displays all log entries for that tool in the requested range.
+
+```
+reminders what
+reminders what yesterday
+reminders what this week
+calendar what last week
+```
+
+**Output format**: Chronological list, one entry per line. Each line: timestamp (time only for today, date+time for multi-day ranges) · command · description · container (if present).
+
+```
+ 2:32pm  done   Call Sarah  [Ibotta]
+ 3:15pm  add    Review PR   [Ibotta]
+ 4:01pm  done   Review PR   [Ibotta]
+```
+
+**Empty state (today)**: `Nothing logged in reminders today.`
+**Empty state (past)**: `Nothing logged in reminders yesterday.` (or appropriate range)
+
+---
+
+## Suite-level: `get-clear what [range]`
+
+Aggregates log entries across all five tools for the requested range.
+
+```
+get-clear what
+get-clear what yesterday
+get-clear what this week
+get-clear what last week
+```
+
+**Output format**: Same as per-tool but includes tool name column. Grouped by date when range spans multiple days.
+
+```
+Wednesday March 19
+
+ 2:32pm  reminders  done   Call Sarah       [Ibotta]
+ 3:15pm  reminders  add    Review PR        [Ibotta]
+ 4:47pm  mail       send   Alex Re: notes
+```
+
+**Empty state (today)**: `Nothing logged so far today.`
+**Empty state (past)**: `Nothing logged yesterday.`
+
+---
+
+## Suite-level: `get-clear recap [range]`
+
+Commitments-kept summary. Suite-level only — no per-tool variant.
+
+```
+get-clear recap
+get-clear recap yesterday
+get-clear recap this week
+get-clear recap last week
+```
+
+**Output format**: Grouped by commitment type, with timespan header.
+
+```
+Wednesday March 19 · 9:00am → 4:45pm
+
+  From your calendar   Sprint review · Trinity Council prep
+  Tasks completed      Call Sarah [Ibotta] · Review PR [Ibotta]
+  Sent                 Email to Alex · Text to Shaun Boyd
+```
+
+Groups are omitted when empty. If all groups are empty:
+- Today: `Quiet so far. Ready for the next thing.` (no timespan shown)
+- Past range: `Nothing logged yesterday.`
+
+**Suppression**: Records added and removed within the range do not appear in any group.
+
+---
+
+## Log Entry Write (internal — not a user-facing command)
+
+Called by each tool's Lib after every successful write command.
+
+```swift
+// GetClearKit public API
+ActivityLog.write(
+    tool: "reminders",
+    cmd: "done",
+    desc: "Call Sarah",
+    container: "Ibotta"  // nil for mail, sms
+)
+```
+
+Writes one JSON Lines entry to `~/.local/share/get-clear/log/YYYY-MM-DD.log` using POSIX `O_APPEND`. Creates directory and file if they don't exist. On failure: silently drops the entry — log write failure MUST NOT cause the tool command to fail.
