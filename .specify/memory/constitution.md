@@ -103,6 +103,41 @@ Stub functions that cannot be implemented honestly MUST be deleted, not left in.
 
 When features are removed, their supporting code goes with them in the same commit. When a function cannot be implemented correctly yet, remove the call site too — do not leave the impression of working logic.
 
+### VIII. Error Output Design *(needs further refinement)*
+
+Three distinct cases. Three distinct treatments. Getting this wrong in either direction — too alarming, too silent, blaming the user for a tool failure — changes the entire feel of the tools. Error output is the last thing the user sees when something went wrong. It shapes trust more than any successful command.
+
+**User input problems** — the user made a mistake the tool can understand.
+*Examples: reminder not found, invalid date, unrecognized list name.*
+
+The tool understood the intent. The data just didn't match. Output must be specific about what failed — not "error" but "No reminder found matching 'Pay rant'." Suggest a correction where confident, but don't guess. Never condescending.
+
+Tone: *I understood what you were trying to do. Here's what I found.*
+Exit non-zero. No stack trace.
+
+**Syntax confusion** — the tool couldn't parse the intent.
+*Examples: wrong number of arguments, unrecognized command, ambiguous input.*
+
+Show just enough usage to guide — one line of syntax, not a wall of text. Don't echo back what the user typed. Point toward `help` for more, but don't make them go looking for the basics.
+
+Tone: *Here's how this command works.*
+Exit non-zero.
+
+**Tool failure** — the tool broke, not the user.
+*Examples: EventKit permission denied, JMAP token expired, unexpected crash, API unreachable.*
+
+Be honest that something went wrong on the tool's side. Never blame the user or make them feel responsible. Where the failure is recoverable, say how — "Run `mail setup` to refresh your token." Where it is not, say that plainly. This is where future telemetry hooks in: if a crash is reportable, say so — "This looks like a bug. If you'd like to report it..." — but only when opt-in telemetry is configured.
+
+Tone: *Something went wrong on our end. Not yours.*
+Exit non-zero.
+
+**Rules that apply to all three cases:**
+- All errors go to stderr via `fail()` — never stdout
+- Exit non-zero — always
+- No silent failures — ever
+- Brevity applies — errors are already friction; don't add to it
+- No stack traces in production output — those go to the error log, not the screen
+
 ## Suite Architecture
 
 ### Repo Structure
