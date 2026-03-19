@@ -15,13 +15,17 @@ Deferred TODOs: none
 
 ## Core Principles
 
-### I. Claude-First, Human-Usable
+### I. Two Equal Modes
 
-Get Clear is designed first for use through Claude and second as a standalone CLI. The primary operator is an AI in a conversation — not a human typing blind. This changes the design frame: commands can be softer (`remove` not `delete`) because the conversation history is the undo log and "oops" is a complete recovery instruction.
+Get Clear works in two modes: direct CLI use (a person typing commands) and Claude-assisted use (Claude issuing commands on the user's behalf). These modes are equal. Neither is primary.
 
-Every command MUST also be usable and legible without Claude. If a command only makes sense when an AI is driving it, the design is wrong. The vocabulary is natural enough that a person can type it directly. Claude is the accelerant, not the requirement.
+A command that only makes sense when Claude is driving it is broken. A command that Claude handles fine but feels awkward to type directly is also broken. Claude's ability to paper over a design problem does not make it not a problem.
 
-**Measure:** Could someone use the tool from a command reference card alone, with no AI assistance? If yes, the design is right.
+The vocabulary is natural enough to type directly — not because direct use is the priority, but because that's the test. If it reads wrong on a command line, the design is wrong. If Claude has to work around it, the design is wrong. Both failure modes are equal failures.
+
+Commands can be softer than traditional CLIs (`remove` not `delete`, `done` not `complete`) because in both modes the context provides the safety net: conversation history when Claude-assisted, the user's own judgment when direct. The safety comes from the design, not from intimidating word choices.
+
+**Measure:** Could someone use the tool from a command reference card alone? And does Claude issue commands that would read naturally if the user had typed them? Both must be yes.
 
 ### II. Conversational Command Vocabulary
 
