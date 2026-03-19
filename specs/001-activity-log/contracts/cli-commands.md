@@ -69,7 +69,7 @@ Wednesday March 19
  9:15am  reminders  add    Team standup prep  [Ibotta]
 ```
 
-**Empty state (today)**: `Nothing logged so far today.`
+**Empty state (today)**: `Nothing logged so far today.` — unless the most recent log entry across all files was within 3 hours, in which case that day's entries are shown instead (FR-018).
 **Empty state (past)**: `Nothing logged yesterday.`
 
 ---
@@ -96,7 +96,7 @@ Wednesday March 19 · 9:00am → 4:45pm
 ```
 
 Groups are omitted when empty. If all groups are empty:
-- Today: `Quiet so far. Ready for the next thing.` (no timespan shown)
+- Today: `Quiet so far. Ready for the next thing.` (no timespan shown) — unless the most recent log entry was within 3 hours, in which case that day's recap is shown instead (FR-018).
 - Past range: `Nothing logged yesterday.`
 
 **Suppression**: Records added and removed within the range do not appear in any group.

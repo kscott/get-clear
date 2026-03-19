@@ -88,6 +88,11 @@ The user uses Get Clear tools throughout the day in different Claude conversatio
 
 ### Edge Cases
 
+**The midnight failure case**
+A user works a full day, closes out at 11:52pm, runs `get-clear recap` at 12:05am to feel the weight of what they accomplished. The clock has crossed midnight. Today's log file is empty. Without a recency rule, the tool returns "Quiet so far. Ready for the next thing." — the opposite of what it promises. This is not a minor UX miss. It is the tool failing at the moment it matters most.
+
+**Recency rule (FR-018):** If today has no log entries, check the most recent log entry across all files. If it was written within 3 hours of now, show that day's entries instead — the user is still in their session. The date header makes the substitution transparent. If the last entry was more than 3 hours ago, treat today as a fresh start. No configuration required — the log knows the rhythm.
+
 **Log mechanics**
 - What happens if the log directory does not exist yet (first run)?
 - What happens if the log file is unreadable or corrupted?
@@ -133,6 +138,7 @@ The user uses Get Clear tools throughout the day in different Claude conversatio
 - **FR-013**: The log storage location MUST be consistent and predictable so the suite-level `get-clear what` can aggregate from a single known location without tool-specific configuration.
 - **FR-014**: The log directory MUST be created automatically on first use — no manual setup required.
 - **FR-015**: When querying past calendar events for `recap`, timed events MUST use end-time comparison; all-day events MUST use date comparison. An all-day event is "occurred" if its calendar date falls within the query range, regardless of whether its exact end timestamp has passed.
+- **FR-018**: When today has no log entries, `what` and `recap` MUST check the most recent log entry across all files. If that entry was written within 3 hours of now, display that day's entries instead — the user is still in their session. The date header must reflect the actual date of the entries shown, making the substitution transparent. If the most recent entry is more than 3 hours old, treat today as a fresh start and apply the normal empty state.
 - **FR-016**: All timestamps MUST be generated from the system clock at the moment of command execution. No timestamp may be supplied by the calling process (e.g., Claude). This applies to log entry timestamps and to the "current time" used when evaluating which calendar events have occurred.
 - **FR-017**: `recap` MUST suppress any record that was both added and removed within the query range, regardless of how much time elapsed between the two actions. A meeting added in the morning and cancelled after lunch is a changed commitment — it MUST NOT appear as a commitment kept. `what` is unaffected and always shows the complete record. This suppression is intentional quiet intelligence: the user who notices the cancelled meeting is absent from `recap` understands the tool is thinking about what actually held up, not just what happened. That recognition is a moment of trust.
 
