@@ -123,7 +123,10 @@ The user uses Get Clear tools throughout the day in different Claude conversatio
 - **FR-009b**: `get-clear recap` MUST accept the same time range specifiers as `what` (default: today; also `yesterday`, `this week`, `last week`, named days, date ranges).
 - **FR-009c**: `get-clear recap` output MUST be meaningful and satisfying to read at the CLI without Claude, and MUST also serve as useful structured input when Claude is asked to narrate or interpret the day.
 - **FR-009d**: `get-clear recap` MUST display a timespan derived from the first and last log entry timestamps of the requested period, rounded to the nearest 15 minutes — e.g., "9:00am → 4:45pm". Exact timestamps MUST NOT be shown. Rounding is intentional: it signals that the tool has not captured everything, and sets honest expectations about what the timespan represents. If only one log entry exists, display its rounded timestamp with no end. If no log entries exist, no timespan is shown.
-- **FR-010**: If no log entries exist for the requested range, the command MUST output a message indicating no activity — not an error or empty screen.
+- **FR-010**: If no log entries exist for the requested range, the output MUST differ based on whether the range is today or a past period:
+  - **Today**: `recap` displays an encouraging message that holds the door open — no mention of absence, just the opportunity remaining. The exact phrasing is still being refined; candidates include "Still quiet." and "The day's still yours." `what` may use a softer variant like "Nothing logged so far today."
+  - **Past ranges**: plain and factual — "Nothing logged yesterday." / "Nothing logged this week." No encouragement; that door is closed. Same rule applies to both `what` and `recap` for past ranges.
+  - Neither case is an error. Empty output with no message is never acceptable.
 - **FR-011**: Log entries MUST be written immediately when an action completes — not buffered or deferred to session end.
 - **FR-012**: Failed commands (those that exit with an error) MUST NOT write a log entry — only successful actions are recorded.
 - **FR-013**: The log storage location MUST be consistent and predictable so the suite-level `get-clear what` can aggregate from a single known location without tool-specific configuration.
