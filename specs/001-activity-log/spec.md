@@ -124,7 +124,7 @@ The user uses Get Clear tools throughout the day in different Claude conversatio
 - **FR-009c**: `get-clear recap` output MUST be meaningful and satisfying to read at the CLI without Claude, and MUST also serve as useful structured input when Claude is asked to narrate or interpret the day.
 - **FR-009d**: `get-clear recap` MUST display a timespan derived from the first and last log entry timestamps of the requested period, rounded to the nearest 15 minutes — e.g., "9:00am → 4:45pm". Exact timestamps MUST NOT be shown. Rounding is intentional: it signals that the tool has not captured everything, and sets honest expectations about what the timespan represents. If only one log entry exists, display its rounded timestamp with no end. If no log entries exist, no timespan is shown.
 - **FR-010**: If no log entries exist for the requested range, the output MUST differ based on whether the range is today or a past period:
-  - **Today**: `recap` displays an encouraging message that holds the door open — no mention of absence, just the opportunity remaining. Exact phrasing: *"Quiet so far. Ready for the next thing you do."* The first sentence names the state without judgment. The second positions the tool as a partner poised to capture what comes next. `what` may use a plainer variant: "Nothing logged so far today."
+  - **Today**: `recap` displays an encouraging message that holds the door open — no mention of absence, just the opportunity remaining. Exact phrasing: *"Quiet so far. Ready for the next thing."* The first sentence names the state without judgment. The second positions the tool as a partner poised to capture what comes next. `what` may use a plainer variant: "Nothing logged so far today."
   - **Past ranges**: plain and factual — "Nothing logged yesterday." / "Nothing logged this week." No encouragement; that door is closed. Same rule applies to both `what` and `recap` for past ranges.
   - Neither case is an error. Empty output with no message is never acceptable.
 - **FR-011**: Log entries MUST be written immediately when an action completes — not buffered or deferred to session end.
@@ -150,7 +150,7 @@ The user uses Get Clear tools throughout the day in different Claude conversatio
 - **SC-004**: A user can answer "where did I keep my commitments this week?" with a single command and a time range argument — covering task completions, messages sent, and meetings attended — with no gaps caused by missed sessions.
 - **SC-005**: Log entries are written in plain language a non-technical user can understand without knowing the tool's internal syntax.
 - **SC-006**: The `what` command is consistent enough across all five tools that a user who knows `reminders what` can correctly use `calendar what` without reading documentation.
-- **SC-007**: `get-clear recap` output reads as progress, not a ledger. The tone is affirmative — it surfaces what was done in a way that feels like a shoulder tap, not an audit. A user who runs it mid-afternoon should feel the weight of what they've already accomplished.
+- **SC-007**: `get-clear recap` output reads as progress, not a ledger. The tone is affirmative — it surfaces what was done in a way that feels like a shoulder tap, not an audit. A user who runs it mid-afternoon should feel the weight of what they've already accomplished. Output is tight: every word earns its place. Do the extra work to make things shorter.
 
 ## Design Notes
 
