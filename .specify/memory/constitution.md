@@ -2,7 +2,7 @@
 Sync Impact Report
 ==================
 Version change: (initial) → 1.0.0
-Added sections: Core Principles (I–VII), Suite Architecture, Development Standards, Governance
+Added sections: Core Principles (I–VIII), Suite Architecture, Development Standards, Governance
 Modified principles: n/a (first ratification)
 Templates updated:
   - .specify/templates/plan-template.md ✅ (no principle conflicts found)
@@ -216,6 +216,6 @@ This constitution supersedes all other development guidance when conflicts arise
 3. Update `LAST_AMENDED_DATE` to the merge date
 4. Propagate changes to templates if affected
 
-All implementation work MUST verify compliance with Core Principles I–VII before merge. When a principle is in tension with a proposed feature, resolve the tension first — do not ship around it.
+All implementation work MUST verify compliance with Core Principles I–VIII before merge. When a principle is in tension with a proposed feature, resolve the tension first — do not ship around it.
 
 **Version**: 1.0.0 | **Ratified**: 2026-03-18 | **Last Amended**: 2026-03-18
