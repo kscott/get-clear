@@ -7,19 +7,22 @@
 
 ## User Scenarios & Testing *(mandatory)*
 
-### User Story 1 — See What I Got Done Today (Priority: P1)
+### User Story 1 — See Everything I Did (Priority: P1)
 
-At the end of a busy day, the user asks Claude "what did I get done today?" Claude runs `get-clear what` and returns a complete, timestamped list of every action taken across all five tools that day — reminders added and completed, events added, contacts updated, messages and emails sent.
+The user runs `get-clear what` and gets a complete, timestamped, chronological list of every write action taken across all five tools — reminders added and completed, events added, contacts updated, messages and emails sent. This is the raw log: accurate, complete, uninterpreted. Good for filling a timesheet, scanning what happened, or feeding to Claude for further analysis.
 
-**Why this priority**: This is the core feedback loop. Every other story builds on the log existing and being queryable. It delivers immediate value with no UI beyond the command itself.
+Time range defaults to today but accepts specifiers: `get-clear what yesterday`, `get-clear what this week`, `get-clear what last week`, or any date range supported by GetClearKit's range parser.
 
-**Independent Test**: Use all five tools to take at least one write action each. Then run `get-clear what` and confirm every action appears with a timestamp and the tool that produced it.
+**Why this priority**: This is the foundation. Every other story depends on the log existing and being complete. Raw log output delivers immediate value with no interpretation required.
+
+**Independent Test**: Use all five tools to take at least one write action each. Run `get-clear what` and confirm every action appears with a timestamp and the tool that produced it.
 
 **Acceptance Scenarios**:
 
 1. **Given** the user has added a reminder and sent an SMS today, **When** they run `get-clear what`, **Then** both actions appear in chronological order with timestamps and the tool name.
 2. **Given** no write actions have been taken today, **When** they run `get-clear what`, **Then** the output says no activity today (not an error).
-3. **Given** actions on two different days, **When** they run `get-clear what`, **Then** only today's actions appear.
+3. **Given** actions on two different days, **When** they run `get-clear what this week`, **Then** all actions from the current week appear grouped or labeled by date.
+4. **Given** actions across multiple days, **When** they run `get-clear what yesterday`, **Then** only yesterday's actions appear.
 
 ---
 
@@ -38,29 +41,33 @@ The user wants to review what reminders were touched today, or what calendar eve
 
 ---
 
-### User Story 3 — Where Did I Keep My Commitments Today (Priority: P3)
+### User Story 3 — Get a Recap (Priority: P3)
 
-The user asks "where did I keep my commitments today?" and gets a focused view of follow-through — not all activity, but specifically the moments of fulfillment: tasks completed, messages sent, meetings attended. This is the done report: evidence of character over time.
+The user runs `get-clear recap` at any point in the day — morning, midday, end of day — and gets a structured, human-readable summary of where they've shown up so far. Not a raw log, but an interpreted view: commitments kept, things moved forward, the shape of the day. Satisfying to read on its own at the CLI, and exactly what Claude needs to compose a narrative when asked "how's my day going?"
 
-The done report draws from four sources:
+`recap` is not a finalizing action — it can be run any number of times. Run it midday for a pick-me-up. Run it before a 1:1 to remember what you've shipped. Run it at end of day to feel the weight of what got done. The output reflects what has happened so far, not what was planned.
+
+`recap` accepts the same time range specifiers as `what` (default: today; also `yesterday`, `this week`, `last week`, date ranges).
+
+The recap draws from four sources:
 - **Reminders `done`** — task commitments explicitly closed out
-- **Mail sent** — communication commitments fulfilled (the send is the done; it may have resolved something that never needed a reminder)
+- **Mail sent** — communication commitments fulfilled (the send is the done)
 - **SMS sent** — same; a quick message kept a relationship or resolved a thread
-- **Calendar events that occurred** — time commitments honored; past events are queried automatically, no explicit close action required
+- **Calendar events that occurred** — time commitments honored; queried from the calendar, not the log
 
-When a meeting ends and the user processes it with Claude ("I had the meeting, here are the notes"), the resulting reminders added, contacts updated, and follow-ups set also appear in the done report through their own tools. The meeting and its follow-through are both visible.
+When a meeting is processed with Claude afterward ("I had the meeting, here are the notes"), the resulting reminders, contacts, and follow-ups appear in the recap through their own tools — the meeting and its follow-through visible together.
 
-**Why this priority**: The done report is more motivating than the daily log because it shows follow-through, not just activity. It answers a different question: not "what happened?" but "where did I show up?"
+**Why this priority**: The recap answers a different question than `what`. Not "what happened?" but "where did I show up?" That reframe — from activity to character — is what makes it motivating.
 
-**Independent Test**: Complete a reminder, send an email, and have a calendar event pass. Run the done report and confirm all three appear under their respective categories.
+**Independent Test**: Complete a reminder, send an email, and have a calendar event pass. Run `get-clear recap` mid-afternoon. Confirm the output is structured by commitment type, reads as a meaningful summary, and excludes scaffolding activity (adds, changes).
 
 **Acceptance Scenarios**:
 
-1. **Given** a reminder marked done, an email sent, and an SMS sent today, **When** they run the done report, **Then** all three appear as commitments kept — grouped or labeled by type.
-2. **Given** reminders added but not completed, **When** they run the done report, **Then** the adds do not appear — only the `done` actions.
-3. **Given** a calendar event whose end time has passed, **When** they run the done report, **Then** the event appears as a kept time commitment — queried from the calendar, not from the write log.
-4. **Given** the done report for the week, **When** they run it, **Then** completions, sends, and past events appear across all days in range — with no gaps from missed sessions.
-5. **Given** a meeting processed with Claude after it ended ("I had the meeting, here are the notes"), **When** they run the done report, **Then** both the past calendar event and the follow-up reminders or contacts changes appear.
+1. **Given** a reminder marked done, an email sent, and an SMS sent today, **When** they run `get-clear recap`, **Then** all three appear as commitments kept — structured by type, not as a raw list.
+2. **Given** reminders added but not completed, **When** they run `get-clear recap`, **Then** the adds do not appear — only `done` actions count as commitments kept.
+3. **Given** a calendar event whose end time has passed, **When** they run `get-clear recap`, **Then** the event appears as a kept time commitment.
+4. **Given** a busy morning with 10 actions, **When** the user runs `get-clear recap` at noon, **Then** the output reflects only what has happened so far — not the full day, not a projection.
+5. **Given** `get-clear recap this week`, **When** they run it, **Then** commitments kept appear across all days in range with no gaps from missed sessions.
 
 ---
 
@@ -110,8 +117,11 @@ The user uses Get Clear tools throughout the day in different Claude conversatio
 - **FR-005**: The `what` command MUST be available in all five tools and in a suite-level `get-clear what` entry point.
 - **FR-006**: `<tool> what` MUST display all log entries for that tool from today, in chronological order.
 - **FR-007**: `get-clear what` MUST display all log entries across all five tools from today, in chronological order.
-- **FR-008**: Both `<tool> what` and `get-clear what` MUST accept an optional time range argument (default: today; also supports `week`, `yesterday`, named days, and date ranges).
-- **FR-009**: The done report MUST draw from four sources: reminders `done` commands (from the log), mail `send` commands (from the log), SMS `send` commands (from the log), and calendar events whose end time has passed (queried from the calendar at report time — not from the write log).
+- **FR-008**: Both `<tool> what` and `get-clear what` MUST accept an optional time range argument (default: today; also supports `yesterday`, `this week`, `last week`, named days, and date ranges).
+- **FR-009**: `get-clear recap` MUST display a structured, human-readable summary of commitments kept — grouped by type (meetings attended, tasks completed, communications sent) — for the given time range (default: today). It MUST be runnable at any point in the day and always reflect activity so far, not a full-day projection.
+- **FR-009a**: `get-clear recap` MUST draw from four sources: reminders `done` commands (from the log), mail `send` commands (from the log), SMS `send` commands (from the log), and calendar events whose end time has passed (queried from the calendar at report time — not from the write log).
+- **FR-009b**: `get-clear recap` MUST accept the same time range specifiers as `what` (default: today; also `yesterday`, `this week`, `last week`, named days, date ranges).
+- **FR-009c**: `get-clear recap` output MUST be meaningful and satisfying to read at the CLI without Claude, and MUST also serve as useful structured input when Claude is asked to narrate or interpret the day.
 - **FR-010**: If no log entries exist for the requested range, the command MUST output a message indicating no activity — not an error or empty screen.
 - **FR-011**: Log entries MUST be written immediately when an action completes — not buffered or deferred to session end.
 - **FR-012**: Failed commands (those that exit with an error) MUST NOT write a log entry — only successful actions are recorded.
