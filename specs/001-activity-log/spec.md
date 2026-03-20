@@ -2,7 +2,7 @@
 
 **Feature Branch**: `001-activity-log`
 **Created**: 2026-03-18
-**Status**: Draft
+**Status**: Shipped (2026-03-19, branch `001-activity-log`)
 **Input**: User description: "Activity log and done report: every write command across all five tools logs a timestamped entry to a daily log file. The what command surfaces the log per-tool and suite-wide. Reminders done report shows completions over time."
 
 ## User Scenarios & Testing *(mandatory)*

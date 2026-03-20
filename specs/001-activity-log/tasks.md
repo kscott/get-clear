@@ -11,10 +11,10 @@
 
 **Repo**: `~/dev/get-clear/`
 
-- [ ] T001 Create `Sources/GetClearKit/ActivityLog.swift` — POSIX O_APPEND writer; `ActivityLog.write(tool:cmd:desc:container:)`; creates `~/.local/share/get-clear/log/` on first use; silent on failure (never propagates errors)
-- [ ] T002 Create `Sources/GetClearKit/ActivityLogReader.swift` — JSONL parser; `ActivityLogReader.entries(for:tool:)` with date range filter; skips malformed lines silently; implements FR-018 recency rule (3-hour window)
-- [ ] T003 Create `Sources/GetClearKit/TimespanFormatter.swift` — rounds timestamps to nearest 15 minutes; formats range string "9:00am → 4:45pm"; handles single-entry and no-entry cases (FR-009d)
-- [ ] T004 Create `Tests/GetClearKitTests/ActivityLogTests.swift` — covers:
+- [x] T001 Create `Sources/GetClearKit/ActivityLog.swift` — POSIX O_APPEND writer; `ActivityLog.write(tool:cmd:desc:container:)`; creates `~/.local/share/get-clear/log/` on first use; silent on failure (never propagates errors)
+- [x] T002 Create `Sources/GetClearKit/ActivityLogReader.swift` — JSONL parser; `ActivityLogReader.entries(for:tool:)` with date range filter; skips malformed lines silently; implements FR-018 recency rule (3-hour window)
+- [x] T003 Create `Sources/GetClearKit/TimespanFormatter.swift` — rounds timestamps to nearest 15 minutes; formats range string "9:00am → 4:45pm"; handles single-entry and no-entry cases (FR-009d)
+- [x] T004 Create `Tests/GetClearKitTests/ActivityLogTests.swift` — covers:
   - Write produces valid JSONL line with all fields
   - Reader parses and filters by tool, date range, command
   - Reader skips malformed/unknown lines without crashing
@@ -35,11 +35,11 @@
 try? ActivityLog.write(tool: "<tool>", cmd: "<cmd>", desc: <title/name/recipient>, container: <list/calendar/nil>)
 ```
 
-- [ ] T005 [P] **reminders-cli** — `Sources/RemindersLib/`: add `ActivityLog.write()` after `add`, `remove`, `change`, `rename`, `done`. Container = list name (always). Repo: `~/dev/reminders-cli/`
-- [ ] T006 [P] **calendar-cli** — `Sources/CalendarLib/`: add `ActivityLog.write()` after `add`, `remove`. Container = calendar name (always). Repo: `~/dev/calendar-cli/`
-- [ ] T007 [P] **contacts-cli** — `Sources/ContactsLib/`: add `ActivityLog.write()` after `add`, `remove`, `change`, `rename`. Container = group name for `add to` / `remove from` ops; nil for contact-level ops. Repo: `~/dev/contacts-cli/`
-- [ ] T008 [P] **mail-cli** — `Sources/MailLib/`: add `ActivityLog.write()` after `send`. Container = nil. Repo: `~/dev/mail-cli/`
-- [ ] T009 [P] **sms-cli** — `Sources/SMSLib/`: add `ActivityLog.write()` after `send`. Container = nil. Repo: `~/dev/sms-cli/`
+- [x] T005 [P] **reminders-cli** — `Sources/RemindersLib/`: add `ActivityLog.write()` after `add`, `remove`, `change`, `rename`, `done`. Container = list name (always). Repo: `~/dev/reminders-cli/`
+- [x] T006 [P] **calendar-cli** — `Sources/CalendarLib/`: add `ActivityLog.write()` after `add`, `remove`. Container = calendar name (always). Repo: `~/dev/calendar-cli/`
+- [x] T007 [P] **contacts-cli** — `Sources/ContactsLib/`: add `ActivityLog.write()` after `add`, `remove`, `change`, `rename`. Container = group name for `add to` / `remove from` ops; nil for contact-level ops. Repo: `~/dev/contacts-cli/`
+- [x] T008 [P] **mail-cli** — `Sources/MailLib/`: add `ActivityLog.write()` after `send`. Container = nil. Repo: `~/dev/mail-cli/`
+- [x] T009 [P] **sms-cli** — `Sources/SMSLib/`: add `ActivityLog.write()` after `send`. Container = nil. Repo: `~/dev/sms-cli/`
 
 **Checkpoint** (US4 — Log Survives Across Sessions): In two separate terminal sessions, perform one write action each. Run `cat ~/.local/share/get-clear/log/$(date +%Y-%m-%d).log` in a third session and confirm both entries are present.
 
@@ -51,11 +51,11 @@ try? ActivityLog.write(tool: "<tool>", cmd: "<cmd>", desc: <title/name/recipient
 
 **Output contract**: See `contracts/cli-commands.md` — chronological list, timestamp · cmd · desc · [container]. Date header for any non-today range. Empty state: "Nothing recorded in <tool> today." / "Nothing recorded in <tool> yesterday."
 
-- [ ] T010 [P] **reminders-cli** — `Sources/RemindersCLI/main.swift`: add `what [range]` dispatch; call `ActivityLogReader.entries(for: range, tool: "reminders")`; format and print per contract. Repo: `~/dev/reminders-cli/`
-- [ ] T011 [P] **calendar-cli** — same pattern, tool: "calendar". Repo: `~/dev/calendar-cli/`
-- [ ] T012 [P] **contacts-cli** — same pattern, tool: "contacts". Repo: `~/dev/contacts-cli/`
-- [ ] T013 [P] **mail-cli** — same pattern, tool: "mail". Repo: `~/dev/mail-cli/`
-- [ ] T014 [P] **sms-cli** — same pattern, tool: "sms". Repo: `~/dev/sms-cli/`
+- [x] T010 [P] **reminders-cli** — `Sources/RemindersCLI/main.swift`: add `what [range]` dispatch; call `ActivityLogReader.entries(for: range, tool: "reminders")`; format and print per contract. Repo: `~/dev/reminders-cli/`
+- [x] T011 [P] **calendar-cli** — same pattern, tool: "calendar". Repo: `~/dev/calendar-cli/`
+- [x] T012 [P] **contacts-cli** — same pattern, tool: "contacts". Repo: `~/dev/contacts-cli/`
+- [x] T013 [P] **mail-cli** — same pattern, tool: "mail". Repo: `~/dev/mail-cli/`
+- [x] T014 [P] **sms-cli** — same pattern, tool: "sms". Repo: `~/dev/sms-cli/`
 
 **Independent test per tool**: Add a reminder, run `reminders what` — confirm the action appears with timestamp and no other tools' entries. Run `reminders what yesterday` — confirm date header appears.
 
@@ -67,12 +67,12 @@ try? ActivityLog.write(tool: "<tool>", cmd: "<cmd>", desc: <title/name/recipient
 
 **Repo**: `~/dev/get-clear/`
 
-- [ ] T015 Add `GetClear` executable target to `Package.swift`:
+- [x] T015 Add `GetClear` executable target to `Package.swift`:
   ```swift
   .executableTarget(name: "get-clear", dependencies: ["GetClearKit"], path: "Sources/GetClear")
   ```
-- [ ] T016 Create `Sources/GetClear/main.swift` — dispatch `what [range]` and `recap [range]` (recap stubbed for now)
-- [ ] T017 Implement `get-clear what [range]` — call `ActivityLogReader.entries(for: range, tool: nil)` (all tools); format per contract: timestamp · tool · cmd · desc · [container]; date header rule; multi-day gap handling (skip empty days, "X of Y days recorded" footer); FR-018 recency rule
+- [x] T016 Create `Sources/GetClear/main.swift` — dispatch `what [range]` and `recap [range]` (recap stubbed for now)
+- [x] T017 Implement `get-clear what [range]` — call `ActivityLogReader.entries(for: range, tool: nil)` (all tools); format per contract: timestamp · tool · cmd · desc · [container]; date header rule; multi-day gap handling (skip empty days, "X of Y days recorded" footer); FR-018 recency rule
 
 **Independent test** (US1): Use all five tools for at least one write action each. Run `get-clear what` — confirm all actions appear in chronological order with tool column.
 
@@ -84,13 +84,13 @@ try? ActivityLog.write(tool: "<tool>", cmd: "<cmd>", desc: <title/name/recipient
 
 **Repo**: `~/dev/get-clear/`
 
-- [ ] T018 Add EventKit entitlement: create `Sources/GetClear/get-clear.entitlements` with `com.apple.security.personal-information.calendars` and `com.apple.security.personal-information.reminders`
-- [ ] T019 Create `Sources/GetClearKit/RecapAggregator.swift` — coordinates three live queries:
+- [x] T018 Add EventKit entitlement: create `Sources/GetClear/get-clear.entitlements` with `com.apple.security.personal-information.calendars` and `com.apple.security.personal-information.reminders`
+- [x] T019 Create `Sources/GetClearKit/RecapAggregator.swift` — coordinates three live queries:
   - **Reminders**: `EKEventStore.predicateForReminders(in:)` + filter by `completionDate` in range (FR-009a)
   - **Calendar**: `EKEventStore.predicateForEvents(withStart:end:)` + post-filter per FR-015 (end-time for timed events, date comparison for all-day)
   - **Mail + SMS sent**: `ActivityLogReader` filtered to `cmd: "send"` from `mail` and `sms`
   - Returns `RecapResult` with groups and timespan
-- [ ] T020 Implement `get-clear recap [range]` output in `Sources/GetClear/main.swift`:
+- [x] T020 Implement `get-clear recap [range]` output in `Sources/GetClear/main.swift`:
   - Timespan header: "Wednesday March 19 · 9:00am → 4:45pm" (FR-009d, rounded to 15 min)
   - Groups in order: "From your calendar", "Tasks completed", "Sent"
   - Omit empty groups
@@ -105,9 +105,9 @@ try? ActivityLog.write(tool: "<tool>", cmd: "<cmd>", desc: <title/name/recipient
 
 ## Phase 6: Polish
 
-- [ ] T021 [P] Update `get-clear` README / install docs to document `what` and `recap` commands
-- [ ] T022 [P] Verify `get-clear what` returns in under 1 second for a full week range (SC-002)
-- [ ] T023 Manual end-to-end: FR-018 midnight edge case — set system time to 12:05am with a full prior day's log, confirm `get-clear what` and `get-clear recap` show previous day's data with date header
+- [x] T021 [P] Update `get-clear` README / install docs to document `what` and `recap` commands
+- [x] T022 [P] Verify `get-clear what` returns in under 1 second for a full week range (SC-002)
+- [x] T023 Manual end-to-end: FR-018 midnight edge case — set system time to 12:05am with a full prior day's log, confirm `get-clear what` and `get-clear recap` show previous day's data with date header
 
 ---
 
