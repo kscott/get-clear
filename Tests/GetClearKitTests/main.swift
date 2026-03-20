@@ -202,6 +202,25 @@ final class TestRunner: @unchecked Sendable {
             expect("3-part nonsense nil",  parseDate("foo bar baz") == nil)
         }
 
+        suite("Abbreviated month names — parseDate") {
+            // Regression: "Mar 20, 2026" was not recognised (reminders-cli #16)
+            let mar20 = parseDate("mar 20, 2026")
+            expect("mar 20, 2026 — not nil",  mar20 != nil)
+            expect("mar 20, 2026 — month 3",  mar20.map { cal.component(.month, from: $0.date) } == 3)
+            expect("mar 20, 2026 — day 20",   mar20.map { cal.component(.day,   from: $0.date) } == 20)
+            expect("mar 20, 2026 — year 2026",mar20.map { cal.component(.year,  from: $0.date) } == 2026)
+
+            let jan5 = parseDate("jan 5")
+            expect("jan 5 — not nil",   jan5 != nil)
+            expect("jan 5 — month 1",   jan5.map { cal.component(.month, from: $0.date) } == 1)
+            expect("jan 5 — day 5",     jan5.map { cal.component(.day,   from: $0.date) } == 5)
+
+            let dec31 = parseDate("dec 31, 2027")
+            expect("dec 31, 2027 — not nil",   dec31 != nil)
+            expect("dec 31, 2027 — month 12",  dec31.map { cal.component(.month, from: $0.date) } == 12)
+            expect("dec 31, 2027 — year 2027", dec31.map { cal.component(.year,  from: $0.date) } == 2027)
+        }
+
         // MARK: - RangeParser: single-day shorthands
 
         suite("Single-day shorthands") {

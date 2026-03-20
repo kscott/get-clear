@@ -7,8 +7,8 @@
 //   Relative days:  "today", "tomorrow"
 //   Weekday names:  "monday" … "sunday"  (next future occurrence)
 //   next/this:      "next friday", "this monday"  (same as bare weekday)
-//   Month + day:    "march 15"           (rolls to next year if past)
-//   Month+day+year: "march 10 2027", "march 10, 2027", "10 march 2027"
+//   Month + day:    "march 15", "mar 15"  (rolls to next year if past)
+//   Month+day+year: "march 10 2027", "march 10, 2027", "10 march 2027", "mar 20, 2026"
 //   ISO date:       "2026-03-15"
 //   US date:        "3/10/2027", "3/10/27"
 //   Short date:     "3/15" or "3-15"     (rolls to next year if past)
@@ -81,7 +81,9 @@ public func parseDate(_ input: String) -> ParsedDate? {
     let weekdays = ["sunday":1,"monday":2,"tuesday":3,"wednesday":4,
                     "thursday":5,"friday":6,"saturday":7]
     let months   = ["january":1,"february":2,"march":3,"april":4,"may":5,"june":6,
-                    "july":7,"august":8,"september":9,"october":10,"november":11,"december":12]
+                    "july":7,"august":8,"september":9,"october":10,"november":11,"december":12,
+                    "jan":1,"feb":2,"mar":3,"apr":4,"jun":6,
+                    "jul":7,"aug":8,"sep":9,"oct":10,"nov":11,"dec":12]
 
     let dayTrimmed = dayPart.trimmingCharacters(in: .whitespaces)
 
