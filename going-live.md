@@ -127,11 +127,13 @@ quickly once real people use them.
   - `Flags.swift` — isVersionFlag(), isHelpFlag() shared across all tools
   - Shipped 2026-03-15; closed get-clear #13
 
-- [ ] **Update notifier** (new)
-  - Check-on-invocation: reads cached notify file, prints one-liner if behind, fires background check at most once per 24h
-  - Uses `pkgutil --pkg-info com.kenscott.get-clear` for installed version — naturally skips on dev machine
-  - Check script bundled in PKG at `/usr/local/share/get-clear/check-update.sh`; each binary launches it in background
-  - Will live in GetClearKit once built
+- [x] **Update notifier** (new)
+  - `UpdateChecker` in GetClearKit — pkgutil version detection, cache read/write, semver comparison, background spawn
+  - `get-clear check-update` hidden subcommand — hits GitHub API, writes cache; silent
+  - `get-clear update` — compares versions, downloads PKG, warns about password, opens Installer.app
+  - ⭐ hint on stderr after stdout, at most once per hour; wired into all five tools + get-clear commands
+  - CI now creates versioned `v{VERSION}` tag alongside rolling `latest` tag
+  - Shipped 2026-03-19; v1.2.0
 
 - [x] **Close resolved GitHub issues**
   - contacts #3 — multi-value email/phone — closed ✓

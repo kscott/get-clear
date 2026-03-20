@@ -2,7 +2,7 @@
 
 **Feature Branch**: `002-update-notifier`
 **Created**: 2026-03-19
-**Status**: Ratified (2026-03-19)
+**Status**: Shipped (2026-03-19, branch `main`, v1.2.0)
 **Input**: User description: "When a new version ships, the user should find out the next time they use any tool — without checking anything manually. `get-clear update` downloads and installs the new PKG. Tools handle what they can; they do not push work back to the user."
 
 ## User Scenarios & Testing *(mandatory)*
