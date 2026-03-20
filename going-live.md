@@ -78,11 +78,12 @@ Nothing embarrassing should make it to a real person. Test this end to end.
 These aren't bugs — the tools work — but they're missing pieces that will come up
 quickly once real people use them.
 
-- [ ] **Activity log + reminders done report** (get-clear #1, #2)
-  - Every action across all five tools writes a timestamped log entry
-  - `get-clear what` / `reminders what` / `calendar what` to review
-  - This is the feedback loop. Without it, the suite helps you do things but doesn't
-    show you that you're doing them. Load-bearing for the vision.
+- [x] **Activity log, what, and recap** (get-clear #1, #2)
+  - Every write command across all five tools logs a timestamped entry to `~/.local/share/get-clear/log/`
+  - `get-clear what [range]` / `<tool> what [range]` — complete action log
+  - `get-clear recap [range]` — commitments kept: calendar events, completed reminders, mail/sms sent
+  - FR-018 midnight recency rule — never shows empty when you just finished a full day
+  - Shipped 2026-03-19; branch `001-activity-log`
 
 - [x] **calendar setup** (calendar #11)
   - Guided, interactive config.toml creation: `calendar setup`
@@ -182,7 +183,7 @@ Good problems to have. Build after real users are using the tools and giving fee
 | 0 | ~~PKG won't build~~ | ~~Developer ID Installer cert~~ ✅ |
 | 1 | Nothing to point people to | README.md + why.md |
 | 2 | Install experience unvalidated | Clean-machine PKG + curl installer test |
-| 3 | Missing feedback loop | Activity log + done report |
+| 3 | ~~Missing feedback loop~~ | ~~Activity log + done report~~ ✅ |
 | 3 | mail broken for non-Fastmail users | No-backend fallback (mailto: / clipboard) |
 | 3 | Experience gaps | calendar setup command |
 | 3 | ~~Incomplete vision~~ | ~~Color output, GetClearKit migrations (#10–13)~~ ✅ |

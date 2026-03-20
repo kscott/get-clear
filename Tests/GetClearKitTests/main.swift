@@ -435,6 +435,201 @@ final class TestRunner: @unchecked Sendable {
             expect("multi-day description includes em-dash", multiDesc.contains("–"))
         }
 
+        // MARK: - ActivityLog
+
+        suite("ActivityLog write — file creation") {
+            let tempDir = FileManager.default.temporaryDirectory
+                .appendingPathComponent("gc-test-\(UUID().uuidString)")
+            try? ActivityLog.write(tool: "reminders", cmd: "done", desc: "Call Sarah",
+                                   container: "Ibotta", baseDirectory: tempDir)
+            let today = ISO8601DateFormatter.logFileDateString(Date())
+            let file = tempDir.appendingPathComponent("\(today).log")
+            expect("log directory is created", FileManager.default.fileExists(atPath: tempDir.path))
+            expect("log file is created", FileManager.default.fileExists(atPath: file.path))
+        }
+
+        suite("ActivityLog write — entry content") {
+            let tempDir = FileManager.default.temporaryDirectory
+                .appendingPathComponent("gc-test-\(UUID().uuidString)")
+            try? ActivityLog.write(tool: "reminders", cmd: "done", desc: "Call Sarah",
+                                   container: "Ibotta", baseDirectory: tempDir)
+            let today = ISO8601DateFormatter.logFileDateString(Date())
+            let file = tempDir.appendingPathComponent("\(today).log")
+            let content = (try? String(contentsOf: file, encoding: .utf8)) ?? ""
+            let lines = content.split(separator: "\n", omittingEmptySubsequences: true)
+            expect("exactly one line written", lines.count == 1)
+            let data = Data(lines[0].utf8)
+            let entry = try? JSONDecoder.logDecoder().decode(ActivityLogEntry.self, from: data)
+            expect("entry parses as ActivityLogEntry", entry != nil)
+            expect("tool is correct",      entry?.tool      == "reminders")
+            expect("cmd is correct",       entry?.cmd       == "done")
+            expect("desc is correct",      entry?.desc      == "Call Sarah")
+            expect("container is correct", entry?.container == "Ibotta")
+            expect("ts is recent",         entry.map { abs($0.ts.timeIntervalSinceNow) < 5 } == true)
+        }
+
+        suite("ActivityLog write — nil container") {
+            let tempDir = FileManager.default.temporaryDirectory
+                .appendingPathComponent("gc-test-\(UUID().uuidString)")
+            try? ActivityLog.write(tool: "mail", cmd: "send", desc: "Alex Re: notes",
+                                   container: nil, baseDirectory: tempDir)
+            let today = ISO8601DateFormatter.logFileDateString(Date())
+            let file = tempDir.appendingPathComponent("\(today).log")
+            let content = (try? String(contentsOf: file, encoding: .utf8)) ?? ""
+            expect("nil container serializes as null", content.contains("\"container\":null"))
+            let data = Data(content.trimmingCharacters(in: .whitespacesAndNewlines).utf8)
+            let entry = try? JSONDecoder.logDecoder().decode(ActivityLogEntry.self, from: data)
+            expect("container field is nil after round-trip", entry?.container == nil)
+        }
+
+        suite("ActivityLog write — appends, does not overwrite") {
+            let tempDir = FileManager.default.temporaryDirectory
+                .appendingPathComponent("gc-test-\(UUID().uuidString)")
+            try? ActivityLog.write(tool: "reminders", cmd: "add",  desc: "First",  container: nil, baseDirectory: tempDir)
+            try? ActivityLog.write(tool: "reminders", cmd: "done", desc: "Second", container: nil, baseDirectory: tempDir)
+            let today = ISO8601DateFormatter.logFileDateString(Date())
+            let file = tempDir.appendingPathComponent("\(today).log")
+            let content = (try? String(contentsOf: file, encoding: .utf8)) ?? ""
+            let lines = content.split(separator: "\n", omittingEmptySubsequences: true)
+            expect("both entries present", lines.count == 2)
+            expect("first entry is first",  lines[0].contains("\"First\""))
+            expect("second entry is second", lines[1].contains("\"Second\""))
+        }
+
+        // MARK: - ActivityLogReader
+
+        suite("ActivityLogReader — basic parse and filter") {
+            let tempDir = FileManager.default.temporaryDirectory
+                .appendingPathComponent("gc-test-\(UUID().uuidString)")
+            try? FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
+            let today = ISO8601DateFormatter.logFileDateString(Date())
+            let file = tempDir.appendingPathComponent("\(today).log")
+            let lines = [
+                #"{"ts":"2026-03-19T14:32:00Z","tool":"reminders","cmd":"done","desc":"Call Sarah","container":"Ibotta"}"#,
+                #"{"ts":"2026-03-19T15:15:00Z","tool":"mail","cmd":"send","desc":"Alex Re: notes","container":null}"#,
+                #"{"ts":"2026-03-19T16:01:00Z","tool":"reminders","cmd":"add","desc":"Review PR","container":"Ibotta"}"#,
+            ].joined(separator: "\n") + "\n"
+            try? lines.write(to: file, atomically: true, encoding: .utf8)
+            let range = parseRange("today")!
+            let all = ActivityLogReader.entries(in: range.start...range.end, tool: nil, baseDirectory: tempDir)
+            expect("reads all 3 entries",      all.count == 3)
+            let remOnly = ActivityLogReader.entries(in: range.start...range.end, tool: "reminders", baseDirectory: tempDir)
+            expect("filters to 2 reminders entries", remOnly.count == 2)
+            let mailOnly = ActivityLogReader.entries(in: range.start...range.end, tool: "mail", baseDirectory: tempDir)
+            expect("filters to 1 mail entry",  mailOnly.count == 1)
+        }
+
+        suite("ActivityLogReader — skips malformed lines") {
+            let tempDir = FileManager.default.temporaryDirectory
+                .appendingPathComponent("gc-test-\(UUID().uuidString)")
+            try? FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
+            let today = ISO8601DateFormatter.logFileDateString(Date())
+            let file = tempDir.appendingPathComponent("\(today).log")
+            let lines = [
+                #"not json at all"#,
+                #"{"ts":"2026-03-19T14:32:00Z","tool":"reminders","cmd":"done","desc":"Good entry","container":null}"#,
+                #"{"ts":"broken-date","tool":"reminders","cmd":"done","desc":"Bad ts","container":null}"#,
+                #"{"ts":"2026-03-19T14:33:00Z","tool":"unknown-tool","cmd":"done","desc":"Unknown tool","container":null}"#,
+                #"{"ts":"2026-03-19T14:34:00Z","tool":"reminders","cmd":"done","desc":"","container":null}"#,
+            ].joined(separator: "\n") + "\n"
+            try? lines.write(to: file, atomically: true, encoding: .utf8)
+            let range = parseRange("today")!
+            let entries = ActivityLogReader.entries(in: range.start...range.end, tool: nil, baseDirectory: tempDir)
+            expect("only 1 valid entry survives", entries.count == 1)
+            expect("surviving entry is the good one", entries.first?.desc == "Good entry")
+        }
+
+        suite("ActivityLogReader — FR-018 recency rule") {
+            let tempDir = FileManager.default.temporaryDirectory
+                .appendingPathComponent("gc-test-\(UUID().uuidString)")
+            try? FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
+
+            // Write an entry timestamped 2 hours ago into yesterday's file
+            let recentNow = Date()
+            let twoHoursAgo = recentNow.addingTimeInterval(-2 * 3600)
+            let yesterdayStr = ISO8601DateFormatter.logFileDateString(
+                cal.date(byAdding: .day, value: -1, to: recentNow)!)
+            let file = tempDir.appendingPathComponent("\(yesterdayStr).log")
+            let formatter = ISO8601DateFormatter()
+            let tsStr = formatter.string(from: twoHoursAgo)
+            let line = #"{"ts":"\#(tsStr)","tool":"reminders","cmd":"done","desc":"Late night task","container":null}"# + "\n"
+            try? line.write(to: file, atomically: true, encoding: .utf8)
+
+            // Today's file is empty — FR-018 should kick in (within 3 hours)
+            let todayRange = parseRange("today")!
+            let result = ActivityLogReader.entriesForDisplay(
+                in: todayRange.start...todayRange.end,
+                now: recentNow,
+                baseDirectory: tempDir)
+            expect("FR-018: shows yesterday's entry when within 3 hours", result.entries.count == 1)
+            expect("FR-018: reported date is yesterday, not today",
+                   !cal.isDateInToday(result.dateUsed))
+
+            // Entry more than 3 hours ago — FR-018 should NOT trigger
+            let fourHoursAgo = recentNow.addingTimeInterval(-4 * 3600)
+            let tsStr2 = formatter.string(from: fourHoursAgo)
+            let line2 = #"{"ts":"\#(tsStr2)","tool":"reminders","cmd":"done","desc":"Old task","container":null}"# + "\n"
+            let tempDir2 = FileManager.default.temporaryDirectory
+                .appendingPathComponent("gc-test-\(UUID().uuidString)")
+            try? FileManager.default.createDirectory(at: tempDir2, withIntermediateDirectories: true)
+            let file2 = tempDir2.appendingPathComponent("\(yesterdayStr).log")
+            try? line2.write(to: file2, atomically: true, encoding: .utf8)
+            let result2 = ActivityLogReader.entriesForDisplay(
+                in: todayRange.start...todayRange.end,
+                now: recentNow,
+                baseDirectory: tempDir2)
+            expect("FR-018: does not trigger when last entry > 3 hours ago", result2.entries.isEmpty)
+        }
+
+        // MARK: - TimespanFormatter
+
+        suite("TimespanFormatter — 15-minute rounding") {
+            func makeDate(hour: Int, minute: Int) -> Date {
+                cal.date(bySettingHour: hour, minute: minute, second: 0, of: Date())!
+            }
+            func roundedMinute(_ h: Int, _ m: Int) -> Int {
+                cal.component(.minute, from: TimespanFormatter.roundTo15Minutes(makeDate(hour: h, minute: m)))
+            }
+            func roundedHour(_ h: Int, _ m: Int) -> Int {
+                cal.component(.hour, from: TimespanFormatter.roundTo15Minutes(makeDate(hour: h, minute: m)))
+            }
+
+            expect("X:07 rounds down to X:00", roundedMinute(9, 7)  == 0)
+            expect("X:08 rounds up to X:15",   roundedMinute(9, 8)  == 15)
+            expect("X:22 rounds down to X:15", roundedMinute(9, 22) == 15)
+            expect("X:23 rounds up to X:30",   roundedMinute(9, 23) == 30)
+            expect("X:37 rounds down to X:30", roundedMinute(9, 37) == 30)
+            expect("X:38 rounds up to X:45",   roundedMinute(9, 38) == 45)
+            expect("X:52 rounds down to X:45", roundedMinute(9, 52) == 45)
+            expect("X:53 rounds up to next hour :00", roundedMinute(9, 53) == 0 && roundedHour(9, 53) == 10)
+            expect("X:00 stays at X:00",       roundedMinute(9, 0)  == 0)
+            expect("X:15 stays at X:15",       roundedMinute(9, 15) == 15)
+            expect("X:30 stays at X:30",       roundedMinute(9, 30) == 30)
+            expect("X:45 stays at X:45",       roundedMinute(9, 45) == 45)
+        }
+
+        suite("TimespanFormatter — format output") {
+            func makeDate(hour: Int, minute: Int) -> Date {
+                cal.date(bySettingHour: hour, minute: minute, second: 0, of: Date())!
+            }
+
+            let start = makeDate(hour: 9, minute: 3)   // rounds to 9:00am
+            let end   = makeDate(hour: 16, minute: 47)  // rounds to 4:45pm
+
+            let rangeStr = TimespanFormatter.format(first: start, last: end)
+            expect("range includes start time", rangeStr.contains("9:00"))
+            expect("range includes end time",   rangeStr.contains("4:45"))
+            expect("range includes arrow",      rangeStr.contains("→"))
+
+            let singleStr = TimespanFormatter.format(first: start, last: nil)
+            expect("single entry shows start only", singleStr.contains("9:00"))
+            expect("single entry has no arrow",     !singleStr.contains("→"))
+        }
+
+        suite("TimespanFormatter — timespan from entries") {
+            expect("no entries returns nil", TimespanFormatter.timespan(from: []) == nil)
+        }
+
         print("\n\(passed + failed) tests: \(passed) passed, \(failed) failed")
         if failed > 0 { exit(1) }
     }

@@ -7,23 +7,15 @@ conventions. This document captures the principles that span the whole suite.
 
 ---
 
-## Primary context: Claude, not a human typing blind
+## Two equal modes
 
-These tools are designed first for use through Claude, and second as standalone CLIs.
-That changes the design frame significantly.
+Get Clear works in two modes: a person typing commands directly, and Claude issuing commands on the user's behalf. These modes are equal. Neither is primary.
 
-A human typing a CLI command blind needs heavy words like `delete` to signal danger —
-there's no undo, no context, no safety net. Claude in a conversation is a different
-operator: it has likely read the record before touching it, the conversation history
-is the undo log, and "oops" is a complete and sufficient recovery instruction.
+A command that only makes sense when Claude is driving it is broken. A command that Claude handles fine but feels awkward to type directly is also broken. Claude's ability to paper over a design problem does not make it not a problem.
 
-**Design for the AI-assisted context.** Commands can be softer — `add`, `remove`,
-`change` — because the backstop is the conversation, not the word choice. Claude
-can rebuild what it removed if asked. The safety comes from context, not terminology.
+**The vocabulary is natural enough to type directly** — not because direct use is the priority, but because that's the test. Commands can be softer than traditional CLIs (`remove` not `delete`, `done` not `complete`) because in both modes the context provides the safety net: conversation history when Claude-assisted, the user's own judgment when direct. The safety comes from the design, not from intimidating word choices.
 
-This also means the vocabulary should mirror how you'd talk to Claude naturally:
-"add a reminder," "remove that contact," "change the due date." The command should
-read like the instruction you'd give in conversation.
+**Measure:** Could someone use the tool from a command reference card alone? And does Claude issue commands that would read naturally if the user had typed them? Both must be yes.
 
 ---
 
@@ -174,6 +166,7 @@ Use the word you'd say to Claude in conversation:
 | edit | `change` | "change the due date" — exactly how you'd say it |
 | rename | `rename` | changes identity (the primary key); semantically distinct from `change` |
 | search | `find` | the Finder, not the Searcher — macOS named it right; `find` expresses intent, not process |
+| logged / no activity | `recorded` | "The log records what it saw — it makes no claim about what you did." Applies to output: "Nothing recorded" not "nothing logged" or "no activity." `logged` names the mechanism; `recorded` names the result. `no activity` implies the log captured everything — it didn't. |
 
 **`find` not `search`**
 
@@ -206,13 +199,15 @@ Things that must be the same in every tool:
 
 ---
 
-## Emoji shortcode expansion
+## Emoji shortcode expansion *(planned — get-clear #17)*
 
-User-supplied text strings (titles, notes, messages) support Slack-style shortcodes: `:tada:` → 🎉, `:rocket:` → 🚀. This is a text preprocessing step applied before the string is saved or sent.
+User-supplied text strings (titles, notes, messages) will support Slack-style shortcodes: `:tada:` → 🎉, `:rocket:` → 🚀. This is a text preprocessing step applied before the string is saved or sent.
 
-The expansion function lives in each `*Lib` so it is testable. The curated set covers the ~150 most common shortcodes (matching GitHub/Slack common usage) — not the full Unicode emoji list. The dictionary is embedded; no runtime dependency.
+The expansion function will live in each `*Lib` so it is testable. The curated set covers the ~150 most common shortcodes (matching GitHub/Slack common usage) — not the full Unicode emoji list. The dictionary is embedded; no runtime dependency.
 
 Scope: applied to any user-supplied free text — event titles, reminder titles, note fields, mail subject/body, SMS message body. Not applied to command keywords, calendar names, list names, or query strings.
+
+**Not yet implemented.** Tracked in get-clear #17.
 
 ---
 

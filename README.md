@@ -77,6 +77,22 @@ You go in with context. You're not scrambling.
 
 Sent. One thought, one action, done.
 
+**At the end of the day**
+> "What did I actually get done today?"
+
+```
+get-clear recap
+```
+```
+Thursday March 19 · 9:00am → 4:45pm
+
+  From your calendar   Sprint review · Trinity Council prep
+  Tasks completed      Call Sarah [Ibotta] · Review PR [Ibotta]
+  Sent                 Email to Alex · Text to Shaun Boyd
+```
+
+Not a dashboard. Not a report. Just the weight of what you did — there when you need it.
+
 ---
 
 ## Two ways to use it
