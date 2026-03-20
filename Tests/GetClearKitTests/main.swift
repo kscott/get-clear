@@ -504,10 +504,17 @@ final class TestRunner: @unchecked Sendable {
             try? FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
             let today = ISO8601DateFormatter.logFileDateString(Date())
             let file = tempDir.appendingPathComponent("\(today).log")
+            // Use startOfDay + fixed offsets so timestamps are always within today's range,
+            // regardless of when the test runs or what timezone the runner is in.
+            let dayStart = cal.startOfDay(for: Date())
+            let fmt = ISO8601DateFormatter()
+            let ts1 = fmt.string(from: dayStart.addingTimeInterval(8 * 3600))
+            let ts2 = fmt.string(from: dayStart.addingTimeInterval(9 * 3600))
+            let ts3 = fmt.string(from: dayStart.addingTimeInterval(10 * 3600))
             let lines = [
-                #"{"ts":"2026-03-19T14:32:00Z","tool":"reminders","cmd":"done","desc":"Call Sarah","container":"Ibotta"}"#,
-                #"{"ts":"2026-03-19T15:15:00Z","tool":"mail","cmd":"send","desc":"Alex Re: notes","container":null}"#,
-                #"{"ts":"2026-03-19T16:01:00Z","tool":"reminders","cmd":"add","desc":"Review PR","container":"Ibotta"}"#,
+                #"{"ts":"\#(ts1)","tool":"reminders","cmd":"done","desc":"Call Sarah","container":"Ibotta"}"#,
+                #"{"ts":"\#(ts2)","tool":"mail","cmd":"send","desc":"Alex Re: notes","container":null}"#,
+                #"{"ts":"\#(ts3)","tool":"reminders","cmd":"add","desc":"Review PR","container":"Ibotta"}"#,
             ].joined(separator: "\n") + "\n"
             try? lines.write(to: file, atomically: true, encoding: .utf8)
             let range = parseRange("today")!
@@ -525,12 +532,17 @@ final class TestRunner: @unchecked Sendable {
             try? FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
             let today = ISO8601DateFormatter.logFileDateString(Date())
             let file = tempDir.appendingPathComponent("\(today).log")
+            let dayStart = cal.startOfDay(for: Date())
+            let fmt = ISO8601DateFormatter()
+            let tsGood = fmt.string(from: dayStart.addingTimeInterval(8 * 3600))
+            let tsBad1 = fmt.string(from: dayStart.addingTimeInterval(9 * 3600))
+            let tsBad2 = fmt.string(from: dayStart.addingTimeInterval(10 * 3600))
             let lines = [
                 #"not json at all"#,
-                #"{"ts":"2026-03-19T14:32:00Z","tool":"reminders","cmd":"done","desc":"Good entry","container":null}"#,
+                #"{"ts":"\#(tsGood)","tool":"reminders","cmd":"done","desc":"Good entry","container":null}"#,
                 #"{"ts":"broken-date","tool":"reminders","cmd":"done","desc":"Bad ts","container":null}"#,
-                #"{"ts":"2026-03-19T14:33:00Z","tool":"unknown-tool","cmd":"done","desc":"Unknown tool","container":null}"#,
-                #"{"ts":"2026-03-19T14:34:00Z","tool":"reminders","cmd":"done","desc":"","container":null}"#,
+                #"{"ts":"\#(tsBad1)","tool":"unknown-tool","cmd":"done","desc":"Unknown tool","container":null}"#,
+                #"{"ts":"\#(tsBad2)","tool":"reminders","cmd":"done","desc":"","container":null}"#,
             ].joined(separator: "\n") + "\n"
             try? lines.write(to: file, atomically: true, encoding: .utf8)
             let range = parseRange("today")!
