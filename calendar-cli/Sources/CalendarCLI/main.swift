@@ -603,6 +603,7 @@ store.requestFullAccessToEvents { granted, _ in
 
         do {
             try store.save(event, span: .thisEvent, commit: true)
+            try? ActivityLog.write(tool: "calendar", cmd: "add", desc: title, container: targetCal.title)
             let df = DateFormatter()
             df.dateFormat = "EEE MMM d"
             let timeDetail = edt.isAllDay ? "all day" : "\(formatTime(edt.start)) – \(formatTime(edt.end))"
@@ -637,9 +638,12 @@ store.requestFullAccessToEvents { granted, _ in
         }
         let event = matches[0]
         do {
+            let calName  = event.calendar.title
+            let eventTitle = event.title ?? ""
             try store.remove(event, span: .thisEvent, commit: true)
+            try? ActivityLog.write(tool: "calendar", cmd: "remove", desc: eventTitle, container: calName)
             let df = DateFormatter(); df.dateFormat = "EEE MMM d"
-            print("Removed: \(event.title ?? "") (\(df.string(from: event.startDate)))")
+            print("Removed: \(eventTitle) (\(df.string(from: event.startDate)))")
         } catch {
             fail("Could not remove event: \(error.localizedDescription)")
         }
