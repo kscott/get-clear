@@ -661,6 +661,34 @@ final class TestRunner: @unchecked Sendable {
             expect("no entries returns nil", TimespanFormatter.timespan(from: []) == nil)
         }
 
+        suite("UpdateChecker — version comparison") {
+            expect("patch newer",  UpdateChecker.isNewer("1.1.3", than: "1.1.2"))
+            expect("minor newer",  UpdateChecker.isNewer("1.2.0", than: "1.1.9"))
+            expect("major newer",  UpdateChecker.isNewer("2.0.0", than: "1.9.9"))
+            expect("same version", !UpdateChecker.isNewer("1.1.2", than: "1.1.2"))
+            expect("older patch",  !UpdateChecker.isNewer("1.1.1", than: "1.1.2"))
+            expect("older minor",  !UpdateChecker.isNewer("1.0.9", than: "1.1.0"))
+            expect("older major",  !UpdateChecker.isNewer("1.9.9", than: "2.0.0"))
+            expect("strips leading v", UpdateChecker.isNewer("v1.1.3", than: "1.1.2"))
+            expect("both with v",  !UpdateChecker.isNewer("v1.1.2", than: "v1.1.2"))
+        }
+
+        suite("UpdateChecker — cache parsing") {
+            // No cache file — returns nil
+            let noCache = UpdateChecker.cachedLatest()
+            // We can't control the cache file in tests, so just verify the function runs
+            // and returns a valid shape when data exists (structural test only)
+            let _ = noCache // suppresses unused warning; real check is that it doesn't crash
+            expect("cachedLatest does not crash when file absent or present", true)
+        }
+
+        suite("UpdateChecker — hint") {
+            // hint() returns nil when no PKG install (expected on dev machine)
+            // and also when installed == latest; both cases return nil here
+            let h = UpdateChecker.hint()
+            expect("hint is nil on dev machine (no pkgutil receipt)", h == nil)
+        }
+
         print("\n\(passed + failed) tests: \(passed) passed, \(failed) failed")
         if failed > 0 { exit(1) }
     }

@@ -18,6 +18,7 @@ func usage() -> Never {
       get-clear what [range]          # Everything across all tools
       get-clear recap [range]         # Where you showed up
       get-clear setup                 # Configure which calendars appear in recap
+      get-clear update                # Install the latest version
 
     Feedback: https://github.com/kscott/get-clear/issues
     """)
@@ -181,7 +182,31 @@ if isHelpFlag(cmd)    { usage() }
 
 switch cmd {
 
+case "check-update":
+    // Hidden subcommand — not in usage(). Called by UpdateChecker.spawnBackgroundCheckIfNeeded().
+    // Hits the GitHub API and writes the update cache. Silent on success or failure.
+    let apiURL = URL(string: "https://api.github.com/repos/kscott/get-clear/releases/latest")!
+    var request = URLRequest(url: apiURL)
+    request.setValue("get-clear/\(version)", forHTTPHeaderField: "User-Agent")
+    let sem = DispatchSemaphore(value: 0)
+    URLSession.shared.dataTask(with: request) { data, _, _ in
+        defer { sem.signal() }
+        guard let data = data,
+              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let tag  = json["tag_name"] as? String,
+              let assets = json["assets"] as? [[String: Any]],
+              let asset  = assets.first(where: { ($0["name"] as? String) == "get-clear.pkg" }),
+              let downloadURL = asset["browser_download_url"] as? String
+        else { return }
+        let ver = tag.hasPrefix("v") ? String(tag.dropFirst()) : tag
+        guard ver != "latest" else { return } // rolling tag — no semver info available
+        UpdateChecker.writeCache(version: ver, url: downloadURL)
+    }.resume()
+    sem.wait()
+    exit(0)
+
 case "what":
+    UpdateChecker.spawnBackgroundCheckIfNeeded()
     let rangeStr = args.count > 1 ? Array(args.dropFirst()).joined(separator: " ") : "today"
     guard let range = parseRange(rangeStr) else { fail("Unrecognised range: \(rangeStr)") }
     let isToday = rangeStr == "today"
@@ -196,8 +221,92 @@ case "what":
     }
     print(ActivityLogFormatter.suiteWhat(entries: entries, range: range, rangeStr: rangeStr,
                                          dateUsed: dateUsed))
+    if let hint = UpdateChecker.hint() { fputs(hint + "\n", stderr) }
+
+case "update":
+    guard let installed = UpdateChecker.installedVersion() else {
+        print("get-clear update is only available for PKG installs.")
+        print("Download from https://github.com/kscott/get-clear/releases")
+        exit(0)
+    }
+
+    // Refresh cache if stale before comparing
+    func fetchLatestNow() -> (version: String, url: String)? {
+        let apiURL = URL(string: "https://api.github.com/repos/kscott/get-clear/releases/latest")!
+        var request = URLRequest(url: apiURL)
+        request.setValue("get-clear/\(version)", forHTTPHeaderField: "User-Agent")
+        var result: (String, String)? = nil
+        let sem = DispatchSemaphore(value: 0)
+        URLSession.shared.dataTask(with: request) { data, _, _ in
+            defer { sem.signal() }
+            guard let data = data,
+                  let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                  let tag  = json["tag_name"] as? String,
+                  let assets = json["assets"] as? [[String: Any]],
+                  let asset  = assets.first(where: { ($0["name"] as? String) == "get-clear.pkg" }),
+                  let url    = asset["browser_download_url"] as? String
+            else { return }
+            let ver = tag.hasPrefix("v") ? String(tag.dropFirst()) : tag
+            guard ver != "latest" else { return }
+            UpdateChecker.writeCache(version: ver, url: url)
+            result = (ver, url)
+        }.resume()
+        sem.wait()
+        return result
+    }
+
+    var latestVersion: String
+    var downloadURL: String
+    if let cached = UpdateChecker.cachedLatest(),
+       Date().timeIntervalSince(cached.checked) < 3600 {
+        latestVersion = cached.version
+        downloadURL   = cached.url
+    } else {
+        print("Checking for latest version...")
+        guard let fresh = fetchLatestNow() else {
+            fail("Could not reach GitHub. Check your connection and try again.")
+        }
+        latestVersion = fresh.version
+        downloadURL   = fresh.url
+    }
+
+    guard UpdateChecker.isNewer(latestVersion, than: installed) else {
+        print("Already on the latest version (\(installed)).")
+        exit(0)
+    }
+
+    print("Updating get-clear \(installed) → \(latestVersion)...")
+    print("Downloading get-clear \(latestVersion)...")
+
+    let pkgURL  = URL(string: downloadURL)!
+    let tempPkg = URL(fileURLWithPath: "/tmp/get-clear-\(latestVersion).pkg")
+    var downloadError: Error? = nil
+    let dlSem = DispatchSemaphore(value: 0)
+    URLSession.shared.dataTask(with: pkgURL) { data, _, error in
+        defer { dlSem.signal() }
+        if let error = error { downloadError = error; return }
+        guard let data = data else { downloadError = NSError(domain: "get-clear", code: 1); return }
+        do { try data.write(to: tempPkg, options: .atomic) }
+        catch { downloadError = error }
+    }.resume()
+    dlSem.wait()
+
+    if let error = downloadError {
+        try? FileManager.default.removeItem(at: tempPkg)
+        fail("Download failed: \(error.localizedDescription)")
+    }
+
+    print("Download complete.")
+    print("A password will be required to complete installation.")
+
+    let opener = Process()
+    opener.executableURL = URL(fileURLWithPath: "/usr/bin/open")
+    opener.arguments = [tempPkg.path]
+    try? opener.run()
+    exit(0)
 
 case "setup":
+    UpdateChecker.spawnBackgroundCheckIfNeeded()
     let sem   = DispatchSemaphore(value: 0)
     let store = EKEventStore()
     store.requestFullAccessToEvents { granted, _ in
@@ -280,8 +389,10 @@ case "setup":
         sem.signal()
     }
     sem.wait()
+    if let hint = UpdateChecker.hint() { fputs(hint + "\n", stderr) }
 
 case "recap":
+    UpdateChecker.spawnBackgroundCheckIfNeeded()
     let config = loadGetClearConfig()
     guard config.isRecapConfigured else {
         print("Recap isn't configured yet. Run \(ANSI.bold("get-clear setup")) to choose which calendars to include.")
@@ -315,6 +426,7 @@ case "recap":
         sem.signal()
     }
     sem.wait()
+    if let hint = UpdateChecker.hint() { fputs(hint + "\n", stderr) }
 
 default:
     usage()
