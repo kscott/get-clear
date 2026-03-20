@@ -310,6 +310,22 @@ Together they cover the full loop: *who* you're working with, *what* you've prom
 
 ---
 
+---
+
+## Telemetry
+
+Get Clear can collect anonymous usage data to improve the suite — but only with the user's explicit consent, and only ever to a first-party endpoint under the developer's control. No third-party analytics services.
+
+**What's worth collecting:** command usage counts, error rates, version in use, and — most valuably — unrecognized command strings. When users consistently type `reminders search` or `calendar delete`, that's vocabulary friction the design hasn't resolved. Repeated misses tell their own story about what's missing or confusing. Success rates without failure rates are half the picture.
+
+**What's never collected:** personal content of any kind — reminder titles, event names, contact details, message bodies, recipients. The tool handles private commitments; that content stays on the machine.
+
+**Consent lives in the config file** (`~/.config/get-clear/config.toml`), written during `get-clear setup` after a single explicit yes/no prompt. The prompt names what is collected before asking — vague language is not acceptable. Consent stored in the config file leaves the door open for a future `get-clear settings` command that lists all configurable values and their current state, and a toggle subcommand to change them without re-running setup.
+
+**The prompt must be specific.** Something like: *"Share anonymous usage data to help improve Get Clear? This includes command counts, unrecognized commands, and error rates. No reminder titles, event names, contacts, or message content is ever sent. (yes/no)"*
+
+---
+
 ### Tagline candidates
 
 - *Everything handled.*
