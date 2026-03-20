@@ -92,9 +92,8 @@ public struct ActivityLogReader {
             .filter { $0.pathExtension == "log" }
             .sorted { $0.lastPathComponent > $1.lastPathComponent }
 
-        let decoder      = JSONDecoder.logDecoder()
+        let decoder       = JSONDecoder.logDecoder()
         let threeHoursAgo = now.addingTimeInterval(-3 * 3600)
-        let cal          = Calendar.current
 
         for fileURL in logFiles {
             guard let content = try? String(contentsOf: fileURL, encoding: .utf8) else { continue }

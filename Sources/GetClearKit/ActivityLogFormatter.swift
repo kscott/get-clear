@@ -22,7 +22,6 @@ public struct ActivityLogFormatter {
         dateUsed: Date = Date()
     ) -> String {
         let cal = Calendar.current
-        let isDefaultToday = rangeStr == "today"
 
         if entries.isEmpty {
             return emptyMessage(tool: tool, rangeStr: rangeStr)

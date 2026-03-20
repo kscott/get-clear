@@ -105,10 +105,18 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release create "v$VERSION" get-clear.pkg \
-            --title "Get Clear $VERSION" \
-            --notes "Installs all five Get Clear tools to /usr/local/bin. Double-click get-clear.pkg to install." \
-            --latest
+          if gh release view "v$VERSION" > /dev/null 2>&1; then
+            gh release edit "v$VERSION" \
+              --title "Get Clear $VERSION" \
+              --notes "Installs all five Get Clear tools to /usr/local/bin. Double-click get-clear.pkg to install." \
+              --latest
+            gh release upload "v$VERSION" get-clear.pkg --clobber
+          else
+            gh release create "v$VERSION" get-clear.pkg \
+              --title "Get Clear $VERSION" \
+              --notes "Installs all five Get Clear tools to /usr/local/bin. Double-click get-clear.pkg to install." \
+              --latest
+          fi
 
       - name: Update rolling release
         env:
