@@ -16,7 +16,8 @@ let package = Package(
         .executableTarget(
             name: "GetClear",
             dependencies: ["GetClearKit"],
-            path: "Sources/GetClear"
+            path: "Sources/GetClear",
+            exclude: ["get-clear.entitlements"]
         ),
         // Test runner — no Xcode required; run via: swift run getclearkit-tests
         .executableTarget(
