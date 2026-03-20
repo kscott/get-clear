@@ -15,11 +15,20 @@ import Foundation
 
 public enum UpdateChecker {
 
+    // MARK: - Constants
+
+    static let packageID      = "com.kenscott.get-clear"
+    static let binaryPath     = "/usr/local/bin/get-clear"
+    static let releasesAPIURL = "https://api.github.com/repos/kscott/get-clear/releases/latest"
+    static let releasesTagURL = "https://github.com/kscott/get-clear/releases/tag/v"
+
     static let cacheURL: URL = FileManager.default
         .homeDirectoryForCurrentUser
         .appendingPathComponent(".local/share/get-clear/update-check.json")
 
     static let checkInterval: TimeInterval = 3600 // 1 hour
+
+    private static let iso8601 = ISO8601DateFormatter()
 
     // MARK: - Public API
 
@@ -27,7 +36,7 @@ public enum UpdateChecker {
     public static func installedVersion() -> String? {
         let p = Process()
         p.executableURL = URL(fileURLWithPath: "/usr/sbin/pkgutil")
-        p.arguments = ["--pkg-info", "com.kenscott.get-clear"]
+        p.arguments = ["--pkg-info", packageID]
         let pipe = Pipe()
         p.standardOutput = pipe
         p.standardError = Pipe()
@@ -50,9 +59,34 @@ public enum UpdateChecker {
               let json = try? JSONSerialization.jsonObject(with: data) as? [String: String],
               let version = json["version"],
               let url     = json["url"],
-              let checked = json["checked"].flatMap({ ISO8601DateFormatter().date(from: $0) })
+              let checked = json["checked"].flatMap({ iso8601.date(from: $0) })
         else { return nil }
         return (version, url, checked)
+    }
+
+    /// Fetches the latest release from GitHub. Returns (version, downloadURL) or nil on failure.
+    /// Synchronous — call only from a background context or the check-update subcommand.
+    public static func fetchLatestRelease(userAgent: String) -> (version: String, url: String)? {
+        guard let apiURL = URL(string: releasesAPIURL) else { return nil }
+        var request = URLRequest(url: apiURL)
+        request.setValue(userAgent, forHTTPHeaderField: "User-Agent")
+        var result: (String, String)? = nil
+        let sem = DispatchSemaphore(value: 0)
+        URLSession.shared.dataTask(with: request) { data, _, _ in
+            defer { sem.signal() }
+            guard let data = data,
+                  let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                  let tag  = json["tag_name"] as? String,
+                  let assets = json["assets"] as? [[String: Any]],
+                  let asset  = assets.first(where: { ($0["name"] as? String) == "get-clear.pkg" }),
+                  let url    = asset["browser_download_url"] as? String
+            else { return }
+            let ver = tag.hasPrefix("v") ? String(tag.dropFirst()) : tag
+            guard ver != "latest" else { return } // rolling tag — no semver info available
+            result = (ver, url)
+        }.resume()
+        sem.wait()
+        return result
     }
 
     /// Returns a hint string for stderr if a newer version is available, otherwise nil.
@@ -60,8 +94,7 @@ public enum UpdateChecker {
         guard let installed = installedVersion() else { return nil }
         guard let (latest, _, _) = cachedLatest() else { return nil }
         guard isNewer(latest, than: installed) else { return nil }
-        let changelogURL = "https://github.com/kscott/get-clear/releases/tag/v\(latest)"
-        let text = "get-clear \(latest) available — run: get-clear update  (what's new: \(changelogURL))"
+        let text = "get-clear \(latest) available — run: get-clear update  (what's new: \(releasesTagURL)\(latest))"
         return "⭐ \(ANSI.dim(text))"
     }
 
@@ -71,11 +104,7 @@ public enum UpdateChecker {
         guard installedVersion() != nil else { return }
         if let (_, _, checked) = cachedLatest(),
            Date().timeIntervalSince(checked) < checkInterval { return }
-
-        // Find the get-clear binary — PKG installs to /usr/local/bin
-        let binaryPath = "/usr/local/bin/get-clear"
         guard FileManager.default.isExecutableFile(atPath: binaryPath) else { return }
-
         let p = Process()
         p.executableURL = URL(fileURLWithPath: binaryPath)
         p.arguments = ["check-update"]
@@ -98,7 +127,7 @@ public enum UpdateChecker {
         let json: [String: String] = [
             "version": version,
             "url":     url,
-            "checked": ISO8601DateFormatter().string(from: Date())
+            "checked": iso8601.string(from: Date())
         ]
         guard let data = try? JSONSerialization.data(withJSONObject: json) else { return }
         let dir = cacheURL.deletingLastPathComponent()
@@ -107,6 +136,7 @@ public enum UpdateChecker {
     }
 
     /// Returns true if `a` is a higher semver than `b`.
+    /// Assumes standard X.Y.Z format — pre-release suffixes are not supported.
     public static func isNewer(_ a: String, than b: String) -> Bool {
         let av = components(of: a)
         let bv = components(of: b)

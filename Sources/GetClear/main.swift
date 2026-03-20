@@ -185,24 +185,9 @@ switch cmd {
 case "check-update":
     // Hidden subcommand — not in usage(). Called by UpdateChecker.spawnBackgroundCheckIfNeeded().
     // Hits the GitHub API and writes the update cache. Silent on success or failure.
-    let apiURL = URL(string: "https://api.github.com/repos/kscott/get-clear/releases/latest")!
-    var request = URLRequest(url: apiURL)
-    request.setValue("get-clear/\(version)", forHTTPHeaderField: "User-Agent")
-    let sem = DispatchSemaphore(value: 0)
-    URLSession.shared.dataTask(with: request) { data, _, _ in
-        defer { sem.signal() }
-        guard let data = data,
-              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-              let tag  = json["tag_name"] as? String,
-              let assets = json["assets"] as? [[String: Any]],
-              let asset  = assets.first(where: { ($0["name"] as? String) == "get-clear.pkg" }),
-              let downloadURL = asset["browser_download_url"] as? String
-        else { return }
-        let ver = tag.hasPrefix("v") ? String(tag.dropFirst()) : tag
-        guard ver != "latest" else { return } // rolling tag — no semver info available
-        UpdateChecker.writeCache(version: ver, url: downloadURL)
-    }.resume()
-    sem.wait()
+    if let release = UpdateChecker.fetchLatestRelease(userAgent: "get-clear/\(version)") {
+        UpdateChecker.writeCache(version: release.version, url: release.url)
+    }
     exit(0)
 
 case "what":
@@ -230,31 +215,6 @@ case "update":
         exit(0)
     }
 
-    // Refresh cache if stale before comparing
-    func fetchLatestNow() -> (version: String, url: String)? {
-        let apiURL = URL(string: "https://api.github.com/repos/kscott/get-clear/releases/latest")!
-        var request = URLRequest(url: apiURL)
-        request.setValue("get-clear/\(version)", forHTTPHeaderField: "User-Agent")
-        var result: (String, String)? = nil
-        let sem = DispatchSemaphore(value: 0)
-        URLSession.shared.dataTask(with: request) { data, _, _ in
-            defer { sem.signal() }
-            guard let data = data,
-                  let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-                  let tag  = json["tag_name"] as? String,
-                  let assets = json["assets"] as? [[String: Any]],
-                  let asset  = assets.first(where: { ($0["name"] as? String) == "get-clear.pkg" }),
-                  let url    = asset["browser_download_url"] as? String
-            else { return }
-            let ver = tag.hasPrefix("v") ? String(tag.dropFirst()) : tag
-            guard ver != "latest" else { return }
-            UpdateChecker.writeCache(version: ver, url: url)
-            result = (ver, url)
-        }.resume()
-        sem.wait()
-        return result
-    }
-
     var latestVersion: String
     var downloadURL: String
     if let cached = UpdateChecker.cachedLatest(),
@@ -263,9 +223,10 @@ case "update":
         downloadURL   = cached.url
     } else {
         print("Checking for latest version...")
-        guard let fresh = fetchLatestNow() else {
+        guard let fresh = UpdateChecker.fetchLatestRelease(userAgent: "get-clear/\(version)") else {
             fail("Could not reach GitHub. Check your connection and try again.")
         }
+        UpdateChecker.writeCache(version: fresh.version, url: fresh.url)
         latestVersion = fresh.version
         downloadURL   = fresh.url
     }
