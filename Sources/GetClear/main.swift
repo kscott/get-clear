@@ -1,7 +1,7 @@
 // main.swift
 //
 // Entry point for the get-clear suite binary.
-// Dispatches suite-level commands: what, recap.
+// Dispatches suite-level commands: what, setup, recap.
 
 import Foundation
 import EventKit
@@ -16,11 +16,33 @@ func usage() -> Never {
 
     Usage:
       get-clear what [range]          # Everything across all tools
-      get-clear recap [range]         # Where you showed up (coming soon)
+      get-clear recap [range]         # Where you showed up
+      get-clear setup                 # Configure which calendars appear in recap
 
     Feedback: https://github.com/kscott/get-clear/issues
     """)
     exit(0)
+}
+
+// MARK: - Calendar dot (ANSI true-color, respects NO_COLOR / isatty)
+
+func calendarDot(_ calendar: EKCalendar) -> String {
+    guard ANSI.enabled else { return "  " }
+    guard let cg = calendar.cgColor else { return "  " }
+    let colorSpace = cg.colorSpace?.model
+    let components = cg.components ?? []
+    let r, g, b: Int
+    if colorSpace == .rgb, components.count >= 3 {
+        r = Int(components[0] * 255)
+        g = Int(components[1] * 255)
+        b = Int(components[2] * 255)
+    } else if colorSpace == .monochrome, components.count >= 1 {
+        let w = Int(components[0] * 255)
+        r = w; g = w; b = w
+    } else {
+        return "  "
+    }
+    return "\u{001B}[38;2;\(r);\(g);\(b)m●\u{001B}[0m "
 }
 
 // MARK: - Recap formatting
@@ -95,7 +117,6 @@ func formatRecap(
     let cal = Calendar.current
     let fr018Active = isToday && !cal.isDateInToday(dateUsed)
 
-    // Empty state
     if result.isEmpty {
         if isToday && !fr018Active {
             return "Quiet so far. Ready for the next thing."
@@ -107,7 +128,6 @@ func formatRecap(
     var lines: [String] = []
 
     if range.isSingleDay {
-        // Header: always show date for recap; append timespan if present
         var header = recapDateHeader(for: dateUsed)
         if let ts = result.timespan { header += " · \(formatTimespanResult(ts))" }
         lines.append(header)
@@ -132,7 +152,6 @@ func formatRecap(
             if i > 0 { lines.append("") }
             lines.append(recapDateHeader(for: day))
             lines.append("")
-            // Filter each group to this day
             var dayGroups: [RecapGroup] = []
             for group in result.groups {
                 switch group {
@@ -178,14 +197,104 @@ case "what":
     print(ActivityLogFormatter.suiteWhat(entries: entries, range: range, rangeStr: rangeStr,
                                          dateUsed: dateUsed))
 
+case "setup":
+    let sem   = DispatchSemaphore(value: 0)
+    let store = EKEventStore()
+    store.requestFullAccessToEvents { granted, _ in
+        guard granted else { fail("Calendar access required for setup") }
+
+        let all     = store.calendars(for: .event)
+        let grouped = Dictionary(grouping: all) { $0.source.title }
+
+        let configURL = getClearConfigURL
+        if FileManager.default.fileExists(atPath: configURL.path) {
+            print("Existing config found — running setup will overwrite it.\n")
+        }
+
+        // Build numbered flat list
+        var numberedCals: [(Int, EKCalendar)] = []
+        var n = 1
+        print("Available calendars:\n")
+        for source in grouped.keys.sorted() {
+            print("  \(source)")
+            for cal in (grouped[source] ?? []).sorted(by: { $0.title < $1.title }) {
+                print(String(format: "    %2d  \(calendarDot(cal))\(cal.title)", n))
+                numberedCals.append((n, cal))
+                n += 1
+            }
+        }
+
+        print("\nChoose calendars to include in recap.")
+        print("Enter numbers or names, comma-separated:\n")
+        print("Recap calendars: ", terminator: "")
+        fflush(stdout)
+
+        guard let input = readLine(),
+              !input.trimmingCharacters(in: .whitespaces).isEmpty else {
+            print("No calendars entered — nothing written.")
+            sem.signal()
+            return
+        }
+
+        let tokens = input.components(separatedBy: ",")
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .filter { !$0.isEmpty }
+
+        var calNames: [String] = []
+        var unmatched: [String] = []
+        for token in tokens {
+            if let num = Int(token),
+               let match = numberedCals.first(where: { $0.0 == num }) {
+                calNames.append(match.1.title)
+            } else if let match = all.first(where: {
+                $0.title.lowercased() == token.lowercased()
+            }) {
+                calNames.append(match.title)
+            } else {
+                unmatched.append(token)
+            }
+        }
+
+        if !unmatched.isEmpty {
+            print("Not found: \(unmatched.joined(separator: ", ")) — skipping those")
+        }
+        guard !calNames.isEmpty else {
+            print("No valid calendars — nothing written.")
+            sem.signal()
+            return
+        }
+
+        let quoted = calNames.map { "\"\($0)\"" }.joined(separator: ", ")
+        print("  → recap = [\(quoted)]\n")
+
+        let toml = "[recap]\ncalendars = [\(quoted)]\n"
+        let configDir = configURL.deletingLastPathComponent()
+        do {
+            try FileManager.default.createDirectory(at: configDir, withIntermediateDirectories: true)
+            try toml.write(to: configURL, atomically: true, encoding: .utf8)
+            print("Config written to \(configURL.path)")
+            print("Try it: get-clear recap")
+        } catch {
+            fail("Could not write config: \(error.localizedDescription)")
+        }
+        sem.signal()
+    }
+    sem.wait()
+
 case "recap":
+    let config = loadGetClearConfig()
+    guard config.isRecapConfigured else {
+        print("Recap isn't configured yet. Run \(ANSI.bold("get-clear setup")) to choose which calendars to include.")
+        exit(0)
+    }
+
     let rangeStr = args.count > 1 ? Array(args.dropFirst()).joined(separator: " ") : "today"
     guard let range = parseRange(rangeStr) else { fail("Unrecognised range: \(rangeStr)") }
     let isToday = rangeStr == "today"
 
     // FR-018: for today, check if we should substitute a recent prior day
     var effectiveRange = range.start...range.end
-    var dateUsed       = range.start   // default: representative date for single-day header
+    var dateUsed       = range.start
     if isToday {
         let logResult = ActivityLogReader.entriesForDisplay(in: range.start...range.end)
         dateUsed = logResult.dateUsed
@@ -199,7 +308,8 @@ case "recap":
 
     let sem   = DispatchSemaphore(value: 0)
     let store = EKEventStore()
-    RecapAggregator.fetch(in: effectiveRange, store: store) { result in
+    RecapAggregator.fetch(in: effectiveRange, store: store,
+                          calendarNames: config.recapCalendars) { result in
         print(formatRecap(result, range: range, rangeStr: rangeStr,
                           isToday: isToday, dateUsed: dateUsed))
         sem.signal()
