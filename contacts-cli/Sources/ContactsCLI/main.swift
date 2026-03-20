@@ -177,6 +177,7 @@ store.requestAccess(for: .contacts) { granted, _ in
             request.addMember(contact, to: group)
             do {
                 try store.execute(request)
+                try? ActivityLog.write(tool: "contacts", cmd: "add", desc: "\(name) → \(group.name)", container: group.name)
                 print("Added \(name) to \(group.name)")
             } catch {
                 fail("Could not add to group: \(error.localizedDescription)")
@@ -216,6 +217,7 @@ store.requestAccess(for: .contacts) { granted, _ in
         request.add(contact, toContainerWithIdentifier: nil)
         do {
             try store.execute(request)
+            try? ActivityLog.write(tool: "contacts", cmd: "add", desc: name, container: nil)
             var parts = ["Added: \(name)"]
             if !email.isEmpty { parts.append("email \(email)") }
             if !phone.isEmpty { parts.append("phone \(phone)") }
@@ -351,6 +353,7 @@ store.requestAccess(for: .contacts) { granted, _ in
         }
 
         if saved {
+            try? ActivityLog.write(tool: "contacts", cmd: "change", desc: query, container: nil)
             emit("Updated \"\(query)\": \(changes.joined(separator: ", "))")
         } else if let err = lastError as NSError?, err.code == 134092 {
             emit("Error: Conflict saving contact — iCloud sync may be in progress, try again shortly")
@@ -377,6 +380,7 @@ store.requestAccess(for: .contacts) { granted, _ in
         renameRequest.update(mutable)
         do {
             try store.execute(renameRequest)
+            try? ActivityLog.write(tool: "contacts", cmd: "rename", desc: "\(oldName) → \(newName)", container: nil)
             print("Renamed: \"\(oldName)\" → \"\(newName)\"")
         } catch {
             fail("Could not rename: \(error.localizedDescription)")
@@ -400,6 +404,7 @@ store.requestAccess(for: .contacts) { granted, _ in
             request.removeMember(contact, from: group)
             do {
                 try store.execute(request)
+                try? ActivityLog.write(tool: "contacts", cmd: "remove", desc: "\(name) → \(group.name)", container: group.name)
                 print("Removed \(name) from \(group.name)")
             } catch {
                 fail("Could not remove from group: \(error.localizedDescription)")
@@ -412,6 +417,7 @@ store.requestAccess(for: .contacts) { granted, _ in
             request.delete(mutable)
             do {
                 try store.execute(request)
+                try? ActivityLog.write(tool: "contacts", cmd: "remove", desc: name, container: nil)
                 print("Removed: \(name)")
             } catch {
                 fail("Could not remove contact: \(error.localizedDescription)")
