@@ -6,11 +6,17 @@ let package = Package(
     platforms: [.macOS(.v14)],
     products: [
         .library(name: "GetClearKit", targets: ["GetClearKit"]),
+        .executable(name: "get-clear", targets: ["GetClear"]),
     ],
     targets: [
         .target(
             name: "GetClearKit",
             path: "Sources/GetClearKit"
+        ),
+        .executableTarget(
+            name: "GetClear",
+            dependencies: ["GetClearKit"],
+            path: "Sources/GetClear"
         ),
         // Test runner — no Xcode required; run via: swift run getclearkit-tests
         .executableTarget(
