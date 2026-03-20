@@ -102,24 +102,22 @@ jobs:
           xcrun stapler staple get-clear.pkg
 
       - name: Create versioned release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: v${{ env.VERSION }}
-          name: "Get Clear ${{ env.VERSION }}"
-          body: "Installs all five Get Clear tools to /usr/local/bin. Double-click get-clear.pkg to install."
-          prerelease: false
-          files: get-clear.pkg
-          make_latest: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "v$VERSION" get-clear.pkg \
+            --title "Get Clear $VERSION" \
+            --notes "Installs all five Get Clear tools to /usr/local/bin. Double-click get-clear.pkg to install." \
+            --latest
 
       - name: Update rolling release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: latest
-          name: "Get Clear ${{ env.VERSION }}"
-          body: "Installs all five Get Clear tools to /usr/local/bin. Double-click get-clear.pkg to install."
-          prerelease: false
-          files: get-clear.pkg
-          make_latest: false
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload latest get-clear.pkg --clobber
+          gh release edit latest \
+            --title "Get Clear $VERSION" \
+            --notes "Installs all five Get Clear tools to /usr/local/bin. Double-click get-clear.pkg to install."
 
   smoke-test:
     runs-on: macos-latest
