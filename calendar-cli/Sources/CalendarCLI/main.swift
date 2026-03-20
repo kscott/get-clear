@@ -688,3 +688,7 @@ store.requestFullAccessToEvents { granted, _ in
 }
 
 semaphore.wait()
+
+
+UpdateChecker.spawnBackgroundCheckIfNeeded()
+if let hint = UpdateChecker.hint() { fputs(hint + "\n", stderr) }
