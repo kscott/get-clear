@@ -31,8 +31,8 @@ Tuesday March 18
  4:01pm  done   Review PR   [Ibotta]
 ```
 
-**Empty state (today)**: `Nothing logged in reminders today.`
-**Empty state (past)**: `Nothing logged in reminders yesterday.` (or appropriate range)
+**Empty state (today)**: `Nothing recorded in reminders today.`
+**Empty state (past)**: `Nothing recorded in reminders yesterday.` (or appropriate range)
 
 ---
 
@@ -69,8 +69,12 @@ Wednesday March 19
  9:15am  reminders  add    Team standup prep  [Ibotta]
 ```
 
-**Empty state (today)**: `Nothing logged so far today.` — unless the most recent log entry across all files was within 3 hours, in which case that day's entries are shown instead (FR-018).
-**Empty state (past)**: `Nothing logged yesterday.`
+**Empty state (today)**: `Nothing recorded so far today.` — unless the most recent log entry across all files was within 3 hours, in which case that day's entries are shown instead (FR-018).
+**Empty state (past)**: `Nothing recorded yesterday.`
+
+**Multi-day ranges with gaps**: Days with no entries are skipped entirely — not listed, not labeled. A compact footer shows the shape of the range: `2 of 5 days recorded.` Honest about what the log covers without implying it captured everything.
+
+**Vocabulary note**: "Nothing recorded" not "no activity." The log records what it saw — it makes no claim about what you did.
 
 ---
 
@@ -97,9 +101,11 @@ Wednesday March 19 · 9:00am → 4:45pm
 
 Groups are omitted when empty. If all groups are empty:
 - Today: `Quiet so far. Ready for the next thing.` (no timespan shown) — unless the most recent log entry was within 3 hours, in which case that day's recap is shown instead (FR-018).
-- Past range: `Nothing logged yesterday.`
+- Past range: `Nothing recorded yesterday.`
 
-**Suppression**: Records added and removed within the range do not appear in any group.
+**Multi-day ranges with gaps**: Days with no entries are skipped entirely. No footer — recap's job is the affirmative view; coverage metadata belongs to `what`.
+
+**Suppression**: Not needed — recap queries live data stores. A cancelled reminder isn't completed; a removed event isn't in EventKit.
 
 ---
 

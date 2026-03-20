@@ -47,20 +47,22 @@ The date in the filename is the local calendar date at time of write (from the s
 
 Not a stored entity — derived at query time from two sources:
 
+**From the Reminders database** (live query at report time):
+- `EKReminder` where `isCompleted == true` and `completionDate` falls within the query range → Tasks completed
+
 **From the log** (filtered by command type):
-- `cmd: "done"` from tool `reminders` → Tasks completed
 - `cmd: "send"` from tools `mail` or `sms` → Sent
 
 **From EventKit** (live query at report time):
 - Past calendar events within the query range (per FR-015 date rules) → From your calendar
 
-**Suppression** (FR-017): Any `(tool, desc)` pair where both `cmd: "add"` and `cmd: "remove"` exist within the query range is excluded from all recap output.
+**Suppression**: Not needed. Recap queries live data stores for reminders and calendar — cancelled items simply aren't present. Mail and SMS are log-sourced but have no remove equivalent.
 
 **Output groups**:
 | Group label | Source | Commands |
 |---|---|---|
-| From your calendar | EventKit | Past events in range |
-| Tasks completed | Log | `reminders done` |
+| From your calendar | EventKit (live query) | Past events in range |
+| Tasks completed | Reminders database (live query) | `EKReminder.completionDate` in range |
 | Sent | Log | `mail send`, `sms send` |
 
 **Timespan** (FR-009d): First and last `ts` in the log entries for the range, rounded to nearest 15 minutes. Derived from log entries only (not EventKit events). Null if no log entries exist for the range.

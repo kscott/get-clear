@@ -40,7 +40,7 @@ GetClearKit must be complete and tested before any tool changes. The tool Lib ch
 - **System clock only** — never accept a timestamp from an argument or environment variable
 - **POSIX O_APPEND** — do not use `FileHandle.seekToEndOfFile()`
 - **All-day events use date comparison** — check `startDate` calendar date, not `endDate <= now`
-- **FR-017 suppression** — filter add/remove pairs before grouping in RecapAggregator
+- **No suppression logic needed** — recap queries live data stores; cancelled items aren't present
 
 ## Testing approach
 

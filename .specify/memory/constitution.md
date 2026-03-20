@@ -39,6 +39,7 @@ Commands read as plain English, not POSIX syntax. The vocabulary mirrors how you
 | — | `rename` | changes identity (the primary key); semantically distinct from `change` |
 | search | `find` | the Finder, not the Searcher; `find` expresses intent, not process |
 | complete | `done` | "I'm done with that" — grounded in human experience, not software |
+| logged / no activity | `recorded` | "The log records what it saw — it makes no claim about what you did." Applies to output: "Nothing recorded" not "nothing logged" or "no activity." `logged` names the mechanism; `recorded` names the result. `no activity` implies the log captured everything — it didn't. |
 
 **`rename` and `change` are distinct, non-interchangeable operations.** `rename` changes the identity of a record (its title or name — the field by which it is found). `change` modifies attributes that hang off the identity (due date, phone number, priority, note). No tool may use `rename` and `change` as aliases.
 
@@ -202,9 +203,9 @@ Tools are versioned with MAJOR.MINOR.PATCH. The umbrella `get-clear.pkg` tracks 
 
 Version 1.0.0 ships publicly when: Phase 1 (README + why.md) is complete and Phase 2 (clean-machine install validation) passes.
 
-### Emoji Shortcode Expansion
+### Emoji Shortcode Expansion *(planned — get-clear #17)*
 
-User-supplied text strings support Slack-style shortcodes (`:tada:` → 🎉). The expansion function lives in each `*Lib` (testable). Applied to: event titles, reminder titles, note fields, mail subject/body, SMS message body. Not applied to: command keywords, calendar/list names, query strings.
+User-supplied text strings will support Slack-style shortcodes (`:tada:` → 🎉). The expansion function will live in each `*Lib` (testable). Applied to: event titles, reminder titles, note fields, mail subject/body, SMS message body. Not applied to: command keywords, calendar/list names, query strings. Not yet implemented.
 
 ## Governance
 

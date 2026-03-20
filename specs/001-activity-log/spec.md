@@ -20,7 +20,7 @@ Time range defaults to today but accepts specifiers: `get-clear what yesterday`,
 **Acceptance Scenarios**:
 
 1. **Given** the user has added a reminder and sent an SMS today, **When** they run `get-clear what`, **Then** both actions appear in chronological order with timestamps and the tool name.
-2. **Given** no write actions have been taken today, **When** they run `get-clear what`, **Then** the output says "Nothing logged so far today." (not an error).
+2. **Given** no write actions have been taken today, **When** they run `get-clear what`, **Then** the output says "Nothing recorded so far today." (not an error).
 3. **Given** actions on two different days, **When** they run `get-clear what this week`, **Then** all actions from the current week appear grouped or labeled by date.
 4. **Given** actions across multiple days, **When** they run `get-clear what yesterday`, **Then** only yesterday's actions appear.
 
@@ -37,7 +37,7 @@ The user wants to review what reminders were touched today, or what calendar eve
 **Acceptance Scenarios**:
 
 1. **Given** actions in both reminders and calendar, **When** they run `reminders what`, **Then** only reminder actions appear.
-2. **Given** no actions in calendar today, **When** they run `calendar what`, **Then** the output says no activity today in this tool (not an error).
+2. **Given** no actions in calendar today, **When** they run `calendar what`, **Then** the output says nothing was recorded in this tool today (not an error).
 
 ---
 
@@ -55,7 +55,7 @@ The recap draws from four sources:
 - **SMS sent** — same; a quick message kept a relationship or resolved a thread
 - **Calendar events that occurred** — time commitments honored; queried from the calendar, not the log
 
-When a meeting is processed with Claude afterward ("I had the meeting, here are the notes"), the resulting reminders, contacts, and follow-ups appear in the recap through their own tools — the meeting and its follow-through visible together.
+When a meeting is processed with Claude afterward ("I had the meeting, here are the notes"), the resulting reminders and follow-ups appear in the recap through their own tools — the meeting and its follow-through visible together. Contacts updated in the process appear in `what` but not `recap` — they are context for the commitment, not the commitment itself.
 
 **Why this priority**: The recap answers a different question than `what`. Not "what happened?" but "where did I show up?" That reframe — from activity to character — is what makes it motivating.
 
@@ -99,7 +99,7 @@ A user works a full day, closes out at 11:52pm, runs `get-clear recap` at 12:05a
 - What happens if a write command fails — does it still log?
 - What does the output look like for a very active day (50+ actions)?
 - What if two write commands run in very quick succession — do both appear?
-- What happens when a record is added and later removed within the same query range — does it appear in recap? **Resolved:** `what` shows both actions (complete record). `recap` suppresses the pair — added and removed in the same range means cancelled, not kept, regardless of how much time passed between the two. See FR-017.
+- What happens when a record is added and later removed within the same query range — does it appear in recap? **Non-issue:** recap queries live data stores for reminders and calendar. A cancelled reminder isn't completed; a removed calendar event isn't in EventKit. The data stores handle this naturally — no suppression logic required.
 
 **Calendar: `what` vs. `recap`**
 - `calendar what` shows write actions through the CLI — events added or removed. An event that occurred today does not appear in `calendar what` unless it was also added or modified today via the tool. These are different questions: "what did I do to my calendar?" vs. "what happened on my calendar?"
@@ -124,14 +124,14 @@ A user works a full day, closes out at 11:52pm, runs `get-clear recap` at 12:05a
 - **FR-007**: `get-clear what` MUST display all log entries across all five tools from today, in chronological order.
 - **FR-008**: Both `<tool> what` and `get-clear what` MUST accept an optional time range argument (default: today; also supports `yesterday`, `this week`, `last week`, named days, and date ranges).
 - **FR-009**: `get-clear recap` MUST display a structured, human-readable summary of commitments kept — grouped by type (from your calendar, tasks completed, sent) — for the given time range (default: today). It MUST be runnable at any point in the day and always reflect activity so far, not a full-day projection.
-- **FR-009a**: `get-clear recap` MUST draw from four sources: reminders `done` commands (from the log), mail `send` commands (from the log), SMS `send` commands (from the log), and past calendar events queried from the calendar at report time — not from the write log. What constitutes "past" follows FR-015: end-time comparison for timed events, date comparison for all-day events.
+- **FR-009a**: `get-clear recap` MUST draw from four sources: reminders completed within the time range (queried from the Reminders database via `EKReminder.completionDate` — not from the log), mail `send` commands (from the log), SMS `send` commands (from the log), and past calendar events queried from the calendar at report time. Reminders are queried live for the same reason as calendar events: a commitment kept is a commitment kept regardless of which interface completed it. Mail and SMS remain log-only — no equivalent live query source exists for those. What constitutes "past" for calendar events follows FR-015: end-time comparison for timed events, date comparison for all-day events.
 - **FR-009b**: `get-clear recap` MUST accept the same time range specifiers as `what` (default: today; also `yesterday`, `this week`, `last week`, named days, date ranges).
 - **FR-009c**: `get-clear recap` output MUST be meaningful and satisfying to read at the CLI without Claude, and MUST also serve as useful structured input when Claude is asked to narrate or interpret the day.
 - **FR-009d**: `get-clear recap` MUST display a timespan derived from the first and last log entry timestamps of the requested period, rounded to the nearest 15 minutes — e.g., "9:00am → 4:45pm". Exact timestamps MUST NOT be shown. Rounding is intentional: it signals that the tool has not captured everything, and sets honest expectations about what the timespan represents. If only one log entry exists, display its rounded timestamp with no end. If no log entries exist, no timespan is shown.
 - **FR-010**: If no log entries exist for the requested range, the output MUST differ based on whether the range is today or a past period:
   - **Today — `recap`**: displays an encouraging message that holds the door open — no mention of absence, just the opportunity remaining. Exact phrasing: *"Quiet so far. Ready for the next thing."*
-  - **Today — `what` and `<tool> what`**: plain but not alarming — "Nothing logged so far today." Per-tool variant: "Nothing logged in reminders today." (or whichever tool.) Behavior is identical to suite `what`, filtered to the tool.
-  - **Past ranges — all commands**: plain and factual — "Nothing logged yesterday." / "Nothing logged this week." No encouragement; that door is closed.
+  - **Today — `what` and `<tool> what`**: plain but not alarming — "Nothing recorded so far today." Per-tool variant: "Nothing recorded in reminders today." (or whichever tool.) Behavior is identical to suite `what`, filtered to the tool.
+  - **Past ranges — all commands**: plain and factual — "Nothing recorded yesterday." / "Nothing recorded this week." No encouragement; that door is closed.
   - Empty output with no message is never acceptable.
 - **FR-011**: Log entries MUST be written immediately when an action completes — not buffered or deferred to session end.
 - **FR-012**: Failed commands (those that exit with an error) MUST NOT write a log entry — only successful actions are recorded.
@@ -140,7 +140,7 @@ A user works a full day, closes out at 11:52pm, runs `get-clear recap` at 12:05a
 - **FR-015**: When querying past calendar events for `recap`, timed events MUST use end-time comparison; all-day events MUST use date comparison. An all-day event is "occurred" if its calendar date falls within the query range, regardless of whether its exact end timestamp has passed.
 - **FR-018**: When today has no log entries, `what` and `recap` MUST check the most recent log entry across all files. If that entry was written within 3 hours of now, display that day's entries instead — the user is still in their session. The date header must reflect the actual date of the entries shown, making the substitution transparent. If the most recent entry is more than 3 hours old, treat today as a fresh start and apply the normal empty state.
 - **FR-016**: All timestamps MUST be generated from the system clock at the moment of command execution. No timestamp may be supplied by the calling process (e.g., Claude). This applies to log entry timestamps and to the "current time" used when evaluating which calendar events have occurred.
-- **FR-017**: `recap` MUST suppress any record that was both added and removed within the query range, regardless of how much time elapsed between the two actions. A meeting added in the morning and cancelled after lunch is a changed commitment — it MUST NOT appear as a commitment kept. `what` is unaffected and always shows the complete record. This suppression is intentional quiet intelligence: the user who notices the cancelled meeting is absent from `recap` understands the tool is thinking about what actually held up, not just what happened. That recognition is a moment of trust.
+- ~~**FR-017**~~: *(removed)* Add/remove suppression is no longer needed. Recap queries live data stores for reminders and calendar — a cancelled reminder isn't completed, a removed event isn't in EventKit. The data stores enforce this naturally. Mail and SMS are log-sourced but have no remove equivalent.
 
 ### Key Entities
 
@@ -161,6 +161,10 @@ A user works a full day, closes out at 11:52pm, runs `get-clear recap` at 12:05a
 - **SC-007**: `get-clear recap` output reads as progress, not a ledger. The tone is affirmative — it surfaces what was done in a way that feels like a shoulder tap, not an audit. A user who runs it mid-afternoon should feel the weight of what they've already accomplished. Output is tight: every word earns its place. Do the extra work to make things shorter.
 
 ## Design Notes
+
+**Contacts are not part of recap — by design.** A contact is not a commitment; it is who the commitment is regarding. Adding or updating a contact is infrastructure: it makes future commitments possible but is not itself a kept commitment. Contacts appear in `what` (complete action record) but have no place in `recap` (commitments kept). This is not an oversight.
+
+**`what` and `recap` are MCP-ready.** Both commands are designed to serve two consumers equally: a person reading output directly at the CLI, and Claude calling the command via MCP to compose a narrative or answer a question. `recap` output is structured exactly for this — grouped by commitment type, tightly worded, no filler. When the MCP server is built (get-clear #3), `get-clear what` and `get-clear recap` should be exposed as tools. "How's my day going?" is an MCP call to `recap` followed by Claude narrating the result.
 
 **Lists as projects — no tags needed.** Reminders lists and calendar names are the project attribution layer. A reminder's list name is captured in the log entry and surfaces in `what` and `recap` output — no separate tagging system required. Calendar attribution is coarser ("Work", "Personal") but event titles carry meaning on their own, and Claude can make project associations from them when asked. The practical guidance: if project context matters for a type of work, use a more specific list rather than reaching for a tag.
 

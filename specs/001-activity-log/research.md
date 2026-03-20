@@ -40,6 +40,29 @@ data.withCString { Darwin.write(fd, $0, strlen($0)) }
 
 ---
 
+## EventKit Completed Reminders Query
+
+**Decision**: `EKEventStore.predicateForReminders(in:)` with post-filter on `completionDate`.
+
+**Rationale**: Querying the Reminders database directly captures completions from any source — the app, Siri, the CLI, a watch — not just those recorded in the activity log. This is more honest: recap's question is "where did you keep your commitments?" and the answer shouldn't depend on which interface you used. No duplicate checks or log/database reconciliation needed.
+
+**Pattern** (for `recap` in the get-clear binary):
+```swift
+let predicate = store.predicateForReminders(in: nil)  // nil = all calendars
+store.fetchReminders(matching: predicate) { reminders in
+    let completed = (reminders ?? []).filter { reminder in
+        guard reminder.isCompleted, let completionDate = reminder.completionDate else { return false }
+        return completionDate >= rangeStart && completionDate <= rangeEnd
+    }
+}
+```
+
+**Retention note**: Reminders preserves completed items and their `completionDate` indefinitely unless the user manually deletes them. Surface this honestly if querying a very old range returns nothing unexpected.
+
+**Alternatives considered**: Using the activity log for reminders completions — rejected because it misses completions from any interface other than the CLI. Requires no deduplication and avoids timestamp format differences between log entries and EventKit dates.
+
+---
+
 ## EventKit Past-Event Query
 
 **Decision**: `EKEventStore.predicateForEvents(withStart:end:calendars:)` with `end = Date()`, then post-filter.
@@ -83,13 +106,6 @@ Entitlement file (`Sources/GetClear/get-clear.entitlements`) needs `com.apple.se
 
 ---
 
-## FR-017 Add/Remove Suppression
+## ~~FR-017 Add/Remove Suppression~~ *(removed)*
 
-**Decision**: Post-read filtering in `RecapAggregator`. Match add/remove pairs by `(tool, desc)` within the query range. Suppress both if a matching pair exists.
-
-**Algorithm**:
-1. Read all log entries for the range
-2. Build a set of `(tool, desc)` keys that appear with both `cmd: "add"` and `cmd: "remove"`
-3. Exclude all entries whose key is in that set from recap output
-
-**Edge case**: A record added, modified (`change`), then removed — the pair is still suppressed. The `change` entry is not a commitment; neither is the add or remove in this context.
+Not needed. Recap queries the Reminders database and EventKit directly — cancelled reminders aren't completed, removed calendar events aren't present. The data stores enforce correctness naturally. `RecapAggregator` requires no suppression logic.
