@@ -1,0 +1,25 @@
+#compdef get-clear
+
+_get-clear() {
+  local -a commands
+  commands=(
+    'what:Everything across all tools for a date range'
+    'recap:Where you showed up (calendar, tasks, sent)'
+    'setup:Configure which calendars appear in recap'
+    'update:Install the latest version'
+  )
+
+  if (( CURRENT == 2 )); then
+    _describe 'command' commands
+  elif (( CURRENT >= 3 )); then
+    case $words[2] in
+      what|recap)
+        local -a ranges
+        ranges=(today yesterday week 'last week')
+        _describe 'range' ranges
+        ;;
+    esac
+  fi
+}
+
+_get-clear "$@"
