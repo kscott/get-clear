@@ -119,6 +119,24 @@ Each tool will prompt for macOS permissions on first use. Just approve them:
 
 ---
 
+## Recommended macOS settings
+
+These aren't required, but they make Get Clear behave the way most people expect.
+
+### Week start day
+
+By default, macOS treats Sunday as the first day of the week — which affects how `get-clear recap last week`, `get-clear what this week`, and similar commands anchor their date ranges.
+
+If your working week starts on Monday (or any other day), tell macOS:
+
+**System Settings → General → Language & Region → First day of week**
+
+Set it to Monday. Calendar.app, Reminders, and every app that reads from the system calendar — including Get Clear — will respect it immediately. No restart needed.
+
+This is worth doing even if you don't use Get Clear, because it fixes week boundaries everywhere: Calendar grid views, widget date ranges, Shortcuts automations, and more.
+
+---
+
 ## Verify everything
 
 ```bash
