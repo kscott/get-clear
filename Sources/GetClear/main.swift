@@ -268,6 +268,7 @@ case "update":
 
 case "setup":
     UpdateChecker.spawnBackgroundCheckIfNeeded()
+    signal(SIGINT) { _ in print("\nCancelled."); exit(0) }
     let sem   = DispatchSemaphore(value: 0)
     let store = EKEventStore()
     store.requestFullAccessToEvents { granted, _ in
@@ -299,8 +300,9 @@ case "setup":
         print("Recap calendars: ", terminator: "")
         fflush(stdout)
 
-        guard let input = readLine(),
-              !input.trimmingCharacters(in: .whitespaces).isEmpty else {
+        guard let rawInput = readLine() else { print("\nCancelled."); sem.signal(); return }
+        let input = String(rawInput.unicodeScalars.filter { $0.value >= 32 && $0.value < 127 })
+        guard !input.trimmingCharacters(in: .whitespaces).isEmpty else {
             print("No calendars entered — nothing written.")
             sem.signal()
             return
