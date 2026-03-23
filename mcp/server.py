@@ -322,7 +322,7 @@ TOOLS = [
                 "body": {"type": "string", "description": "Email body text"},
                 "from_identity": {"type": "string", "description": "Sender identity (name or email), uses default if omitted"},
                 "cc": {"type": "string", "description": "CC recipient name or email"},
-                "attach": {"type": "string", "description": "File path to attach"},
+                "attach": {"type": "array", "items": {"type": "string"}, "description": "File path(s) to attach — pass multiple to attach more than one file"},
             },
             "required": ["to"],
         },
@@ -470,7 +470,7 @@ def dispatch(name: str, args: dict) -> str:
         if args.get("cc"):            parts += ["cc", args["cc"]]
         if args.get("from_identity"): parts += ["from", args["from_identity"]]
         if args.get("subject"):       parts += ["subject", args["subject"]]
-        if args.get("attach"):        parts += ["attach", args["attach"]]
+        for f in (args.get("attach") or []):  parts += ["attach", f]
         if args.get("body"):          parts += ["body", args["body"]]  # must be last
         return run("mail", *parts)
 
