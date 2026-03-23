@@ -32,8 +32,11 @@ TOOL_SOURCES=(RemindersCLI CalendarCLI ContactsCLI MailCLI MessagesCLI)
 
 # ── Update get-clear umbrella ──────────────────────────────────────────────────
 
+# get-clear umbrella always matches the full suite version exactly
 echo "$NEW" > VERSION
-git add VERSION
+printf "// Generated — do not edit manually. Use scripts/bump-version in get-clear.\nlet builtVersion = \"$NEW\"\n" \
+  > Sources/GetClear/Version.swift
+git add VERSION Sources/GetClear/Version.swift
 git commit -m "Bump version to $NEW"
 git push origin main
 echo "get-clear: $OLD → $NEW"

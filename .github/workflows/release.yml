@@ -28,11 +28,17 @@ jobs:
       - name: Set version
         run: echo "VERSION=$(cat VERSION)" >> $GITHUB_ENV
 
+      - name: Build get-clear umbrella binary
+        run: |
+          swift build -c release --product get-clear
+          mkdir -p payload/usr/local/bin
+          cp .build/release/get-clear payload/usr/local/bin/get-clear
+          chmod +x payload/usr/local/bin/get-clear
+
       - name: Download binaries
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          mkdir -p payload/usr/local/bin
           for tool in reminders calendar contacts mail sms; do
             echo "Downloading $tool..."
             gh release download latest \
@@ -146,6 +152,7 @@ jobs:
 
       - name: Smoke test — version flags
         run: |
+          get-clear --version
           reminders --version
           calendar --version
           contacts --version
@@ -154,6 +161,7 @@ jobs:
 
       - name: Smoke test — basic commands
         run: |
+          get-clear help
           reminders help
           calendar help
           contacts help
