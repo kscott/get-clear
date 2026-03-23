@@ -10,7 +10,7 @@ import Contacts
 import ContactsLib
 import GetClearKit
 
-let version = "1.0.0"
+let version = builtVersion
 
 let store     = CNContactStore()
 let semaphore = DispatchSemaphore(value: 0)
