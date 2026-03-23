@@ -28,20 +28,28 @@ jobs:
       - name: Set version
         run: echo "VERSION=$(cat VERSION)" >> $GITHUB_ENV
 
-      - name: Build and sign get-clear umbrella binary
+      - name: Setup keychain
         env:
-          P12_DATA: ${{ secrets.DEVELOPER_ID_P12 }}
-          P12_PASSWORD: ${{ secrets.DEVELOPER_ID_P12_PASSWORD }}
+          APP_P12_DATA: ${{ secrets.DEVELOPER_ID_P12 }}
+          APP_P12_PASSWORD: ${{ secrets.DEVELOPER_ID_P12_PASSWORD }}
+          INSTALLER_P12_DATA: ${{ secrets.DEVELOPER_ID_INSTALLER_P12 }}
+          INSTALLER_P12_PASSWORD: ${{ secrets.DEVELOPER_ID_INSTALLER_P12_PASSWORD }}
         run: |
-          swift build -c release --product get-clear
           KEYCHAIN=build.keychain
           security create-keychain -p "" $KEYCHAIN
           security default-keychain -s $KEYCHAIN
           security unlock-keychain -p "" $KEYCHAIN
-          echo "$P12_DATA" | base64 --decode > /tmp/app.p12
-          security import /tmp/app.p12 -k $KEYCHAIN -P "$P12_PASSWORD" -T /usr/bin/codesign
-          security set-key-partition-list -S apple-tool:,apple: -s -k "" $KEYCHAIN
+          echo "$APP_P12_DATA" | base64 --decode > /tmp/app.p12
+          security import /tmp/app.p12 -k $KEYCHAIN -P "$APP_P12_PASSWORD" -T /usr/bin/codesign
           rm /tmp/app.p12
+          echo "$INSTALLER_P12_DATA" | base64 --decode > /tmp/installer.p12
+          security import /tmp/installer.p12 -k $KEYCHAIN -P "$INSTALLER_P12_PASSWORD" -T /usr/bin/productsign
+          rm /tmp/installer.p12
+          security set-key-partition-list -S apple-tool:,apple: -s -k "" $KEYCHAIN
+
+      - name: Build and sign get-clear umbrella binary
+        run: |
+          swift build -c release --product get-clear
           codesign --sign "Developer ID Application: Kenneth Scott (6Q96Q79QN8)" \
             --entitlements Sources/GetClear/get-clear.entitlements \
             --options runtime \
@@ -88,20 +96,6 @@ jobs:
             --resources pkg/resources \
             --package-path . \
             get-clear-unsigned.pkg
-
-      - name: Import Developer ID Installer certificate
-        env:
-          P12_DATA: ${{ secrets.DEVELOPER_ID_INSTALLER_P12 }}
-          P12_PASSWORD: ${{ secrets.DEVELOPER_ID_INSTALLER_P12_PASSWORD }}
-        run: |
-          KEYCHAIN=build.keychain
-          security create-keychain -p "" $KEYCHAIN
-          security default-keychain -s $KEYCHAIN
-          security unlock-keychain -p "" $KEYCHAIN
-          echo "$P12_DATA" | base64 --decode > /tmp/installer.p12
-          security import /tmp/installer.p12 -k $KEYCHAIN -P "$P12_PASSWORD" -T /usr/bin/productsign
-          security set-key-partition-list -S apple-tool:,apple: -s -k "" $KEYCHAIN
-          rm /tmp/installer.p12
 
       - name: Sign package
         run: |
