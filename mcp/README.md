@@ -58,6 +58,19 @@ Tool parameters are typed and named — Claude passes `date: "friday at 9am"` as
 
 ---
 
+## Trust and confirmation
+
+**Always confirm before sending.** `mail_send` and `sms_send` reach real people. Before calling either tool, state who the message is going to and what it contains, and wait for explicit approval.
+
+This is non-negotiable. Trust is lost in a single action and takes a long time to rebuild. A message sent without authorization — even a quick test — damages Ken's relationships with the people he works with.
+
+Specific rules:
+- If you are choosing the recipient (not the user), confirm before sending. If the user named the person, that is authorization.
+- For test sends, ask the user for a safe address to use. Never assume one.
+- When in doubt, draft and show — don't send.
+
+---
+
 ## Updating
 
 The server shells out to the installed binaries, so Get Clear updates automatically pick up new behaviour. No server restart or reinstall needed when you update the CLI tools.
