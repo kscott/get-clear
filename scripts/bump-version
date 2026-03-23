@@ -1,8 +1,11 @@
 #!/usr/bin/env bash
 # bump-version — update the Get Clear suite version and push
 #
+# Updates major.minor across all tool repos. Each tool's patch version
+# is preserved — only the major.minor is synced.
+#
 # Usage:
-#   ./scripts/bump-version 1.1.0
+#   ./scripts/bump-version 1.3.0
 
 set -euo pipefail
 
@@ -21,10 +24,53 @@ if [[ "$NEW" == "$OLD" ]]; then
   exit 0
 fi
 
+# Extract major.minor from new version
+NEW_MAJOR_MINOR=$(echo "$NEW" | cut -d. -f1-2)
+
+TOOLS=(reminders-cli calendar-cli contacts-cli mail-cli sms-cli)
+TOOL_SOURCES=(RemindersCLI CalendarCLI ContactsCLI MailCLI MessagesCLI)
+
+# ── Update get-clear umbrella ──────────────────────────────────────────────────
+
 echo "$NEW" > VERSION
 git add VERSION
 git commit -m "Bump version to $NEW"
 git push origin main
+echo "get-clear: $OLD → $NEW"
 
+# ── Update each tool repo ──────────────────────────────────────────────────────
+
+for i in "${!TOOLS[@]}"; do
+  tool="${TOOLS[$i]}"
+  src="${TOOL_SOURCES[$i]}"
+  repo="$HOME/dev/$tool"
+
+  if [[ ! -d "$repo" ]]; then
+    echo "  skipped $tool (not found at $repo)"
+    continue
+  fi
+
+  # Preserve existing patch version, update major.minor
+  OLD_TOOL=$(cat "$repo/VERSION" 2>/dev/null || echo "0.0.0")
+  OLD_PATCH=$(echo "$OLD_TOOL" | cut -d. -f3)
+  NEW_TOOL="$NEW_MAJOR_MINOR.$OLD_PATCH"
+
+  if [[ "$NEW_TOOL" == "$OLD_TOOL" ]]; then
+    echo "  $tool: already at $NEW_TOOL — skipped"
+    continue
+  fi
+
+  echo "$NEW_TOOL" > "$repo/VERSION"
+  printf "// Generated — do not edit manually. Use scripts/bump-version in get-clear.\nlet builtVersion = \"$NEW_TOOL\"\n" \
+    > "$repo/Sources/$src/Version.swift"
+
+  (cd "$repo" && git add VERSION "Sources/$src/Version.swift" \
+    && git commit -m "Bump version to $NEW_TOOL (suite $NEW)" \
+    && git push origin main)
+
+  echo "  $tool: $OLD_TOOL → $NEW_TOOL"
+done
+
+echo ""
 echo "Done: $OLD → $NEW"
 echo "CI will build and publish get-clear.pkg as 'Get Clear $NEW'."
