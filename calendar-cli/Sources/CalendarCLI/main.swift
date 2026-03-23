@@ -348,17 +348,21 @@ store.requestFullAccessToEvents { granted, _ in
 
         var subsets: [(String, [String])] = []
 
+        signal(SIGINT) { _ in print("\nCancelled."); exit(0) }
+
         while true {
             print("Subset name: ", terminator: "")
             fflush(stdout)
-            guard let nameInput = readLine() else { break }
+            guard let rawNameInput = readLine() else { print("\nCancelled."); break }
+            let nameInput = String(rawNameInput.unicodeScalars.filter { $0.value >= 32 && $0.value < 127 })
             let subsetName = nameInput.trimmingCharacters(in: .whitespaces).lowercased()
             guard !subsetName.isEmpty else { break }
 
             print("Calendars for \"\(subsetName)\": ", terminator: "")
             fflush(stdout)
-            guard let calInput = readLine(),
-                  !calInput.trimmingCharacters(in: .whitespaces).isEmpty else {
+            guard let rawCalInput = readLine() else { print("\nCancelled."); break }
+            let calInput = String(rawCalInput.unicodeScalars.filter { $0.value >= 32 && $0.value < 127 })
+            guard !calInput.trimmingCharacters(in: .whitespaces).isEmpty else {
                 print("  No calendars entered — skipping\n")
                 continue
             }
