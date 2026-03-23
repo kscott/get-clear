@@ -133,7 +133,7 @@ If your working week starts on Monday (or any other day), tell macOS:
 
 Set it to Monday. Calendar.app, Reminders, and every app that reads from the system calendar — including Get Clear — will respect it immediately. No restart needed.
 
-This is worth doing even if you don't use Get Clear, because it fixes week boundaries everywhere: Calendar grid views, widget date ranges, Shortcuts automations, and more.
+This is worth doing even if you don't use Get Clear, because it fixes week boundaries everywhere: Calendar grid views, date pickers inside apps like Reminders, widget date ranges, Shortcuts automations, and more. The change takes effect immediately — no restart required.
 
 ---
 
