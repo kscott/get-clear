@@ -278,8 +278,8 @@ func parseEventDateTime(_ input: String) -> EventDateTime? {
 // MARK: - Dispatch
 
 guard let cmd = args.first else { usage() }
-if isVersionFlag(cmd) { print(version); exit(0) }
-if isHelpFlag(cmd)    { usage() }
+if args.contains(where: { isVersionFlag($0) }) { print(version); exit(0) }
+if args.contains(where: { isHelpFlag($0) })    { usage() }
 
 store.requestFullAccessToEvents { granted, _ in
     guard granted else { fail("Calendar access denied") }
