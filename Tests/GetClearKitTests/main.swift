@@ -700,12 +700,14 @@ final class TestRunner: @unchecked Sendable {
         }
 
         suite("parseArgs — help flags") {
-            expect("'help' → .help",     { if case .help = parseArgs(["help"])     { return true }; return false }())
-            expect("'--help' → .help",   { if case .help = parseArgs(["--help"])   { return true }; return false }())
-            expect("'-h' → .help",       { if case .help = parseArgs(["-h"])       { return true }; return false }())
-            expect("'--help' after cmd", { if case .help = parseArgs(["add", "--help"]) { return true }; return false }())
-            expect("'-h' after cmd",     { if case .help = parseArgs(["add", "-h"])    { return true }; return false }())
-            expect("'--help' mid-args",  { if case .help = parseArgs(["add", "buy milk", "--help"]) { return true }; return false }())
+            expect("'help' → .help",       { if case .help = parseArgs(["help"])     { return true }; return false }())
+            expect("'--help' → .help",     { if case .help = parseArgs(["--help"])   { return true }; return false }())
+            expect("'-h' → .help",         { if case .help = parseArgs(["-h"])       { return true }; return false }())
+            expect("'--help' after cmd",   { if case .help = parseArgs(["add", "--help"]) { return true }; return false }())
+            expect("'-h' after cmd",       { if case .help = parseArgs(["add", "-h"])    { return true }; return false }())
+            expect("'--help' mid-args",    { if case .help = parseArgs(["add", "buy milk", "--help"]) { return true }; return false }())
+            // 'help add' — first arg is 'help', second arg ignored; shows full help (Phase 4 will filter to subcommand)
+            expect("'help add' → .help",   { if case .help = parseArgs(["help", "add"]) { return true }; return false }())
         }
 
         suite("parseArgs — version flags") {
