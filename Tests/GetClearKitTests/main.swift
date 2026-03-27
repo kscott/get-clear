@@ -689,6 +689,59 @@ final class TestRunner: @unchecked Sendable {
             expect("hint is nil on dev machine (no pkgutil receipt)", h == nil)
         }
 
+        // MARK: - parseArgs
+
+        suite("parseArgs — no args") {
+            if case .empty = parseArgs([]) {
+                expect("empty args → .empty", true)
+            } else {
+                expect("empty args → .empty", false)
+            }
+        }
+
+        suite("parseArgs — help flags") {
+            expect("'help' → .help",     { if case .help = parseArgs(["help"])     { return true }; return false }())
+            expect("'--help' → .help",   { if case .help = parseArgs(["--help"])   { return true }; return false }())
+            expect("'-h' → .help",       { if case .help = parseArgs(["-h"])       { return true }; return false }())
+            expect("'--help' after cmd", { if case .help = parseArgs(["add", "--help"]) { return true }; return false }())
+            expect("'-h' after cmd",     { if case .help = parseArgs(["add", "-h"])    { return true }; return false }())
+            expect("'--help' mid-args",  { if case .help = parseArgs(["add", "buy milk", "--help"]) { return true }; return false }())
+        }
+
+        suite("parseArgs — version flags") {
+            expect("'version' → .version",   { if case .version = parseArgs(["version"])   { return true }; return false }())
+            expect("'--version' → .version", { if case .version = parseArgs(["--version"]) { return true }; return false }())
+            expect("'-v' → .version",        { if case .version = parseArgs(["-v"])        { return true }; return false }())
+            expect("'-v' after cmd",         { if case .version = parseArgs(["add", "-v"]) { return true }; return false }())
+        }
+
+        suite("parseArgs — content words not intercepted") {
+            // bare 'help' in non-first position is content, not a flag
+            if case .command(let cmd, let args) = parseArgs(["add", "Home", "help", "Joe", "with", "cleaning"]) {
+                expect("'help' as content: cmd = add",   cmd == "add")
+                expect("'help' as content: args intact", args == ["add", "Home", "help", "Joe", "with", "cleaning"])
+            } else {
+                expect("'help' as content word parses as .command", false)
+                expect("'help' as content: args intact", false)
+            }
+            // bare 'version' in non-first position is content
+            if case .command(_, let args) = parseArgs(["add", "version", "1.0"]) {
+                expect("'version' as content: args intact", args == ["add", "version", "1.0"])
+            } else {
+                expect("'version' as content word parses as .command", false)
+            }
+        }
+
+        suite("parseArgs — flag stripping") {
+            if case .command(let cmd, let args) = parseArgs(["list", "Work"]) {
+                expect("clean args: cmd = list",     cmd == "list")
+                expect("clean args: args[0] = list", args[0] == "list")
+                expect("clean args: args[1] = Work", args[1] == "Work")
+            } else {
+                expect("clean args parse as .command", false)
+            }
+        }
+
         print("\n\(passed + failed) tests: \(passed) passed, \(failed) failed")
         if failed > 0 { exit(1) }
     }
