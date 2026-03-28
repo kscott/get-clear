@@ -312,6 +312,20 @@ Together they cover the full loop: *who* you're working with, *what* you've prom
 
 ---
 
+## Color output
+
+The suite uses ANSI color with automatic suppression — `isatty(STDOUT_FILENO)` and `NO_COLOR` are both checked at process startup. The result is stored once; there is no per-call re-evaluation.
+
+**Three levels, not a palette.** The visual hierarchy has exactly three levels: bold (primary identifier), plain (body text), dim (metadata). Red is reserved for errors only — the `fail()` prefix. There is no fourth level, no accent color, no green for success. Three levels can be applied by rule; more levels require a style guide.
+
+**Why dim, not color, for metadata.** A colored label (`blue` for dates, `yellow` for lists) creates a legend the user has to learn. Dim requires no legend — it means "this is here but not the thing you're looking for." The visual weight does the work without adding a new convention.
+
+**`NO_COLOR` compliance follows https://no-color.org.** The presence of the variable (any value, including empty) disables color. Absence enables it, subject to isatty. This is the community standard and the only correct interpretation.
+
+**contacts-cli was the reference implementation.** It was the first tool wired to GetClearKit ANSI helpers, and its color application (bold names, dim labels and metadata) set the pattern the other four tools follow. When a new tool is added, contacts-cli is the model to look at.
+
+---
+
 ## Telemetry
 
 Get Clear can collect anonymous usage data to improve the suite — but only with the user's explicit consent, and only ever to a first-party endpoint under the developer's control. No third-party analytics services.

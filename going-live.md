@@ -22,17 +22,19 @@ Complete as of 2026-03-14.
 
 The PKG without a README to point at is useless. This is the story before the install.
 
-- [ ] **README.md** (umbrella repo)
+- [x] **README.md** (umbrella repo)
   - Opens with the origin sentence
   - Tells the story: the itch, who this is for, what it does
   - Install section: PKG download link + curl one-liner as alternative
   - Link to setup guide for post-install steps
   - Feedback link to get-clear issues
+  - Shipped 2026-03-27
 
-- [ ] **why.md** (umbrella repo)
+- [x] **why.md** (umbrella repo)
   - The longer version, for people who want to understand before they install
   - Workflow examples from vision.md
   - The feeling — what "get clear" actually means
+  - Shipped 2026-03-27
 
 ---
 
@@ -209,7 +211,7 @@ Good problems to have. Build after real users are using the tools and giving fee
 | Phase | Blocker | What's needed |
 |---|---|---|
 | 0 | ~~PKG won't build~~ | ~~Developer ID Installer cert~~ ✅ |
-| 1 | Nothing to point people to | README.md + why.md |
+| 1 | ~~Nothing to point people to~~ | ~~README.md + why.md~~ ✅ |
 | 2 | Install experience unvalidated | Clean-machine PKG + curl installer test |
 | 3 | ~~Missing feedback loop~~ | ~~Activity log + done report~~ ✅ |
 | 3 | mail doesn't work for most users | Gmail support (mail #14) |

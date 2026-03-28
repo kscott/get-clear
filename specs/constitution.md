@@ -84,6 +84,22 @@ The setup prompt must disclose what is collected before asking. Vague language (
 
 ---
 
+## Color has exactly three levels
+
+ANSI formatting in all tool output uses exactly three levels: **bold** for primary identifiers (titles, names, subjects), plain for body text, and **dim** for supporting metadata (dates, labels, addresses, indices). **Red is reserved exclusively for errors** — the "Error:" prefix in `fail()` output. It is never used for warnings, urgency, or emphasis.
+
+Adding a fourth level requires a style guide. Three levels can be applied by rule. Red means "something went wrong" in every terminal convention — using it for anything else undermines the signal.
+
+---
+
+## GetClearKit first
+
+Shared behavior lives in GetClearKit. If logic already exists in GetClearKit, duplicating it in a tool repo is wrong by definition. When writing new code in a tool repo, search GetClearKit first. When logic appears in two tool repos, it moves to GetClearKit before either ships.
+
+The test: could a new sixth tool get this behavior by importing GetClearKit alone, with no copy-paste? If not, the wrong thing is in the wrong place.
+
+---
+
 ## Timestamps come from the system clock
 
 No timestamp may be supplied by a calling process. All times are generated at the moment of execution. This applies to log entries, cache writes, and any time-sensitive comparison.

@@ -1,0 +1,3 @@
+module GetClearKit {
+    header "/Users/ken/dev/get-clear/.build/arm64-apple-macosx/release/GetClearKit.build/include/GetClearKit-Swift.h"
+}
