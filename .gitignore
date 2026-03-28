@@ -1,2 +1,3 @@
+.build/
 mcp/__pycache__/
 mcp/.venv/
