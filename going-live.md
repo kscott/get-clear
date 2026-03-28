@@ -96,17 +96,28 @@ quickly once real people use them.
   - Tab-complete commands, list names, calendar subsets
   - PKG bundles to `/usr/local/share/zsh/site-functions/`; curl installer patches fpath
 
-- [ ] **mail: no-backend fallback** (new)
-  - If no JMAP token is configured, `mail send` falls back instead of erroring:
-    - Single recipient → `open mailto:...` — opens the user's default mail client pre-filled
-    - Multiple recipients or long body → copy to clipboard in paste-ready format
-  - Auto-detected from whether `mail setup` has been run — user never has to think about it
-  - This makes mail work for everyone on day one, regardless of email provider
+- [ ] **Gmail support** (mail #14)
+  - The majority of the target audience is on Gmail or Google Workspace
+  - Shipping without Gmail means mail doesn't work for most users on day one
+  - OAuth2 flow, Google Cloud Console app registration, browser consent
+  - Workspace/Okta environments may require IT admin approval — outside our control
+  - `mail setup gmail` triggers OAuth flow; `mail setup fastmail <token>` stays as-is
+  - Setup section in README needs two paths once this ships
+  - **This is a launch blocker — do not ship publicly until Gmail works**
 
-- [ ] **mail draft command** (new)
-  - Explicit "stage it, don't send it" workflow — always uses mailto:/clipboard path
-  - Works even with JMAP configured, for people who want to review before sending
-  - Covers distro list composition: resolves a contacts group → paste-ready To: block
+- [ ] **MCP mail attachments** (get-clear #20)
+  - `mail send` already supports attachments in the binary; MCP tool doesn't expose it
+  - Gap affects every Claude user sending mail with attachments — primary interface
+
+- [ ] **`--help` flag guard** (get-clear #28, partial)
+  - `--help` passed to any command is silently treated as content — creates a reminder named "--help", sends mail to "--help", etc.
+  - Fix: intercept `--help` / `-h` before argument parsing and show subcommand help instead
+  - Silent data corruption; applies to all five tools
+
+- [ ] **Emoji shortcode expansion** (get-clear #17)
+  - `:tada:` → 🎉, `:rocket:` → 🚀 etc. in all user-supplied text fields
+  - Expansion function in GetClearKit, curated ~150 shortcode dictionary, no runtime dependency
+  - Small scope, high delight for a Claude-first tool
 
 - [x] **Color output pass** (get-clear #10)
   - All five tools: bold names/titles, dim metadata, red errors
@@ -145,15 +156,30 @@ quickly once real people use them.
 
 Good problems to have. Build after real users are using the tools and giving feedback.
 
+- [ ] **Contextual subcommand help** (get-clear #28, partial)
+  - `help <subcommand>` currently falls through to full help; should filter to the relevant block
+  - Companion to the `--help` guard fix already in Phase 3
+
+- [ ] **MCP compiled binary** (get-clear #27)
+  - MCP server currently a Python script requiring the source repo to be cloned
+  - Ship as `get-clear mcp` or `reminders mcp` compiled subcommand so MCP works on a fresh install
+  - Becomes important once distributing to real users
+
+- [ ] **mail: no-backend fallback** (mail #17)
+  - If no token configured, fall back to `mailto:` or clipboard instead of erroring
+  - Niche edge case once Gmail ships — covers providers outside Fastmail/Gmail
+
+- [ ] **mail draft command** (mail #18)
+  - Explicit "stage it, don't send it" workflow via mailto:/clipboard
+  - Distro list composition: contacts group → paste-ready To: block
+
 - [ ] **mail find + reply** (mail #10, #11)
   - Numbered results from `mail find`, referenceable by ID
   - `mail reply <n>` to respond in-thread
   - Completes the mail loop for Claude-assisted use
 
-- [ ] **Gmail support** (get-clear #5, mail #14)
-  - Opens the suite to the majority of email users
-  - Significant scope: Google API auth, OAuth flow, MIME handling
-  - Evaluate after v1 — don't let it block launch
+- [ ] **Gmail support** (mail #14)
+  - Moved to Phase 3 — confirmed launch blocker
 
 - [ ] **JMAP session cache** (mail #4)
   - Cache session and mailbox IDs instead of fetching on every command
@@ -186,8 +212,11 @@ Good problems to have. Build after real users are using the tools and giving fee
 | 1 | Nothing to point people to | README.md + why.md |
 | 2 | Install experience unvalidated | Clean-machine PKG + curl installer test |
 | 3 | ~~Missing feedback loop~~ | ~~Activity log + done report~~ ✅ |
-| 3 | mail broken for non-Fastmail users | No-backend fallback (mailto: / clipboard) |
-| 3 | Experience gaps | calendar setup command |
+| 3 | mail doesn't work for most users | Gmail support (mail #14) |
+| 3 | MCP missing binary feature | mail attachments via MCP (#20) |
+| 3 | Silent data corruption | `--help` flag guard (#28) |
+| 3 | Polish | Emoji shortcode expansion (#17) |
+| 3 | ~~Experience gaps~~ | ~~calendar setup command~~ ✅ |
 | 3 | ~~Incomplete vision~~ | ~~Color output, GetClearKit migrations (#10–13)~~ ✅ |
 
 The PKG is built, signed, and live. Phases 1–3 must all be complete before sharing with real people.
