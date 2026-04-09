@@ -3,6 +3,7 @@
 **Feature Branch**: `main` (commit de8aeb2 and subsequent, 2026-03-16; get-clear #3)
 **Created**: 2026-03-16
 **Status**: Shipped (2026-03-16; registered with Claude Code via `claude mcp add`; 22 tools live)
+**Superseded by**: `specs/009-skills` — Claude Code skills replaced MCP as the integration layer (2026-04-09). MCP server removed from repo; `mcp/` directory deleted. See get-clear #30.
 **Input**: Claude could use the Get Clear tools by constructing CLI strings and running them via Bash — but this required exact string construction, was fragile (the `due friday` bug class), and gave Claude no structured parameter contract. An MCP server gives Claude typed input schemas, tool descriptions with sequencing guidance, and output it can parse without ANSI stripping. The result: Claude can add a reminder, find a contact, and send a mail as confidently as a user would.
 
 ## User Scenarios & Testing *(mandatory)*

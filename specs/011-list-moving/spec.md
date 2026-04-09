@@ -35,8 +35,8 @@ If the title matches multiple reminders in different lists, the disambiguation p
 **The `nothing to change` error message was updated**
 Before this feature, the error for no recognized keywords was "nothing to change — specify a date, repeat, priority, note, or url". The `list` keyword was added to this message: "nothing to change — specify a date, repeat, priority, note, url, or list".
 
-**MCP server updated same session**
-Immediately after shipping, the MCP server was updated to expose `target_list` as a typed parameter on `reminders_change`. This closed the loop: Claude can now move reminders via MCP without constructing shell strings.
+**MCP server updated same session** *(historical)*
+Immediately after shipping, the MCP server was updated to expose `target_list` as a typed parameter on `reminders_change`. The MCP server has since been removed and superseded by Claude Code skills (see specs/008-mcp-server).
 
 ## Requirements *(mandatory)*
 
@@ -48,7 +48,7 @@ Immediately after shipping, the MCP server was updated to expose `target_list` a
 - **FR-004**: If the target list is not found, `fail("List not found: <name>")` MUST be called.
 - **FR-005**: The change confirmation output MUST include the list move: `"list → <from> → <to>"`.
 - **FR-006**: `list` MUST be combinable with other `change` keywords in a single invocation (e.g., `change "title" date friday list Ibotta`).
-- **FR-007**: `reminders_change` in the MCP server MUST expose `target_list` as a typed optional string parameter.
+- **FR-007**: ~~`reminders_change` in the MCP server MUST expose `target_list` as a typed optional string parameter.~~ *(MCP removed — superseded by skills)*
 - **FR-008**: 20 new tests MUST cover: basic move, move with source-list disambiguation, not-found error, combined list+date, and the `nothing to change` error message update.
 
 ### Key Entities
