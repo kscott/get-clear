@@ -107,9 +107,12 @@ quickly once real people use them.
   - Setup section in README needs two paths once this ships
   - **This is a launch blocker — do not ship publicly until Gmail works**
 
-- [ ] **MCP mail attachments** (get-clear #20)
-  - `mail send` already supports attachments in the binary; MCP tool doesn't expose it
-  - Gap affects every Claude user sending mail with attachments — primary interface
+- [ ] **Bundle Claude Code skills with distribution** (get-clear #30)
+  - One skill file per tool installed to `~/.claude/skills/` by the PKG and curl installer
+  - Skills are the Claude integration layer — without them, new users have no Claude-first experience
+  - Skills encode argument order rules and confirmation contracts that prevent misuse
+  - Replaces MCP server as the integration approach
+  - **This is a launch blocker — the tools are Claude-first by design**
 
 - [ ] **`--help` flag guard** (get-clear #28, partial)
   - `--help` passed to any command is silently treated as content — creates a reminder named "--help", sends mail to "--help", etc.
@@ -162,11 +165,6 @@ Good problems to have. Build after real users are using the tools and giving fee
   - `help <subcommand>` currently falls through to full help; should filter to the relevant block
   - Companion to the `--help` guard fix already in Phase 3
 
-- [ ] **MCP compiled binary** (get-clear #27)
-  - MCP server currently a Python script requiring the source repo to be cloned
-  - Ship as `get-clear mcp` or `reminders mcp` compiled subcommand so MCP works on a fresh install
-  - Becomes important once distributing to real users
-
 - [ ] **mail: no-backend fallback** (mail #17)
   - If no token configured, fall back to `mailto:` or clipboard instead of erroring
   - Niche edge case once Gmail ships — covers providers outside Fastmail/Gmail
@@ -187,11 +185,10 @@ Good problems to have. Build after real users are using the tools and giving fee
   - Cache session and mailbox IDs instead of fetching on every command
   - Performance win, not correctness fix
 
-- [x] **MCP server** (get-clear #3)
-  - 22 tools across all five CLIs; lives in `mcp/`
-  - Typed parameters eliminate CLI string-construction ambiguity
-  - Setup: `python3 -m venv .venv && .venv/bin/pip install mcp && claude mcp add get-clear ...`
-  - Shipped 2026-03-16
+- [x] **MCP server** (get-clear #3) — superseded by skills
+  - Shipped 2026-03-16; 22 tools across all five CLIs
+  - Replaced by Claude Code skills (get-clear #30) — simpler, no server process, same agent contracts
+  - `mcp/` directory and get-clear #27 (compiled binary) removed from scope
 
 - [ ] **Google Calendar** (calendar #12)
   - Same scope concern as Gmail — evaluate post-v1
@@ -215,7 +212,7 @@ Good problems to have. Build after real users are using the tools and giving fee
 | 2 | Install experience unvalidated | Clean-machine PKG + curl installer test |
 | 3 | ~~Missing feedback loop~~ | ~~Activity log + done report~~ ✅ |
 | 3 | mail doesn't work for most users | Gmail support (mail #14) |
-| 3 | MCP missing binary feature | mail attachments via MCP (#20) |
+| 3 | Claude integration not distributed | Bundle skills with PKG (#30) |
 | 3 | Silent data corruption | `--help` flag guard (#28) |
 | 3 | Polish | Emoji shortcode expansion (#17) |
 | 3 | ~~Experience gaps~~ | ~~calendar setup command~~ ✅ |
