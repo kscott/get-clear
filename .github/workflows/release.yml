@@ -63,7 +63,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          for tool in reminders calendar contacts mail sms; do
+          for tool in reminders calendar contacts mail text; do
             echo "Downloading $tool..."
             gh release download latest \
               --repo kscott/${tool}-cli \
@@ -76,7 +76,7 @@ jobs:
           chmod +x payload/usr/local/share/get-clear/uninstall.sh
           mkdir -p payload/usr/local/share/zsh/site-functions
           cp completions/_get-clear completions/_reminders completions/_calendar \
-             completions/_contacts completions/_mail completions/_sms \
+             completions/_contacts completions/_mail completions/_text \
              payload/usr/local/share/zsh/site-functions/
 
       - name: Build component package
@@ -167,7 +167,7 @@ jobs:
           calendar --version
           contacts --version
           mail --version
-          sms --version
+          text --version
 
       - name: Smoke test — basic commands
         run: |
@@ -176,4 +176,4 @@ jobs:
           calendar help
           contacts help
           mail help
-          sms help
+          text help

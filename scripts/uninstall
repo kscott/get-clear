@@ -25,7 +25,7 @@ if [[ "$EUID" -ne 0 ]]; then
   exec sudo "$0" "$@"
 fi
 
-TOOLS=(reminders calendar contacts mail sms)
+TOOLS=(reminders calendar contacts mail text)
 BIN_DIR="/usr/local/bin"
 
 echo "Uninstalling Get Clear..."

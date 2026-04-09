@@ -1,6 +1,6 @@
 # CLI Suite — Design Principles
 
-Covers: reminders-cli, calendar-cli, contacts-cli, mail-cli, sms-cli
+Covers: reminders-cli, calendar-cli, contacts-cli, mail-cli, text-cli
 
 Repos live at `~/dev/<tool>-cli/`. Each has its own DEVELOPMENT.md for tool-specific
 conventions. This document captures the principles that span the whole suite.
@@ -28,14 +28,14 @@ The suite divides cleanly into two kinds of tools:
 - The data lives persistently (EventKit, CNContactStore)
 - Claude can read back what it created and correct mistakes
 
-**Fire-and-forget tools** — mail, sms
+**Fire-and-forget tools** — mail, text
 - One-way dispatch: you compose and send, you don't read back in this CLI
 - No list, show, or inbox commands — those belong in the native app
 - `find` in mail is the one exception: it provides context *before* composing, not after sending (current code still uses `search` — tracked as mail #12)
 
 The test for whether a command belongs in a tool: *does it fit the tool's identity?*
 A `mail inbox` command would be wrong not because it's hard, but because mail is a
-send tool. Same reasoning cut `sms list` and `sms show`.
+send tool. Same reasoning cut `text list` and `text show`.
 
 ---
 
@@ -215,13 +215,13 @@ Scope: applied to any user-supplied free text — event titles, reminder titles,
 
 Stub functions that can't be implemented honestly get deleted, not left in.
 
-The failure mode: `phoneLabel()` in sms-cli always returned false, making the
+The failure mode: `phoneLabel()` in text-cli always returned false, making the
 mobile-number preference loop silently a no-op. The code looked like it was doing
 something it wasn't. When a function can't be implemented correctly yet, remove
 the call site too — don't leave the impression of working logic.
 
 When features are removed, their supporting code goes with them. `resolveIdentifier()`
-was written for `sms list` and `sms show`. When those commands were cut, the function
+was written for `text list` and `text show`. When those commands were cut, the function
 and its tests were deleted in the same commit.
 
 ---

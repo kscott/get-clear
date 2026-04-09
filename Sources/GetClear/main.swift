@@ -71,7 +71,7 @@ func formatSentItem(_ entry: ActivityLogEntry) -> String {
     case "mail":
         let recipient = entry.desc.components(separatedBy: " Re: ").first ?? entry.desc
         return "Email to \(recipient)"
-    case "sms":
+    case "sms", "text":
         let name = entry.desc.components(separatedBy: ": ").first ?? entry.desc
         return "Text to \(name)"
     default:

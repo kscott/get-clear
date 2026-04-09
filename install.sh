@@ -9,7 +9,7 @@
 
 set -euo pipefail
 
-TOOLS=(reminders calendar contacts mail sms)
+TOOLS=(reminders calendar contacts mail text)
 BIN_DIR="${GET_CLEAR_BIN_DIR:-$HOME/.local/bin}"
 ZSH_COMPLETIONS_DIR="${GET_CLEAR_ZSH_COMPLETIONS_DIR:-$HOME/.local/share/zsh/site-functions}"
 BASE="https://github.com/kscott"
@@ -98,6 +98,6 @@ echo "       personal = [\"Home\", \"Family\"]"
 echo ""
 echo "  3. First-run permissions"
 echo "     Each tool asks once — just approve:"
-echo "     reminders list · calendar today · contacts lists · sms open"
+echo "     reminders list · calendar today · contacts lists · text open"
 echo ""
 echo "  https://github.com/kscott/get-clear"

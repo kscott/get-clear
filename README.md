@@ -22,7 +22,7 @@ You say what needs to happen. Get Clear handles the rest.
 | [**Reminders**](https://github.com/kscott/reminders-cli) | The promises you can't afford to forget |
 | [**Calendar**](https://github.com/kscott/calendar-cli) | When you said you'd be there |
 | [**Mail**](https://github.com/kscott/mail-cli) | The thing you said you'd send |
-| [**Messages**](https://github.com/kscott/sms-cli) | The quick word |
+| [**Messages**](https://github.com/kscott/text-cli) | The quick word |
 
 `add` · `find` · `show` · `change` · `rename` · `remove` — six words across all five tools. Use one, know them all.
 
@@ -104,7 +104,7 @@ Name to inbox in one motion.
 > "Text Marcus I'm running a few minutes late"
 
 ```
-sms send Marcus "Running a few minutes late, be right there"
+text send Marcus "Running a few minutes late, be right there"
 ```
 ```
 Sent → Marcus Reyes
@@ -159,7 +159,7 @@ Tab completion is included — commands, list names, and calendar subsets.
 | `reminders list` | Reminders access |
 | `calendar today` | Calendar access |
 | `contacts lists` | Contacts access |
-| `sms open` | Messages automation |
+| `text open` | Messages automation |
 
 **Mail** — run setup once for your provider:
 

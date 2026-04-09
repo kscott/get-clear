@@ -7,7 +7,7 @@ public struct ActivityLogReader {
         FileManager.default.homeDirectoryForCurrentUser
             .appendingPathComponent(".local/share/get-clear/log")
 
-    private static let validTools: Set<String> = ["reminders", "calendar", "contacts", "mail", "sms"]
+    private static let validTools: Set<String> = ["reminders", "calendar", "contacts", "mail", "sms", "text"]
     private static let validCmds:  Set<String> = ["add", "remove", "change", "rename", "done", "send"]
 
     // MARK: - Public API

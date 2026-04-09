@@ -341,7 +341,7 @@ TOOLS = [
 
     # ── SMS ───────────────────────────────────────────────────────────────────
     types.Tool(
-        name="sms_send",
+        name="text_send",
         description="Send an SMS or iMessage via Messages.app. Before sending, display the recipient and message to the user and wait for confirmation — messages cannot be unsent. If given a contact name, always call contacts_show first to get their phone number. Pass the phone number directly to this tool — do not pass a name or email unless you have confirmed no phone number exists.",
         inputSchema={
             "type": "object",
@@ -477,9 +477,9 @@ def dispatch(name: str, args: dict) -> str:
     if name == "mail_find":
         return run("mail", "find", args["query"])
 
-    # sms
-    if name == "sms_send":
-        return run("sms", "send", args["contact"], args["message"])
+    # text
+    if name == "text_send":
+        return run("text", "send", args["contact"], args["message"])
 
     return f"Error: unknown tool '{name}'"
 

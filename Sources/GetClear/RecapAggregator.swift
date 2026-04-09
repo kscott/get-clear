@@ -72,10 +72,10 @@ public struct RecapAggregator {
         }
 
         group.notify(queue: .global()) {
-            // Sent entries from log (mail + sms send commands)
+            // Sent entries from log (mail + text send commands; "sms" kept for backward compat)
             let logEntries = ActivityLogReader.entries(in: range, baseDirectory: baseDirectory)
             let sent = logEntries.filter {
-                ($0.tool == "mail" || $0.tool == "sms") && $0.cmd == "send"
+                ($0.tool == "mail" || $0.tool == "sms" || $0.tool == "text") && $0.cmd == "send"
             }
 
             // Timespan from all log entries (FR-009d)

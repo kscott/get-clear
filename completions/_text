@@ -1,6 +1,6 @@
-#compdef sms
+#compdef text
 
-_sms() {
+_text() {
   local -a commands
   commands=(
     'send:Send an SMS or iMessage'
@@ -12,4 +12,4 @@ _sms() {
   fi
 }
 
-_sms "$@"
+_text "$@"

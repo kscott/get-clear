@@ -72,7 +72,7 @@ The suite divides cleanly into two identities:
 - Data persists (EventKit, CNContactStore)
 - Claude can read back what it created and correct mistakes
 
-**Fire-and-forget tools** — mail, sms
+**Fire-and-forget tools** — mail, text
 - One-way dispatch: compose and send; no read-back in this CLI
 - No `list`, `show`, or inbox commands — those belong in the native app
 - `find` in mail is the exception: it provides context *before* composing, not after sending
@@ -149,7 +149,7 @@ Exit non-zero.
 
 ### Repo Structure
 
-Six repos: one per tool (`reminders-cli`, `calendar-cli`, `contacts-cli`, `mail-cli`, `sms-cli`) plus the umbrella `get-clear` repo that hosts GetClearKit, the MCP server, and suite-level documentation.
+Six repos: one per tool (`reminders-cli`, `calendar-cli`, `contacts-cli`, `mail-cli`, `text-cli`) plus the umbrella `get-clear` repo that hosts GetClearKit and suite-level documentation.
 
 Per-tool repos provide: clean versioning and changelogs, scoped GitHub issues and PRs, per-tool releases in the PKG installer.
 
@@ -194,7 +194,7 @@ Current test counts (targets):
 - calendar-cli: 89 tests
 - contacts-cli: 31 tests
 - mail-cli: 50 tests
-- sms-cli: 36 tests
+- text-cli: 36 tests
 - GetClearKit: 185 tests
 
 ### Versioning and Distribution

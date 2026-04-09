@@ -21,7 +21,7 @@ git clone https://github.com/kscott/reminders-cli ~/dev/reminders-cli
 git clone https://github.com/kscott/calendar-cli ~/dev/calendar-cli
 git clone https://github.com/kscott/contacts-cli ~/dev/contacts-cli
 git clone https://github.com/kscott/mail-cli ~/dev/mail-cli
-git clone https://github.com/kscott/sms-cli ~/dev/sms-cli
+git clone https://github.com/kscott/text-cli ~/dev/text-cli
 git clone https://github.com/kscott/get-clear ~/dev/get-clear
 ```
 
@@ -35,7 +35,7 @@ Each `setup` command builds the release binary, installs it to `~/bin`, and syml
 ~/dev/reminders-cli/reminders setup
 ~/dev/calendar-cli/calendar setup
 ~/dev/contacts-cli/contacts setup
-~/dev/sms-cli/sms setup
+~/dev/text-cli/text setup
 ```
 
 Mail is last — it needs a token (see step 3).
@@ -114,7 +114,7 @@ Each tool will prompt for macOS permissions on first use. Just approve them:
 - **Reminders** — `reminders list`
 - **Calendar** — `calendar today`
 - **Contacts** — `contacts lists`
-- **Messages** (Automation) — `sms open`
+- **Messages** (Automation) — `text open`
 - **Mail** — handled by JMAP token, no system permission needed
 
 ---
@@ -144,7 +144,7 @@ reminders list
 calendar today
 contacts lists
 mail find "test"
-sms open
+text open
 ```
 
 All five working — you're set up.

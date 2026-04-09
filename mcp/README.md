@@ -8,7 +8,7 @@ Claude can add reminders, check your calendar, look up contacts, send email, and
 
 ## Prerequisites
 
-- **Get Clear installed** — all five tools must be in your PATH (`reminders`, `calendar`, `contacts`, `mail`, `sms`). See [setup.md](../setup.md).
+- **Get Clear installed** — all five tools must be in your PATH (`reminders`, `calendar`, `contacts`, `mail`, `text`). See [setup.md](../setup.md).
 - **Python 3.11+** — comes with macOS 14+. Check: `python3 --version`
 - **Claude Code** — the CLI (`claude`)
 

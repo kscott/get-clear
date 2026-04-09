@@ -12,7 +12,7 @@ Complete as of 2026-03-14.
 - [x] **Create Developer ID Installer cert** — created, imported, backed up to Secure Documents disk image
 - [x] **Store in Keychain, sync to GitHub** — `get-clear-signing` Keychain entries updated, `sync-secrets` run
 - [x] **CI green, PKG ships** — signed, notarized, stapled `get-clear.pkg 1.0.0` live at GitHub releases
-- [x] **Stapler bug fixed across all five tool repos** — contacts, reminders, calendar, mail, sms
+- [x] **Stapler bug fixed across all five tool repos** — contacts, reminders, calendar, mail, text
 - [x] **Semantic versioning** — `VERSION` file + `scripts/bump-version`
 - [x] **Uninstaller** — `scripts/uninstall`; prompts to remove config/credentials; bundled in PKG at `/usr/local/share/get-clear/uninstall.sh`
 
@@ -62,7 +62,7 @@ Nothing embarrassing should make it to a real person. Test this end to end.
   - `reminders list` — approves Reminders access
   - `calendar today` — approves Calendar access
   - `contacts lists` — approves Contacts access
-  - `sms open` — approves Automation/Messages access
+  - `text open` — approves Automation/Messages access
   - Confirm each permission prompt is clear and approves correctly
 
 - [ ] **Verify mail setup onboarding flow**
@@ -83,7 +83,7 @@ quickly once real people use them.
 - [x] **Activity log, what, and recap** (get-clear #1, #2)
   - Every write command across all five tools logs a timestamped entry to `~/.local/share/get-clear/log/`
   - `get-clear what [range]` / `<tool> what [range]` — complete action log
-  - `get-clear recap [range]` — commitments kept: calendar events, completed reminders, mail/sms sent
+  - `get-clear recap [range]` — commitments kept: calendar events, completed reminders, mail/text sent
   - FR-018 midnight recency rule — never shows empty when you just finished a full day
   - Shipped 2026-03-19; branch `001-activity-log`
 
@@ -196,7 +196,7 @@ Good problems to have. Build after real users are using the tools and giving fee
 - [ ] **Google Calendar** (calendar #12)
   - Same scope concern as Gmail — evaluate post-v1
 
-- [ ] **Multi-recipient SMS** (sms #10)
+- [ ] **Multi-recipient text** (text #10)
 
 - [ ] **Move reminder to different list** (reminders #13)
 

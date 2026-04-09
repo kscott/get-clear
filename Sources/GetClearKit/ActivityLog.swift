@@ -13,7 +13,7 @@ public struct ActivityLog {
     /// Writes one log entry for a successful write command.
     ///
     /// - Parameters:
-    ///   - tool: One of: reminders, calendar, contacts, mail, sms
+    ///   - tool: One of: reminders, calendar, contacts, mail, text
     ///   - cmd: The command executed: add, remove, change, rename, done, send
     ///   - desc: Human-readable description of the record acted on
     ///   - container: Scoping container (list name, calendar name, group name) or nil

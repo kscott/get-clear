@@ -27,8 +27,8 @@ fi
 # Extract major.minor from new version
 NEW_MAJOR_MINOR=$(echo "$NEW" | cut -d. -f1-2)
 
-TOOLS=(reminders-cli calendar-cli contacts-cli mail-cli sms-cli)
-TOOL_SOURCES=(RemindersCLI CalendarCLI ContactsCLI MailCLI MessagesCLI)
+TOOLS=(reminders-cli calendar-cli contacts-cli mail-cli text-cli)
+TOOL_SOURCES=(RemindersCLI CalendarCLI ContactsCLI MailCLI TextCLI)
 
 # ── Update get-clear umbrella ──────────────────────────────────────────────────
 
