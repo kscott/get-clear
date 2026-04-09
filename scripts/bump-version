@@ -76,4 +76,36 @@ done
 
 echo ""
 echo "Done: $OLD → $NEW"
-echo "CI will build and publish get-clear.pkg as 'Get Clear $NEW'."
+echo "Waiting for tool binaries to be published..."
+
+# Record when we started pushing — used to verify each binary is freshly built,
+# not the pre-existing one at releases/latest.
+PUSH_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+# Poll each tool repo until the signed binary at releases/latest was uploaded
+# after PUSH_TIME. Each tool CI takes ~1-2 minutes; timeout after 10 minutes.
+TOOL_BINS=(reminders calendar contacts mail text)
+TIMEOUT=600
+for bin in "${TOOL_BINS[@]}"; do
+  deadline=$((SECONDS + TIMEOUT))
+  while [[ $SECONDS -lt $deadline ]]; do
+    updated=$(gh release view latest --repo "kscott/${bin}-cli" --json assets \
+      --jq ".assets[] | select(.name == \"${bin}-bin\") | .updatedAt" 2>/dev/null || true)
+    if [[ -n "$updated" && "$updated" > "$PUSH_TIME" ]]; then
+      echo "  ${bin}-bin ready ($updated)"
+      break
+    fi
+    echo "  waiting for ${bin}-bin..."
+    sleep 30
+  done
+  if [[ $SECONDS -ge $deadline ]]; then
+    echo "  timeout waiting for ${bin}-bin — trigger PKG build manually:"
+    echo "  gh workflow run release.yml --repo kscott/get-clear"
+    exit 1
+  fi
+done
+
+echo ""
+echo "All binaries ready. Triggering PKG build..."
+gh workflow run release.yml --repo kscott/get-clear
+echo "PKG build started. Watch it at: https://github.com/kscott/get-clear/actions"
