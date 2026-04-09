@@ -119,6 +119,13 @@ quickly once real people use them.
   - Fix: intercept `--help` / `-h` before argument parsing and show subcommand help instead
   - Silent data corruption; applies to all five tools
 
+- [ ] **`calendar change`** (calendar-cli #15)
+  - Move, reschedule, or retitle an existing event without delete-and-recreate
+  - Will surface immediately with real users — it's a routine action
+  - Non-recurring events are straightforward; recurring events need a scope choice (this / all future / all)
+  - Acceptable to ship with non-recurring only and add recurrence scope later
+  - Not a hard blocker, but a fast-follow if not done before launch
+
 - [ ] **Emoji shortcode expansion** (get-clear #17)
   - `:tada:` → 🎉, `:rocket:` → 🚀 etc. in all user-supplied text fields
   - Expansion function in GetClearKit, curated ~150 shortcode dictionary, no runtime dependency
