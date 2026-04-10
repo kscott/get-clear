@@ -11,6 +11,7 @@ import CalendarLib
 import GetClearKit
 
 let version = builtVersion
+let versionString = "\(builtVersion) (Get Clear \(suiteVersion))"
 
 let store     = EKEventStore()
 let semaphore = DispatchSemaphore(value: 0)
@@ -18,7 +19,7 @@ var args      = Array(CommandLine.arguments.dropFirst())
 
 func usage() -> Never {
     print("""
-    calendar \(version) — CLI for Apple Calendar
+    calendar \(versionString) — CLI for Apple Calendar
 
     Usage:
       calendar open                               # Open the Calendar app
@@ -278,7 +279,7 @@ func parseEventDateTime(_ input: String) -> EventDateTime? {
 // MARK: - Dispatch
 
 let dispatch = parseArgs(args)
-if case .version = dispatch { print(version); exit(0) }
+if case .version = dispatch { print(versionString); exit(0) }
 guard case .command(let cmd, let args) = dispatch else { usage() }
 
 store.requestFullAccessToEvents { granted, _ in
