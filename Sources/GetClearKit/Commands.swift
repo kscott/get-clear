@@ -1,0 +1,58 @@
+import Foundation
+
+/// All commands recognized across the Get Clear suite.
+///
+/// Each tool declares the subset it supports via a private `Cmd` enum whose
+/// `init?(_ command: Command)` maps suite commands to tool-local cases. Commands
+/// not supported by a tool return `nil` from that initializer and fall through
+/// to `usage()`. Adding a command to a tool requires a `Command` case here first,
+/// which enforces consistent naming across the suite.
+public enum Command: String {
+    // Suite-wide
+    case open
+    case what
+    case find
+    case show
+    case add
+    case change
+    case rename
+    case remove
+    case list
+    case lists
+    case send
+    case setup
+    // Tool-specific
+    case done       // reminders
+    case export     // contacts
+    case calendars  // calendar — see get-clear#31 for rename discussion
+    case today      // calendar
+    case week       // calendar
+    case next       // calendar
+}
+
+/// Parse args, handle version/help/empty, and dispatch to `handler` with a typed `Command`.
+///
+/// - `.version` → prints version string and exits
+/// - `.help` / `.empty` → calls `usage()`
+/// - Unrecognised command string → calls `usage()`
+/// - Known command → calls `handler` with the typed `Command` and filtered arg list
+///
+/// The arg list passed to `handler` mirrors the raw args with flag tokens stripped;
+/// the command name remains at index 0 so handler code uses `args[1]`, `args[2]`, etc.
+public func runCLI(
+    args: [String],
+    version: String,
+    usage: () -> Never,
+    handler: (Command, [String]) -> Void
+) {
+    switch parseArgs(args) {
+    case .version:
+        print(version)
+        exit(0)
+    case .help, .empty:
+        usage()
+    case .command(let raw, let cmdArgs):
+        guard let command = Command(rawValue: raw) else { usage() }
+        handler(command, cmdArgs)
+    }
+}
