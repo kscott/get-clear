@@ -1,50 +1,63 @@
 #!/usr/bin/env bash
 # bump-version — update the Get Clear suite version and push
 #
-# Updates major.minor across all tool repos. Each tool's patch version
-# is preserved — only the major.minor is synced.
+# Always updates suiteVersion in all tool repos.
+# Optionally updates builtVersion for specific tools.
 #
 # Usage:
-#   ./scripts/bump-version 1.3.0
+#   ./scripts/bump-version <suite-version> [tool:version ...]
+#
+# Examples:
+#   ./scripts/bump-version 1.4.0                        # suite only
+#   ./scripts/bump-version 1.4.0 reminders:1.4.0        # suite + one tool
+#   ./scripts/bump-version 1.4.0 reminders:1.4.0 calendar:1.3.1
 
 set -euo pipefail
 
-NEW="$1"
+NEW_SUITE="$1"
 
-if [[ -z "$NEW" ]]; then
-  echo "Usage: ./scripts/bump-version <version>"
-  echo "Current: $(cat VERSION)"
+if [[ -z "$NEW_SUITE" ]]; then
+  echo "Usage: ./scripts/bump-version <suite-version> [tool:version ...]"
+  echo "Current suite: $(cat VERSION)"
   exit 1
 fi
 
-OLD=$(cat VERSION)
+# Parse tool:version overrides from remaining args
+declare -A TOOL_VERSIONS
+shift
+for arg in "$@"; do
+  tool="${arg%%:*}"
+  ver="${arg##*:}"
+  TOOL_VERSIONS["$tool"]="$ver"
+done
 
-if [[ "$NEW" == "$OLD" ]]; then
-  echo "Already at $NEW — nothing to do."
+OLD_SUITE=$(cat VERSION)
+
+if [[ "$NEW_SUITE" == "$OLD_SUITE" && ${#TOOL_VERSIONS[@]} -eq 0 ]]; then
+  echo "Already at $NEW_SUITE — nothing to do."
   exit 0
 fi
 
-# Extract major.minor from new version
-NEW_MAJOR_MINOR=$(echo "$NEW" | cut -d. -f1-2)
-
 TOOLS=(reminders-cli calendar-cli contacts-cli mail-cli text-cli)
+TOOL_NAMES=(reminders calendar contacts mail text)
 TOOL_SOURCES=(RemindersCLI CalendarCLI ContactsCLI MailCLI TextCLI)
 
 # ── Update get-clear umbrella ──────────────────────────────────────────────────
 
-# get-clear umbrella always matches the full suite version exactly
-echo "$NEW" > VERSION
-printf "// Generated — do not edit manually. Use scripts/bump-version in get-clear.\nlet builtVersion = \"$NEW\"\n" \
+# get-clear umbrella: builtVersion == suiteVersion always
+echo "$NEW_SUITE" > VERSION
+printf "// Generated — do not edit manually. Use scripts/bump-version in get-clear.\nlet builtVersion = \"$NEW_SUITE\"\nlet suiteVersion = \"$NEW_SUITE\"\n" \
   > Sources/GetClear/Version.swift
 git add VERSION Sources/GetClear/Version.swift
-git commit -m "Bump version to $NEW"
+git commit -m "Bump suite version to $NEW_SUITE"
 git push origin main
-echo "get-clear: $OLD → $NEW"
+echo "get-clear: $OLD_SUITE → $NEW_SUITE"
 
 # ── Update each tool repo ──────────────────────────────────────────────────────
 
 for i in "${!TOOLS[@]}"; do
   tool="${TOOLS[$i]}"
+  name="${TOOL_NAMES[$i]}"
   src="${TOOL_SOURCES[$i]}"
   repo="$HOME/dev/$tool"
 
@@ -53,29 +66,43 @@ for i in "${!TOOLS[@]}"; do
     continue
   fi
 
-  # Preserve existing patch version, update major.minor
-  OLD_TOOL=$(cat "$repo/VERSION" 2>/dev/null || echo "0.0.0")
-  OLD_PATCH=$(echo "$OLD_TOOL" | cut -d. -f3)
-  NEW_TOOL="$NEW_MAJOR_MINOR.$OLD_PATCH"
+  OLD_BUILT=$(cat "$repo/VERSION" 2>/dev/null || echo "0.0.0")
 
-  if [[ "$NEW_TOOL" == "$OLD_TOOL" ]]; then
-    echo "  $tool: already at $NEW_TOOL — skipped"
+  # Use explicit override if provided, otherwise keep existing builtVersion
+  if [[ -v TOOL_VERSIONS[$name] ]]; then
+    NEW_BUILT="${TOOL_VERSIONS[$name]}"
+  else
+    NEW_BUILT="$OLD_BUILT"
+  fi
+
+  # Skip if nothing changes
+  if [[ "$NEW_BUILT" == "$OLD_BUILT" && "$NEW_SUITE" == "$OLD_SUITE" ]]; then
+    echo "  $tool: already at $NEW_BUILT (suite $NEW_SUITE) — skipped"
     continue
   fi
 
-  echo "$NEW_TOOL" > "$repo/VERSION"
-  printf "// Generated — do not edit manually. Use scripts/bump-version in get-clear.\nlet builtVersion = \"$NEW_TOOL\"\n" \
+  echo "$NEW_BUILT" > "$repo/VERSION"
+  printf "// Generated — do not edit manually. Use scripts/bump-version in get-clear.\nlet builtVersion = \"$NEW_BUILT\"\nlet suiteVersion = \"$NEW_SUITE\"\n" \
     > "$repo/Sources/$src/Version.swift"
 
+  msg="Bump suite version to $NEW_SUITE"
+  if [[ "$NEW_BUILT" != "$OLD_BUILT" ]]; then
+    msg="Bump version to $NEW_BUILT (Get Clear $NEW_SUITE)"
+  fi
+
   (cd "$repo" && git add VERSION "Sources/$src/Version.swift" \
-    && git commit -m "Bump version to $NEW_TOOL (suite $NEW)" \
+    && git commit -m "$msg" \
     && git push origin main)
 
-  echo "  $tool: $OLD_TOOL → $NEW_TOOL"
+  if [[ "$NEW_BUILT" != "$OLD_BUILT" ]]; then
+    echo "  $tool: $OLD_BUILT → $NEW_BUILT (suite $NEW_SUITE)"
+  else
+    echo "  $tool: $OLD_BUILT unchanged, suite → $NEW_SUITE"
+  fi
 done
 
 echo ""
-echo "Done: $OLD → $NEW"
+echo "Done: suite $OLD_SUITE → $NEW_SUITE"
 echo "Waiting for tool binaries to be published..."
 
 # Record when we started pushing — used to verify each binary is freshly built,

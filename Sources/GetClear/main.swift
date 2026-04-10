@@ -7,7 +7,7 @@ import Foundation
 import EventKit
 import GetClearKit
 
-let version = builtVersion
+let version = builtVersion  // also suiteVersion — umbrella tracks the suite
 let args    = Array(CommandLine.arguments.dropFirst())
 
 func usage() -> Never {
