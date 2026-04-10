@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html>
+<head><meta charset="utf-8"></head>
 <body style="font-family: -apple-system, Helvetica Neue, sans-serif; font-size: 13px; padding: 16px; line-height: 1.5;">
 
 <h2 style="margin-top: 0;">Almost there</h2>
@@ -9,18 +10,16 @@
 <ol>
   <li style="margin-bottom: 12px;">
     <strong>Connect mail</strong><br>
-    Go to <strong>Fastmail → Settings → Privacy &amp; Security → API tokens</strong>, create a new token with JMAP scope, then open Terminal and run:<br>
-    <code>mail setup &lt;your-token&gt;</code>
+    Run <code>mail setup</code> and follow the prompts to connect your mail account.
   </li>
   <li style="margin-bottom: 12px;">
     <strong>Name your calendars</strong><br>
-    Run <code>calendar calendars</code> to see your calendar names, then create<br>
-    <code>~/.config/calendar-cli/config.toml</code> to define named groups like <em>work</em> and <em>personal</em>.
+    Run <code>calendar setup</code> to define named groups like <em>work</em> and <em>personal</em>.
   </li>
 </ol>
 
-<p>Each tool will ask for macOS permissions on first use — just approve them:</p>
-<p><code>reminders list &nbsp;·&nbsp; calendar today &nbsp;·&nbsp; contacts lists &nbsp;·&nbsp; sms open</code></p>
+<p>Each tool will ask for macOS permissions on first use &#8212; just approve them:</p>
+<p><code>reminders list &nbsp;&#183;&nbsp; calendar today &nbsp;&#183;&nbsp; contacts lists &nbsp;&#183;&nbsp; text open</code></p>
 
 <p>Full guide: <a href="https://github.com/kscott/get-clear">github.com/kscott/get-clear</a></p>
 
