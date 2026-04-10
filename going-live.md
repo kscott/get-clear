@@ -226,5 +226,8 @@ Good problems to have. Build after real users are using the tools and giving fee
 | 3 | ~~Incomplete vision~~ | ~~Color output, GetClearKit migrations (#10–13)~~ ✅ |
 | 4 | Code quality / naming drift risk | Command enum + runCLI across all tools (#33) |
 | 4 | Fragmented history and issue record | Monorepo migration (#34) |
+| 4 | Business logic untestable in main.swift | Extract to Lib: reminders (#35), calendar (#36), contacts (#37), mail (#38), text (#39) |
+| 4 | Duplicated suite-wide patterns | GetClearKit shared utilities: what, multi-match, field updates, error type (#40) |
+| 4 | Missing unit test coverage | Tests for reminders (#41), calendar (#42), contacts (#43), mail (#44), text (#45) |
 
 The PKG is built, signed, and live. Phases 1–3 must all be complete before sharing with real people. Phase 4 items are pre-launch quality gates — complete before public release.
