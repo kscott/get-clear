@@ -1,233 +1,171 @@
-# Get Clear — Going Live Checklist
-
-Everything that needs to be completed, fixed, or built before the first PKG release
-is in the hands of real people.
+# Get Clear — Going Live
 
 ---
 
-## Phase 0 — Unblock the PKG build ✅
+## Completed ✅
 
-Complete as of 2026-03-14.
-
-- [x] **Create Developer ID Installer cert** — created, imported, backed up to Secure Documents disk image
-- [x] **Store in Keychain, sync to GitHub** — `get-clear-signing` Keychain entries updated, `sync-secrets` run
-- [x] **CI green, PKG ships** — signed, notarized, stapled `get-clear.pkg 1.0.0` live at GitHub releases
-- [x] **Stapler bug fixed across all five tool repos** — contacts, reminders, calendar, mail, text
-- [x] **Semantic versioning** — `VERSION` file + `scripts/bump-version`
-- [x] **Uninstaller** — `scripts/uninstall`; prompts to remove config/credentials; bundled in PKG at `/usr/local/share/get-clear/uninstall.sh`
-
----
-
-## Phase 1 — The front door
-
-The PKG without a README to point at is useless. This is the story before the install.
-
-- [x] **README.md** (umbrella repo)
-  - Opens with the origin sentence
-  - Tells the story: the itch, who this is for, what it does
-  - Install section: PKG download link + curl one-liner as alternative
-  - Link to setup guide for post-install steps
-  - Feedback link to get-clear issues
-  - Shipped 2026-03-27
-
-- [x] **why.md** (umbrella repo)
-  - The longer version, for people who want to understand before they install
-  - Workflow examples from vision.md
-  - The feeling — what "get clear" actually means
-  - Shipped 2026-03-27
+| Item | Shipped |
+|---|---|
+| PKG signed, notarized, stapled | 2026-03-14 |
+| README.md + why.md | 2026-03-27 |
+| Activity log, `what`, `recap` | 2026-03-19 |
+| Color output, shared fail(), date parsing, flag handling | 2026-03-15 |
+| Shell completions | 2026-03-15 |
+| calendar setup | 2026-03-15 |
+| Update notifier | 2026-03-19 |
+| `--help` flag guard | 2026-04-10 |
+| Installer HTML fixes (sms→text, encoding, setup instructions) | 2026-04-10 |
 
 ---
 
-## Phase 2 — Validate the install experience
+## Blockers — ordered by dependency
 
-Nothing embarrassing should make it to a real person. Test this end to end.
+Nothing ships until all of these are done. Order matters.
 
-- [ ] **Test PKG on a clean macOS account or VM**
-  - Create a new local user account (System Settings → Users & Groups) — simplest clean-slate option
-  - Download get-clear.pkg from GitHub releases
-  - Double-click, run through the installer
-  - Confirm Gatekeeper accepts the signed + stapled PKG without a warning
-  - Confirm postinstall opens the README in a browser
-  - **Note:** CI smoke test (release.yml) automatically confirms binaries install and execute on every release — this manual step focuses on Gatekeeper acceptance and permission prompts only
+### 1. Extract business logic from main.swift — #35, #36, #37, #38, #39
+**Do this first, one tool at a time. No cross-repo dependency.**
 
-- [ ] **Test curl installer on a clean shell**
-  ```bash
-  curl -fsSL https://raw.githubusercontent.com/kscott/get-clear/main/install.sh | bash
-  ```
-  - Confirm all five binaries download successfully
-  - Confirm PATH is patched in `~/.zshrc` if `~/.local/bin` isn't already there
-  - Confirm next-steps output is clear
+Each tool's main.swift contains business logic, formatting, and protocol details that cannot be unit tested. Each extraction produces focused, single-responsibility files with designed interfaces — not a mass move. Design the interface first. Write the test. Then write the code. See individual issues for interface designs and definition of done.
 
-- [ ] **Walk through first-run permissions for each tool**
-  - `reminders list` — approves Reminders access
-  - `calendar today` — approves Calendar access
-  - `contacts lists` — approves Contacts access
-  - `text open` — approves Automation/Messages access
-  - Confirm each permission prompt is clear and approves correctly
-
-- [ ] **Verify mail setup onboarding flow**
-  - `mail send` before setup → should print "No JMAP token — run 'mail setup' first" ✓ (already handled)
-  - `mail setup <token>` → confirm it discovers identities and stores to Keychain cleanly
-
-- [ ] **Verify calendar without config**
-  - `calendar today` (no config.toml) → shows all calendars — acceptable
-  - `calendar work today` (no config.toml) → "No calendars matched subset 'work'" — acceptable, but conclusion.html and README need to make config setup obvious
-
----
-
-## Phase 3 — Code gaps that affect real users
-
-These aren't bugs — the tools work — but they're missing pieces that will come up
-quickly once real people use them.
-
-- [x] **Activity log, what, and recap** (get-clear #1, #2)
-  - Every write command across all five tools logs a timestamped entry to `~/.local/share/get-clear/log/`
-  - `get-clear what [range]` / `<tool> what [range]` — complete action log
-  - `get-clear recap [range]` — commitments kept: calendar events, completed reminders, mail/text sent
-  - FR-018 midnight recency rule — never shows empty when you just finished a full day
-  - Shipped 2026-03-19; branch `001-activity-log`
-
-- [x] **calendar setup** (calendar #11)
-  - Guided, interactive config.toml creation: `calendar setup`
-  - Shows available calendars numbered with true-color dots
-  - Accepts number or name input; writes `[subsets]` TOML
-  - Shipped 2026-03-15
-
-- [x] **Shell completions** (get-clear #4)
-  - zsh completions for all five tools
-  - Tab-complete commands, list names, calendar subsets
-  - PKG bundles to `/usr/local/share/zsh/site-functions/`; curl installer patches fpath
-
-- [ ] **Gmail support** (mail #14)
-  - The majority of the target audience is on Gmail or Google Workspace
-  - Shipping without Gmail means mail doesn't work for most users on day one
-  - OAuth2 flow, Google Cloud Console app registration, browser consent
-  - Workspace/Okta environments may require IT admin approval — outside our control
-  - `mail setup gmail` triggers OAuth flow; `mail setup fastmail <token>` stays as-is
-  - Setup section in README needs two paths once this ships
-  - **This is a launch blocker — do not ship publicly until Gmail works**
-
-- [ ] **Bundle Claude Code skills with distribution** (get-clear #30)
-  - One skill file per tool installed to `~/.claude/skills/` by the PKG and curl installer
-  - Skills are the Claude integration layer — without them, new users have no Claude-first experience
-  - Skills encode argument order rules and confirmation contracts that prevent misuse
-  - Replaces MCP server as the integration approach
-  - **This is a launch blocker — the tools are Claude-first by design**
-
-- [ ] **`--help` flag guard** (get-clear #28, partial)
-  - `--help` passed to any command is silently treated as content — creates a reminder named "--help", sends mail to "--help", etc.
-  - Fix: intercept `--help` / `-h` before argument parsing and show subcommand help instead
-  - Silent data corruption; applies to all five tools
-
-- [ ] **`calendar change`** (calendar-cli #15)
-  - Move, reschedule, or retitle an existing event without delete-and-recreate
-  - Will surface immediately with real users — it's a routine action
-  - Non-recurring events are straightforward; recurring events need a scope choice (this / all future / all)
-  - Acceptable to ship with non-recurring only and add recurrence scope later
-  - Not a hard blocker, but a fast-follow if not done before launch
-
-- [ ] **Emoji shortcode expansion** (get-clear #17)
-  - `:tada:` → 🎉, `:rocket:` → 🚀 etc. in all user-supplied text fields
-  - Expansion function in GetClearKit, curated ~150 shortcode dictionary, no runtime dependency
-  - Small scope, high delight for a Claude-first tool
-
-- [x] **Color output pass** (get-clear #10)
-  - All five tools: bold names/titles, dim metadata, red errors
-  - isatty + NO_COLOR detection — ANSI suppressed when piped
-  - Shipped 2026-03-15; closed get-clear #10
-
-- [x] **GetClearKit: shared fail()** (get-clear #12)
-  - `Fail.swift` in GetClearKit — red-prefixed error, exit non-zero
-  - All five tools wired; shipped 2026-03-15; closed get-clear #12
-
-- [x] **GetClearKit: shared date parsing** (get-clear #11)
-  - `DateParser.swift` — ParsedDate, parseDate(), formatDate()
-  - `RangeParser.swift` — ParsedRange, parseRange(), parseSingleDate(), formatRangeDescription()
-  - 185 tests in GetClearKit test suite; RemindersLib + CalendarLib stubs removed
-  - Shipped 2026-03-15; closed get-clear #11
-
-- [x] **GetClearKit: standard flag handling** (get-clear #13)
-  - `Flags.swift` — isVersionFlag(), isHelpFlag() shared across all tools
-  - Shipped 2026-03-15; closed get-clear #13
-
-- [x] **Update notifier** (new)
-  - `UpdateChecker` in GetClearKit — pkgutil version detection, cache read/write, semver comparison, background spawn
-  - `get-clear check-update` hidden subcommand — hits GitHub API, writes cache; silent
-  - `get-clear update` — compares versions, downloads PKG, warns about password, opens Installer.app
-  - ⭐ hint on stderr after stdout, at most once per hour; wired into all five tools + get-clear commands
-  - CI now creates versioned `v{VERSION}` tag alongside rolling `latest` tag
-  - Shipped 2026-03-19; v1.2.0
-
-- [x] **Close resolved GitHub issues**
-  - contacts #3 — multi-value email/phone — closed ✓
-  - contacts #14 — CoreData 134092 — never filed; fix shipped in same session as #3
-
----
-
-## Phase 4 — Post-v1
-
-Good problems to have. Build after real users are using the tools and giving feedback.
-
-- [ ] **Contextual subcommand help** (get-clear #28, partial)
-  - `help <subcommand>` currently falls through to full help; should filter to the relevant block
-  - Companion to the `--help` guard fix already in Phase 3
-
-- [ ] **mail: no-backend fallback** (mail #17)
-  - If no token configured, fall back to `mailto:` or clipboard instead of erroring
-  - Niche edge case once Gmail ships — covers providers outside Fastmail/Gmail
-
-- [ ] **mail draft command** (mail #18)
-  - Explicit "stage it, don't send it" workflow via mailto:/clipboard
-  - Distro list composition: contacts group → paste-ready To: block
-
-- [ ] **mail find + reply** (mail #10, #11)
-  - Numbered results from `mail find`, referenceable by ID
-  - `mail reply <n>` to respond in-thread
-  - Completes the mail loop for Claude-assisted use
-
-- [ ] **Gmail support** (mail #14)
-  - Moved to Phase 3 — confirmed launch blocker
-
-- [ ] **JMAP session cache** (mail #4)
-  - Cache session and mailbox IDs instead of fetching on every command
-  - Performance win, not correctness fix
-
-- [x] **MCP server** (get-clear #3) — superseded by skills
-  - Shipped 2026-03-16; 22 tools across all five CLIs
-  - Replaced by Claude Code skills (get-clear #30) — simpler, no server process, same agent contracts
-  - `mcp/` directory and get-clear #27 (compiled binary) removed from scope
-
-- [ ] **Google Calendar** (calendar #12)
-  - Same scope concern as Gmail — evaluate post-v1
-
-- [ ] **Multi-recipient text** (text #10)
-
-- [ ] **Move reminder to different list** (reminders #13)
-
-- [ ] **Automated release tagging** (get-clear #9)
-  - Semantic versioning, GitHub releases with proper tags
-  - Current approach (rolling `latest` tag) is fine for now
-
----
-
-## Summary — what's actually blocking launch
-
-| Phase | Blocker | What's needed |
+| Issue | Tool | Key extractions |
 |---|---|---|
-| 0 | ~~PKG won't build~~ | ~~Developer ID Installer cert~~ ✅ |
-| 1 | ~~Nothing to point people to~~ | ~~README.md + why.md~~ ✅ |
-| 2 | Install experience unvalidated | Clean-machine PKG + curl installer test |
-| 3 | ~~Missing feedback loop~~ | ~~Activity log + done report~~ ✅ |
-| 3 | mail doesn't work for most users | Gmail support (mail #14) |
-| 3 | Claude integration not distributed | Bundle skills with PKG (#30) |
-| 3 | ~~Silent data corruption~~ | ~~`--help` flag guard (#28)~~ ✅ |
-| 3 | Polish | Emoji shortcode expansion (#17) |
-| 3 | ~~Experience gaps~~ | ~~calendar setup command~~ ✅ |
-| 3 | ~~Incomplete vision~~ | ~~Color output, GetClearKit migrations (#10–13)~~ ✅ |
-| 4 | Code quality / naming drift risk | Command enum + runCLI across all tools (#33) |
-| 4 | Fragmented history and issue record | Monorepo migration (#34) |
-| 4 | Business logic untestable in main.swift | Extract to Lib: reminders (#35), calendar (#36), contacts (#37), mail (#38), text (#39) |
-| 4 | Duplicated suite-wide patterns | GetClearKit shared utilities: what, multi-match, field updates, error type (#40) |
-| 4 | Missing unit test coverage | Tests for reminders (#41), calendar (#42), contacts (#43), mail (#44), text (#45) |
+| #35 | reminders | RecurrenceConversion, ReminderFormatter, ChangeCommand |
+| #36 | calendar | EventDateTime (61-line parser, zero tests), EventFormatter, CalendarResolver |
+| #37 | contacts | ChangeCommand, ContactStore, ContactFormatter |
+| #38 | mail | MailConfiguration, JMAPClient, MailFormatter, SetupCommand, SendCommand |
+| #39 | text | MessagesClient (appleScriptLiteral — security-relevant, zero tests) |
 
-The PKG is built, signed, and live. Phases 1–3 must all be complete before sharing with real people. Phase 4 items are pre-launch quality gates — complete before public release.
+**#38 must come before #14 (Gmail).** Once JMAP logic is in JMAPClient, Gmail is a parallel OAuth2 implementation. Without the extraction, Gmail forks main.swift.
+
+**#36 must come before calendar #15 (`calendar change`).** The implementation belongs in CalendarLib alongside EventFormatter and CalendarResolver — not in main.swift.
+
+**Unblocks:** #14, calendar #15, #40, #41–45.
+
+---
+
+### 2. `calendar change` — calendar #15
+**Depends on:** #36 (EventFormatter and CalendarResolver extracted into CalendarLib)
+
+Modifying events is expected functionality. Runs SpecKit first; implementation lands in CalendarLib alongside the other extracted types from #36.
+
+---
+
+### 3. Move reminder to list — reminders #13
+**Depends on:** #35 (RemindersLib extraction)
+
+Moving a reminder between lists is a routine action. The remove + add workaround loses note, due date, and recurrence — a data loss footgun. Implementation belongs in RemindersLib alongside ChangeCommand after #35.
+
+---
+
+### 5. Multi-recipient text — text #10
+**Depends on:** #39 (MessagesClient extracted into TextLib)
+
+Sending to a group is a basic expectation. Implementation belongs in MessagesClient after #39 extracts it.
+
+---
+
+### 5. Monorepo migration — #34
+**Depends on:** #35–39 (cleaner repos make migration less risky; each tool arrives well-structured)
+
+Six repos with a shared library create friction on every cross-cutting change. Once the extractions are done, each tool repo is clean and well-structured — good time to bring them together. GetClearKit changes currently require push + `swift package update` in each tool repo. After migration: one Package.swift, one CI run, one place for everything.
+
+Full plan in the issue. Key steps: git filter-repo for history, gh issue transfer for open issues, API recreation with backlinks for closed issues, single Package.swift, CI path filters, archive tool repos.
+
+**Unblocks:** #33, reduced friction on all future cross-cutting work.
+
+---
+
+### 6. Command migration — #33
+**Depends on:** #34 (monorepo eliminates the push + `swift package update` per tool)
+
+Roll the `Command` enum + `runCLI` pattern to the four remaining tools. contacts-cli is the reference implementation (commit 37e9a75). Order: text → mail → calendar → reminders. In the monorepo, this is a single Package.swift change — no cross-repo coordination required.
+
+**Unblocks:** cleaner dispatch layer for future work.
+
+---
+
+### 7. Gmail support — #14
+**Depends on:** #38 (mail extraction)
+
+The majority of the target audience is on Gmail. Shipping without it means mail doesn't work for most users on day one. This is a hard launch blocker.
+
+OAuth2 flow, Google Cloud Console app registration, browser consent. `mail setup gmail` triggers OAuth; `mail setup fastmail <token>` stays as-is. README needs two setup paths after this ships.
+
+---
+
+### 8. GetClearKit shared utilities — #40
+**Depends on:** #35–39 (extracted interfaces define what can be centralized)
+
+Four patterns duplicated across all five tools: `what` command (identical in every main.swift), multi-match disambiguation, field-update parsing, unified error type. Centralizing these collapses repetition and makes the patterns testable.
+
+---
+
+### 9. Test coverage — #41, #42, #43, #44, #45
+**Depends on:** #35–39 (logic must be in Lib targets before it can be tested)
+
+| Issue | Tool | Priority cases |
+|---|---|---|
+| #41 | reminders | ChangeCommand field variants, recurrence conversion |
+| #42 | calendar | EventDateTime edge cases (malformed input, boundary dates) |
+| #43 | contacts | ChangeCommand variants, multi-match |
+| #44 | mail | Config parsing, JMAP response handling, send edge cases |
+| #45 | text | appleScriptLiteral injection safety |
+
+---
+
+### 10. Bundle Claude Code skills — #30
+**Depends on:** nothing (independent)
+
+Can be worked in parallel with any of the above. Skills are the Claude integration layer — without them, new users have no Claude-first experience out of the box. One skill file per tool, installed to `~/.claude/skills/` by both PKG and curl installer.
+
+---
+
+### 11. Install validation — Phase 2
+**Depends on:** all code changes complete (do last)
+
+Manual testing on a clean macOS account:
+- PKG: Gatekeeper acceptance, postinstall browser open, permission prompts for each tool
+- curl installer: all five binaries, PATH patch, next-steps output
+- First-run flow: `reminders list`, `calendar today`, `contacts lists`, `text open`, `mail setup`
+- calendar without config: acceptable fallback behavior
+
+---
+
+## Not blocking launch
+
+These are good work but wait until real users are using the tools:
+
+| Item | Issue | Notes |
+|---|---|---|
+| Emoji shortcode expansion | #17 | Polish; high delight but not correctness |
+| Contextual subcommand help | #28 | Companion to --help guard (done) |
+| mail draft command | mail #18 | Stage without sending |
+| mail find + reply | mail #10, #11 | Completes the mail loop |
+| JMAP session cache | mail #4 | Performance, not correctness |
+| Google Calendar | calendar #12 | Evaluate post-v1 |
+
+---
+
+## Critical path summary
+
+```
+#35–39 extractions (per tool, one at a time)
+  └── #35 reminders extraction
+        └── reminders #13 move reminder to list
+  └── #36 calendar extraction
+        └── calendar #15 calendar change
+  └── #39 text extraction
+        └── text #10 multi-recipient text
+  └── #38 mail extraction
+        └── #14 Gmail ← hard user-facing blocker
+  └── #34 monorepo ← after repos are clean
+        └── #33 command migration ← easier in monorepo
+  └── #40 shared utilities
+  └── #41–45 test coverage
+
+#30 bundle skills ← independent, work in parallel
+
+Phase 2 install validation ← last, after all code
+```
+
+**Minimum to ship:** #35–39 → #34 → #33 → #14 → reminders #13 → calendar #15 → text #10 → #40 → #41–45 → #30 → Phase 2

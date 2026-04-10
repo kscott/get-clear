@@ -703,18 +703,16 @@ final class TestRunner: @unchecked Sendable {
             expect("'help' → .help",       { if case .help = parseArgs(["help"])     { return true }; return false }())
             expect("'--help' → .help",     { if case .help = parseArgs(["--help"])   { return true }; return false }())
             expect("'-h' → .help",         { if case .help = parseArgs(["-h"])       { return true }; return false }())
-            expect("'--help' after cmd",   { if case .help = parseArgs(["add", "--help"]) { return true }; return false }())
-            expect("'-h' after cmd",       { if case .help = parseArgs(["add", "-h"])    { return true }; return false }())
-            expect("'--help' mid-args",    { if case .help = parseArgs(["add", "buy milk", "--help"]) { return true }; return false }())
-            // 'help add' — first arg is 'help', second arg ignored; shows full help (Phase 4 will filter to subcommand)
+            // 'help add' — first arg is 'help', second arg ignored; shows full help (subcommand filtering is #28)
             expect("'help add' → .help",   { if case .help = parseArgs(["help", "add"]) { return true }; return false }())
+            // '--help' / '-h' after a command is an error (calls fail() → exit); not testable without process isolation
         }
 
         suite("parseArgs — version flags") {
             expect("'version' → .version",   { if case .version = parseArgs(["version"])   { return true }; return false }())
             expect("'--version' → .version", { if case .version = parseArgs(["--version"]) { return true }; return false }())
             expect("'-v' → .version",        { if case .version = parseArgs(["-v"])        { return true }; return false }())
-            expect("'-v' after cmd",         { if case .version = parseArgs(["add", "-v"]) { return true }; return false }())
+            // '-v' / '--version' after a command is an error (calls fail() → exit); not testable without process isolation
         }
 
         suite("parseArgs — content words not intercepted") {
@@ -734,11 +732,11 @@ final class TestRunner: @unchecked Sendable {
             }
         }
 
-        suite("parseArgs — flag stripping") {
+        suite("parseArgs — command dispatch") {
             if case .command(let cmd, let args) = parseArgs(["list", "Work"]) {
-                expect("clean args: cmd = list",     cmd == "list")
-                expect("clean args: args[0] = list", args[0] == "list")
-                expect("clean args: args[1] = Work", args[1] == "Work")
+                expect("cmd = list",     cmd == "list")
+                expect("args[0] = list", args[0] == "list")
+                expect("args[1] = Work", args[1] == "Work")
             } else {
                 expect("clean args parse as .command", false)
             }

@@ -20,11 +20,11 @@ public enum ParsedArgs {
 ///
 /// - First-position bare words (`help`, `version`) are recognised alongside
 ///   flag-style tokens (`--help`, `-h`, `--version`, `-v`).
-/// - Flag-style tokens are intercepted from **any** position so they cannot be
-///   silently consumed as content (e.g. a reminder title of "--help").
 /// - Bare words are only checked in the first position to avoid treating a
 ///   list or reminder named "help" as a help request.
-/// - All matched flag tokens are stripped from the args returned to the caller.
+/// - Flag-style tokens (`--help`, `-h`, `--version`, `-v`) are only valid in
+///   the first position. Passing them after a command is an error — they are
+///   not silently consumed as content or intercepted as a help/version request.
 public func parseArgs(_ rawArgs: [String]) -> ParsedArgs {
     guard let first = rawArgs.first else { return .empty }
 
@@ -32,12 +32,11 @@ public func parseArgs(_ rawArgs: [String]) -> ParsedArgs {
     if isVersionFlag(first) { return .version }
     if isHelpFlag(first)    { return .help }
 
-    // Non-first args: flag-style only (avoids "help" as a content word triggering this)
+    // Non-first args: flag-style tokens are invalid here
     let rest = Array(rawArgs.dropFirst())
-    if rest.contains(where: { $0 == "--version" || $0 == "-v" }) { return .version }
-    if rest.contains(where: { $0 == "--help"    || $0 == "-h" }) { return .help }
+    if let bad = rest.first(where: { isHelpFlag($0) || isVersionFlag($0) }) {
+        fail("'\(bad)' is not valid after a command — use '--help' or '--version' as the first argument")
+    }
 
-    // Strip flag tokens; command name stays at index 0 so callers need no index adjustment.
-    let filtered = rawArgs.filter { $0 != "--help" && $0 != "-h" && $0 != "--version" && $0 != "-v" }
-    return .command(first, filtered)
+    return .command(first, rawArgs)
 }
