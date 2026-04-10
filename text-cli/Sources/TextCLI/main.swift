@@ -10,11 +10,12 @@ import TextLib
 import GetClearKit
 
 let version = builtVersion
+let versionString = "\(builtVersion) (Get Clear \(suiteVersion))"
 let args    = Array(CommandLine.arguments.dropFirst())
 
 func usage() -> Never {
     print("""
-    text \(version) — Send iMessages and SMS from the terminal
+    text \(versionString) — Send iMessages and SMS from the terminal
 
     Usage:
       text send <contact> <message...>     # Send a message
@@ -105,7 +106,7 @@ func sendViaMessages(to address: String, message: String) throws {
 // MARK: - Dispatch
 
 let dispatch = parseArgs(args)
-if case .version = dispatch { print(version); exit(0) }
+if case .version = dispatch { print(versionString); exit(0) }
 guard case .command(let cmd, let args) = dispatch else { usage() }
 
 let store     = CNContactStore()
