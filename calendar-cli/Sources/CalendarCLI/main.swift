@@ -67,8 +67,7 @@ let config = loadConfig()
 
 let knownCommands: Set<String> = [
     "open", "calendars", "setup", "list", "today", "week", "next",
-    "find", "show", "add", "remove",
-    "help", "--help", "-h", "version", "--version", "-v"
+    "find", "show", "add", "remove"
 ]
 
 /// If the first arg is a known config subset, extract it as the calendar filter.
@@ -76,6 +75,7 @@ let knownCommands: Set<String> = [
 var calFilter: String? = nil
 if let first = args.first,
    !knownCommands.contains(first.lowercased()),
+   !isHelpFlag(first), !isVersionFlag(first),
    config.subsets[first.lowercased()] != nil {
     calFilter = args.removeFirst()
 }
