@@ -220,9 +220,11 @@ Good problems to have. Build after real users are using the tools and giving fee
 | 3 | ~~Missing feedback loop~~ | ~~Activity log + done report~~ ✅ |
 | 3 | mail doesn't work for most users | Gmail support (mail #14) |
 | 3 | Claude integration not distributed | Bundle skills with PKG (#30) |
-| 3 | Silent data corruption | `--help` flag guard (#28) |
+| 3 | ~~Silent data corruption~~ | ~~`--help` flag guard (#28)~~ ✅ |
 | 3 | Polish | Emoji shortcode expansion (#17) |
 | 3 | ~~Experience gaps~~ | ~~calendar setup command~~ ✅ |
 | 3 | ~~Incomplete vision~~ | ~~Color output, GetClearKit migrations (#10–13)~~ ✅ |
+| 4 | Code quality / naming drift risk | Command enum + runCLI across all tools (#33) |
+| 4 | Fragmented history and issue record | Monorepo migration (#34) |
 
-The PKG is built, signed, and live. Phases 1–3 must all be complete before sharing with real people.
+The PKG is built, signed, and live. Phases 1–3 must all be complete before sharing with real people. Phase 4 items are pre-launch quality gates — complete before public release.
