@@ -274,6 +274,95 @@ package is tracked but not yet done — when it happens, all five benefit at onc
 
 ---
 
+## Engineering disciplines — inviolable
+
+These are not guidelines. They apply to every line of code written in this project,
+by anyone, including Claude. When writing new code, check each one. When reviewing
+code, reject anything that violates them.
+
+### main.swift is dispatch-only
+
+`main.swift` parses arguments, calls into Lib, and handles the process lifecycle.
+That is all. Business logic, formatting, protocol details, and validation do not
+belong there. A `main.swift` longer than ~100 lines is a signal something is wrong.
+
+If you are tempted to write logic in `main.swift` because it is quick or convenient,
+stop. Put it in the Lib. Quick and convenient is how the codebase got to 600-line
+main files that cannot be tested.
+
+### Every file has one job
+
+Before creating a file, write one sentence describing what it does. If you cannot,
+the design is not ready. The sentence becomes the file's header comment.
+
+- `EventDateTime.swift` — Parses date/time strings into structured start/end/allDay values.
+- `JMAPClient.swift` — Handles JMAP HTTP requests and responses.
+- `ReminderFormatter.swift` — Formats reminder data for display output.
+
+A file named `Helpers.swift` or `Utilities.swift` is a warning sign. Name things for
+what they are. If the job cannot be named, it has not been thought through.
+
+### Design the interface before writing the implementation
+
+Before moving or writing any function, define what it takes as input and what it
+returns. That contract is the design. If the contract is unclear, the implementation
+will be unclear too.
+
+Write the test first. The test defines the contract. Then write the implementation
+that makes the test pass. This is not optional for logic that belongs in a Lib target.
+
+### Moving code is not refactoring
+
+A 600-line `main.swift` that becomes a 600-line `ToolLib.swift` is not progress.
+Refactoring means improving the design: clearer responsibilities, better interfaces,
+smaller functions, improved testability. The goal of an extraction is not to move
+lines — it is to produce a type or function with a clear contract that can be tested.
+
+When extracting from `main.swift`, do not copy the inline structure. Redesign it.
+
+### Prefer pure functions
+
+A function that takes values and returns a value is testable by definition. A function
+that takes a mutable object and modifies it in place requires setting up state before
+testing and inspecting state after. Prefer the former wherever the framework allows.
+
+Where framework objects require mutation (EventKit, CNContacts), keep the mutation
+thin and late. All decision logic — what to change, by how much, under what conditions
+— belongs in pure functions in the Lib.
+
+### No duplication without a documented reason
+
+If the same logic appears in two places, it belongs in GetClearKit or a shared Lib.
+The `what` command appearing identically in five `main.swift` files is the clearest
+example of what this rule prevents.
+
+The allowed exception: when two things look the same but mean different things.
+Similarity is not duplication if the semantics differ. If you are keeping two
+implementations separate intentionally, say so in a comment.
+
+### Test coverage ships with the code
+
+New commands and new Lib functions ship with tests. Not in a follow-up issue. Not
+when there is time. Tests are part of the definition of done.
+
+Edge cases and bad input are first-class test cases, not afterthoughts:
+- What happens when required arguments are missing?
+- What happens when a string contains special characters?
+- What happens when the user passes a value that looks valid but isn't?
+
+If a function is worth writing, the edge cases are worth testing.
+
+### Flag code quality proactively
+
+When writing or reviewing code in this project, apply these disciplines without
+being asked. If a function is growing too large, say so. If logic belongs in a Lib
+and is being written in `main.swift`, say so. If a pattern is being duplicated, say so.
+
+Do not wait to be asked if the code is good. The expectation is that every change
+leaves the codebase in better shape than it found it.
+
+---
+
 ## Suite name: Get Clear
 
 ### The name
