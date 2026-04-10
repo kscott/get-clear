@@ -11,6 +11,7 @@ import ContactsLib
 import GetClearKit
 
 let version = builtVersion
+let versionString = "\(builtVersion) (Get Clear \(suiteVersion))"
 
 let store     = CNContactStore()
 let semaphore = DispatchSemaphore(value: 0)
@@ -23,7 +24,7 @@ func fail(_ msg: String) -> Never {
 
 func usage() -> Never {
     print("""
-    contacts \(version) — CLI for Apple Contacts
+    contacts \(versionString) — CLI for Apple Contacts
 
     Usage:
       contacts open                             # Open the Contacts app
@@ -89,7 +90,7 @@ func printCard(_ c: CNContact) {
 // MARK: - Dispatch
 
 let dispatch = parseArgs(args)
-if case .version = dispatch { print(version); exit(0) }
+if case .version = dispatch { print(versionString); exit(0) }
 guard case .command(let cmd, let args) = dispatch else { usage() }
 
 store.requestAccess(for: .contacts) { granted, _ in
