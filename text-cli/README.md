@@ -2,26 +2,45 @@
 
 Send iMessages and SMS from the terminal. Fire and forget.
 
-## Installation
+Part of the [Get Clear](https://github.com/kscott/get-clear) suite.
+
+## Setup
+
+### Requirements
+
+- macOS 14 (Sonoma) or later
+- Apple Silicon Mac (arm64) for the pre-built binary; Intel Macs must build from source
+
+### Install
+
+Install the full Get Clear suite via the PKG installer — download from the [latest release](https://github.com/kscott/get-clear/releases/latest) and run it.
+
+This installs all five tools to `/usr/local/bin`. Make sure that's in your `$PATH`:
 
 ```bash
-git clone https://github.com/kscott/text-cli ~/dev/text-cli
-~/dev/text-cli/text setup
+export PATH="/usr/local/bin:$PATH"   # add to ~/.zshrc
 ```
 
-**Permissions required:**
-- **Contacts** — for resolving names to phone numbers (prompted on first run)
+On first run, macOS will prompt you to grant Contacts access.
 
-Requires macOS 14+.
+### Build from source
 
-## Commands
+```bash
+xcode-select --install   # if not already installed
+git clone https://github.com/kscott/text-cli.git ~/dev/text-cli
+cd ~/dev/text-cli
+swift build -c release
+cp .build/release/text-bin /usr/local/bin/text
+```
+
+## Command reference
 
 ```
 text send <contact> <message...>     # Send an iMessage or SMS
 text open [contact]                  # Open Messages.app
 ```
 
-## Examples
+### Examples
 
 ```bash
 # Send by contact name
@@ -41,31 +60,32 @@ text open Alice     # opens directly to that conversation
 
 ## Contact resolution
 
-1. Direct phone number (10 or 11 digits) → normalized to E.164 (+1XXXXXXXXXX)
-2. Direct email address → used as-is for iMessage
-3. Fuzzy name match in Contacts → first phone number, or email if no phone
+1. Direct phone number (10 or 11 digits) — normalized to E.164 (+1XXXXXXXXXX)
+2. Direct email address — used as-is for iMessage
+3. Fuzzy name match in Contacts — first phone number, or email if no phone
 
 ## How it works
 
 - **Send** — AppleScript via `osascript` to Messages.app (handles iMessage with SMS fallback via iPhone)
 - **Contact lookup** — CNContactStore for name → phone/email resolution
 
-## Build & test
-
-```bash
-text setup   # build release binary and install to ~/bin
-text test    # build and run test suite (45 tests)
-```
-
 ## Project structure
 
-- `Sources/MessagesLib/PhoneNormalizer.swift` — phone normalization, matching, contact resolution
-- `Sources/MessagesCLI/main.swift` — AppleScript send, CNContactStore, dispatch
-- `Tests/MessagesLibTests/main.swift` — custom test runner (no Xcode/XCTest required)
-- `text` — bash wrapper script, symlinked into `~/bin`
+```
+text-cli/
+├── Package.swift
+├── Sources/
+│   ├── TextLib/                        # Pure Swift — no framework deps, fully testable
+│   │   └── PhoneNormalizer.swift       # Phone normalization, matching, and contact resolution
+│   └── TextCLI/
+│       └── main.swift                  # CLI entry point (Contacts + osascript)
+└── Tests/
+    └── TextLibTests/                   # Quick + Nimble test suite
+        └── PhoneNormalizerSpec.swift
+```
 
-## Key decisions
+## Tests
 
-- **Send only** — iMessage has no public read API; AppleScript for send is the standard approach and fast for a single message
-- **No database reads** — reading `~/Library/Messages/chat.db` requires Full Disk Access and relies on an undocumented schema; not worth it for a fire-and-forget tool
-- **MessagesLib separated from MessagesCLI** — phone normalization and matching are testable without permissions
+```bash
+swift test
+```
