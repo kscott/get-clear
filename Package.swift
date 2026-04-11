@@ -8,6 +8,10 @@ let package = Package(
         .library(name: "GetClearKit", targets: ["GetClearKit"]),
         .executable(name: "get-clear", targets: ["GetClear"]),
     ],
+    dependencies: [
+        .package(url: "https://github.com/Quick/Quick.git", from: "7.0.0"),
+        .package(url: "https://github.com/Quick/Nimble.git", from: "13.0.0"),
+    ],
     targets: [
         .target(
             name: "GetClearKit",
@@ -19,10 +23,14 @@ let package = Package(
             path: "Sources/GetClear",
             exclude: ["get-clear.entitlements"]
         ),
-        // Test runner — no Xcode required; run via: swift run getclearkit-tests
-        .executableTarget(
-            name: "getclearkit-tests",
-            dependencies: ["GetClearKit"],
+        // Test suite — run via: swift test
+        .testTarget(
+            name: "GetClearKitTests",
+            dependencies: [
+                "GetClearKit",
+                .product(name: "Quick", package: "Quick"),
+                .product(name: "Nimble", package: "Nimble"),
+            ],
             path: "Tests/GetClearKitTests"
         ),
     ]
