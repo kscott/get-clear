@@ -38,7 +38,9 @@ These are not reminders. They are the standard.
 
 **Tests ship with the code.** Edge cases and bad input are first-class test cases. Not follow-ups.
 
-**Tests are code — all rules apply.** One test file per source file. Test file structure mirrors source file structure. The harness lives in `main.swift`; test suites do not. Each test file exposes one function: `func run<Name>Tests(_ t: TestRunner)`. New source file and new test file ship in the same commit.
+**Tests are code — all rules apply.** One test file per source file. Test file structure mirrors source file structure. New source file and new test file ship in the same commit.
+
+Test framework is **Quick + Nimble** across all repos. Run via `swift test`. Each test file is a `QuickSpec` subclass named `*Spec.swift`. Structure: `describe` (function/type under test) → `context` (scenario) → `it` (single behavior). One assertion per `it`. Test descriptions are natural English sentences describing behavior — not restating the input. No duplicate tests for the same behavior; if two inputs hit the same code path, pick one. Unimplemented behavior is documented with an `it` that asserts nil and says "not yet supported" in the description.
 
 ---
 
@@ -54,14 +56,14 @@ Get Clear is a suite of five Swift CLIs connecting Claude to Apple Reminders, Ca
 
 ```bash
 # GetClearKit tests
-cd ~/dev/get-clear && swift run getclearkit-tests
+cd ~/dev/get-clear && swift test
 
 # Individual tool — build release and install
 cd ~/dev/<tool>-cli && swift build -c release
 cp .build/release/<tool>-bin ~/.local/bin/<tool>
 
 # Individual tool — run tests
-cd ~/dev/<tool>-cli && swift build && swift run <tool>-tests
+cd ~/dev/<tool>-cli && swift test
 ```
 
 ## Key files

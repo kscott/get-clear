@@ -187,23 +187,15 @@ get-clear what      # everything, across all tools, today
 
 ### Testing
 
-Every tool ships with a test suite in its `*Lib` target. Tests are written before implementation for new features. Test files live in `Tests/` inside each tool repo; GetClearKit tests run via `swift run getclearkit-tests`.
+Every tool ships with a test suite in its `*Lib` target. Tests are written before implementation for new features. Test files live in `Tests/` inside each tool repo. Run via `swift test`.
 
 **Tests are code. All engineering disciplines apply equally to test files.**
 
 - One file, one job. A test file tests exactly one source file.
 - Test file structure mirrors source file structure: one test file per `*Lib/` file.
-- The harness (`TestRunner`, entry point) lives in `Tests/*/main.swift` — no test suites there.
-- Each test file exposes one function: `func run<Name>Tests(_ t: TestRunner)`.
 - New source file + new test file ship in the same commit.
 
-Current test counts (targets):
-- reminders-cli: 188 tests
-- calendar-cli: 89 tests
-- contacts-cli: 31 tests
-- mail-cli: 50 tests
-- text-cli: 36 tests
-- GetClearKit: 185 tests
+**Test framework is Quick + Nimble.** Each test file is a `QuickSpec` subclass named `*Spec.swift`. Structure: `describe` (function/type under test) → `context` (scenario) → `it` (single behavior). One assertion per `it`. Descriptions are natural English sentences describing behavior. No duplicate tests for the same behavior — pick one example. Unimplemented behavior is documented with an `it` asserting nil, labeled "not yet supported."
 
 ### Versioning and Distribution
 

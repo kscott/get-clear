@@ -269,8 +269,7 @@ The rule: if you want to write a test for something in `main.swift`, that's a si
 it belongs in the Lib. The boundary is enforced by not importing system frameworks
 in the Lib target.
 
-`TestRunner` is currently duplicated across all five test files. Extraction to a shared
-package is tracked but not yet done — when it happens, all five benefit at once.
+Tests use **Quick + Nimble** across all repos. Run via `swift test`. No custom harness.
 
 ---
 
@@ -366,17 +365,18 @@ source file.
 there is a corresponding file in `Tests/*LibTests/`. When a new source file is created,
 its test file is created in the same commit.
 
-**The harness is infrastructure, not a test.** `TestRunner` and the entry point live
-in `Tests/*/main.swift`. They have one job: run the suites and report results. No
-test suites live in `main.swift`.
+**Test framework is Quick + Nimble.** Each test file is a `QuickSpec` subclass named
+`*Spec.swift`. Run the suite with `swift test`. No custom harness, no `main.swift`.
 
-**Each test file exposes one function.** The convention:
-```swift
-// In ReminderFormatterTests.swift
-func runReminderFormatterTests(_ t: TestRunner) { ... }
-```
-`main.swift` calls each function in sequence. Adding a new test file means adding
-one line to `main.swift` — nothing more.
+**Structure: describe → context → it.** `describe` names the function or type under
+test. `context` names the scenario. `it` names one specific behavior. One assertion
+per `it`. Test descriptions are natural English sentences describing behavior — not
+restating the input. No two `it` blocks test the same behavior with different inputs;
+pick the most readable example.
+
+**Document absent behavior explicitly.** When a feature is not yet implemented, add
+an `it` that asserts nil and includes "not yet supported" in the description. This
+makes the gap visible and gives the future implementation a ready-made acceptance test.
 
 A test suite that cannot be described in one sentence is not ready to be written.
 
