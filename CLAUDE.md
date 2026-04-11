@@ -38,6 +38,8 @@ These are not reminders. They are the standard.
 
 **Tests ship with the code.** Edge cases and bad input are first-class test cases. Not follow-ups.
 
+**Tests are code — all rules apply.** One test file per source file. Test file structure mirrors source file structure. The harness lives in `main.swift`; test suites do not. Each test file exposes one function: `func run<Name>Tests(_ t: TestRunner)`. New source file and new test file ship in the same commit.
+
 ---
 
 ## What this project is

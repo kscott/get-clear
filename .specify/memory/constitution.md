@@ -189,6 +189,14 @@ get-clear what      # everything, across all tools, today
 
 Every tool ships with a test suite in its `*Lib` target. Tests are written before implementation for new features. Test files live in `Tests/` inside each tool repo; GetClearKit tests run via `swift run getclearkit-tests`.
 
+**Tests are code. All engineering disciplines apply equally to test files.**
+
+- One file, one job. A test file tests exactly one source file.
+- Test file structure mirrors source file structure: one test file per `*Lib/` file.
+- The harness (`TestRunner`, entry point) lives in `Tests/*/main.swift` — no test suites there.
+- Each test file exposes one function: `func run<Name>Tests(_ t: TestRunner)`.
+- New source file + new test file ship in the same commit.
+
 Current test counts (targets):
 - reminders-cli: 188 tests
 - calendar-cli: 89 tests

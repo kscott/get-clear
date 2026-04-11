@@ -352,6 +352,34 @@ Edge cases and bad input are first-class test cases, not afterthoughts:
 
 If a function is worth writing, the edge cases are worth testing.
 
+### Tests are code — all rules apply
+
+Every engineering discipline that applies to source files applies equally to test files.
+There are no exceptions for tests.
+
+**One file, one job.** A test file named `ReminderFormatterTests.swift` tests
+`ReminderFormatter.swift` and nothing else. Stacking tests for multiple source files
+into a single file is the same violation as stacking multiple jobs into a single
+source file.
+
+**Test file structure mirrors source file structure.** For every file in `*Lib/`,
+there is a corresponding file in `Tests/*LibTests/`. When a new source file is created,
+its test file is created in the same commit.
+
+**The harness is infrastructure, not a test.** `TestRunner` and the entry point live
+in `Tests/*/main.swift`. They have one job: run the suites and report results. No
+test suites live in `main.swift`.
+
+**Each test file exposes one function.** The convention:
+```swift
+// In ReminderFormatterTests.swift
+func runReminderFormatterTests(_ t: TestRunner) { ... }
+```
+`main.swift` calls each function in sequence. Adding a new test file means adding
+one line to `main.swift` — nothing more.
+
+A test suite that cannot be described in one sentence is not ready to be written.
+
 ### Flag code quality proactively
 
 When writing or reviewing code in this project, apply these disciplines without
