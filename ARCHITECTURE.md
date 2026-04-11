@@ -137,3 +137,7 @@ UpdateChecker.spawnBackgroundCheckIfNeeded()
 if let hint = UpdateChecker.hint() { fputs(hint + "\n", stderr) }
 ```
 Belongs in `runCLI` in GetClearKit. When `runCLI` is the entry point for all tools, this moves once.
+
+### `FieldChange<T>` will be duplicated across reminders and contacts
+
+`FieldChange<T>` (`.unchanged`, `.cleared`, `.set(T)`) is introduced in both `RemindersLib/ChangeCommand.swift` (#35) and `ContactsLib/ChangeCommand.swift` (#37) as the pattern for "was this field specified, and if so, set or clear?" When the monorepo lands (#34), this moves to GetClearKit — one definition, used by all stateful tools. File an issue at that point.
