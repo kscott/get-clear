@@ -4,19 +4,16 @@ A command-line tool that lets Claude read and query your Apple Calendar — just
 
 Instead of switching to Calendar.app, you ask Claude what's coming up and it handles it. The tool connects directly to Apple's native Calendar framework, so all your existing calendars — including external ones like Google or Exchange configured in Calendar.app — work exactly as before.
 
-## Using with Claude
+Part of the [Get Clear](https://github.com/kscott/get-clear) suite.
 
-This is the main use case. Tell Claude what you want in plain language:
+## Using with Claude
 
 > "What's on my calendar this week?"
 > "Do I have anything tomorrow afternoon?"
 > "What does my week look like — just work stuff?"
 > "Show me everything I have in March"
-> "What's coming up next?"
 > "Add a team standup tomorrow at 9am"
 > "Remove the budget review on Friday"
-
-Claude translates your words into the right commands, filters to the right calendars, and formats the results clearly.
 
 ### Tips for best results
 
@@ -28,33 +25,29 @@ Claude translates your words into the right commands, filters to the right calen
 
 ### Requirements
 
-- **macOS 14 (Sonoma) or later**
-- **Apple Silicon Mac** (arm64) for the pre-built binary; Intel Macs must build from source
-- **`~/bin` in your `$PATH`** — the installer puts the binary there. If `calendar` isn't found after install, add this to your `~/.zshrc`:
+- macOS 14 (Sonoma) or later
+- Apple Silicon Mac (arm64) for the pre-built binary; Intel Macs must build from source
 
-  ```bash
-  export PATH="$HOME/bin:$PATH"
-  ```
+### Install
 
-### Install (pre-built binary — no Xcode required)
+Install the full Get Clear suite via the PKG installer — download from the [latest release](https://github.com/kscott/get-clear/releases/latest) and run it.
 
-1. Download `calendar-bin` from the [latest release](https://github.com/kscott/calendar-cli/releases/latest)
-2. Move it into `~/bin/` and make it executable:
+This installs all five tools to `/usr/local/bin`. Make sure that's in your `$PATH`:
 
 ```bash
-mkdir -p ~/bin
-mv ~/Downloads/calendar-bin ~/bin/calendar-bin
-chmod +x ~/bin/calendar-bin
+export PATH="/usr/local/bin:$PATH"   # add to ~/.zshrc
 ```
 
 On first run, macOS will prompt you to grant Calendar access.
 
-### Build from source (requires Xcode Command Line Tools)
+### Build from source
 
 ```bash
 xcode-select --install   # if not already installed
 git clone https://github.com/kscott/calendar-cli.git ~/dev/calendar-cli
-~/dev/calendar-cli/calendar setup
+cd ~/dev/calendar-cli
+swift build -c release
+cp .build/release/calendar-bin /usr/local/bin/calendar
 ```
 
 ## Command reference
@@ -64,14 +57,15 @@ calendar                                      # Show help
 calendar --version                            # Show version
 calendar open                                 # Open Calendar.app
 calendar calendars                            # List all available calendars
+calendar setup                                # Guided config.toml creation
 calendar list <range>                         # Events in range
 calendar today                                # Today's events
 calendar week                                 # This week's events
 calendar next [n]                             # Next N events (default 5)
-calendar find <query> [range]
+calendar find <query> [range]                 # Find events by title
 calendar show <title> [date]                  # Full event detail
-calendar add <title> [date] [time to time]
-calendar remove <title> [date]
+calendar add <title> [date] [time to time]    # Add an event
+calendar remove <title> [date]                # Remove an event
 ```
 
 Prefix a subset name to filter by calendar group:
@@ -83,15 +77,6 @@ calendar work next 5
 calendar work find standup
 ```
 
-Bare range shorthands also work without the `list` subcommand:
-
-```bash
-calendar monday
-calendar 7d
-calendar "march 15"
-calendar "next monday to friday"
-```
-
 ### Range formats
 
 | Format | Example |
@@ -99,13 +84,12 @@ calendar "next monday to friday"
 | Relative days | `today`, `tomorrow`, `yesterday` |
 | Week spans | `week`, `this week`, `next week`, `last week` |
 | Month spans | `month`, `next month`, `last month` |
-| Weekday | `monday` … `sunday` (next occurrence, or today if today) |
-| Month + day | `march 15` (rolls to next year if past) |
+| Weekday | `monday` … `sunday` |
+| Month + day | `march 15` |
 | ISO date | `2026-03-15` |
-| Short numeric | `3/15` (rolls to next year if past) |
-| N-day window | `7d`, `30d` (today through today+N-1) |
+| Short numeric | `3/15` |
+| N-day window | `7d`, `30d` |
 | Explicit range | `march 15 to march 20` |
-| Relative range | `next monday to friday` |
 
 ### Config file
 
@@ -115,68 +99,36 @@ Create `~/.config/calendar-cli/config.toml` to define named subsets:
 [subsets]
 work     = ["Work", "Meetings", "Google Calendar"]
 personal = ["Home", "Family", "Doctor Appointments"]
-sports   = ["Colorado Avalanche", "Denver Nuggets", "Colorado Rockies"]
-church   = ["Trinity UMC"]
 ```
 
-Subset names are case-insensitive. Calendar names must match exactly as shown in `calendar calendars`.
-
-### Output format
-
-**Single day** — flat list with day header:
-```
-Monday, March 9
-   9:00 AM – 10:00 AM   Standup · Zoom
-  10:30 AM – 11:30 AM   1:1 with Sarah
-   2:00 PM –  3:00 PM   Budget Review
-   All day               Board Retreat
-```
-
-**Multi-day** — grouped by day, empty days omitted:
-```
-Monday, March 9
-   9:00 AM – 10:00 AM   Standup
-
-Tuesday, March 10
-   All day               Spring Break
-   2:00 PM –  3:00 PM   Dentist · 123 Main St
-```
-
-**`next N`** — compact with relative date:
-```
-  Today      9:00 AM   Standup · Zoom
-  Tomorrow  10:00 AM   Dentist
-  Wed 3/11   3:00 PM   Team sync
-```
+Subset names are case-insensitive. Calendar names must match exactly as shown in `calendar calendars`. Run `calendar setup` for a guided setup.
 
 ## Known limitations
 
 - `add` creates events in the first calendar of the subset filter, or your default calendar
 - `show` and `remove` with multiple matches list candidates and ask you to narrow by date
-- Attendee details only available for events with invitations
 - External calendars must be configured in Calendar.app to be visible
 
 ## Project structure
 
 ```
 calendar-cli/
-├── Package.swift                         # Swift Package Manager manifest
-├── calendar                              # Wrapper script (symlinked into ~/bin)
+├── Package.swift
 ├── Sources/
-│   ├── CalendarLib/
-│   │   ├── TimeRangeParser.swift         # Range parsing logic (no Apple framework deps)
-│   │   └── ConfigParser.swift            # TOML config parsing (no Apple framework deps)
+│   ├── CalendarLib/                          # Pure Swift — no framework deps, fully testable
+│   │   └── ConfigParser.swift               # Parses config.toml into CalendarConfig
 │   └── CalendarCLI/
-│       └── main.swift                    # CLI entry point (EventKit + AppKit)
+│       └── main.swift                        # CLI entry point (EventKit + AppKit)
 └── Tests/
-    └── CalendarLibTests/
-        └── main.swift                    # Test runner (no Xcode required)
+    └── CalendarLibTests/                     # Quick + Nimble test suite
+        ├── ConfigParserSpec.swift
+        └── RangeParserSpec.swift
 ```
+
+Range parsing lives in GetClearKit (`RangeParser.swift`) and is shared across the suite.
 
 ## Tests
 
 ```bash
-calendar test
+swift test
 ```
-
-Builds and runs the test suite against the range and config parsing logic. No Xcode required.
