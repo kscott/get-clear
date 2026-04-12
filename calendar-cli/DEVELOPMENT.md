@@ -5,14 +5,16 @@ Follows the same patterns as reminders-cli. Read that project's DEVELOPMENT.md a
 ## Architecture: what goes where
 
 **`CalendarLib`** — pure Swift, no framework dependencies
-- `TimeRangeParser.swift` — all range parsing: single days, spans, N-day windows, explicit ranges
-- `ConfigParser.swift` — TOML config loading and subset resolution
+- `ConfigParser.swift` — TOML config loading into `CalendarConfig`
+- `CalendarResolver.swift` — `resolveCalendarIdentifiers()`: subset filter → identifiers (no store access)
+- `EventDateTime.swift` — `parseEventDateTime()`: date/time string → structured start/end/isAllDay
+- `EventFormatter.swift` — `EventDisplayData`, `eventLine()`, `nextRelativeLabel()`, `printGrouped()`, `printFlat()`
+- `RangeParser.swift` (from GetClearKit) — all range parsing
 
-**`CalendarCLI/main.swift`** — EventKit and AppKit only
-- Argument parsing and command dispatch
-- `--cal` flag extraction and calendar resolution
-- EventKit calls (`store.events(matching:)`)
-- All output formatting functions
+**`CalendarCLI/`** — EventKit and AppKit only
+- `main.swift` — argument parsing and command dispatch
+- `EventFetcher.swift` — `resolveCalendars()`, `fetchEvents()`, `calendarColor()`, `displayData()`
+- `SetupCommand.swift` — `runSetup()`: interactive config wizard
 
 ## Interface design: one flag, no syntax
 
