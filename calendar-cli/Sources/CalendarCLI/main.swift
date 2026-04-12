@@ -1,8 +1,8 @@
 // main.swift
 //
 // Entry point for the calendar-bin executable.
-// Handles argument parsing and all EventKit/AppKit interactions.
-// Range and config parsing are delegated to CalendarLib so they can be unit tested.
+// Argument parsing, dispatch, and EventKit/AppKit interactions only.
+// Formatting, parsing, and calendar resolution are delegated to CalendarLib.
 
 import Foundation
 import AppKit
@@ -63,6 +63,34 @@ func usage() -> Never {
 
 let config = loadConfig()
 
+/// Extracts an RGB color triple from an EKCalendar's CGColor, or nil when unavailable.
+/// Kept in CalendarCLI because it requires AppKit (CGColor, colorSpace).
+func calendarColor(_ cal: EKCalendar) -> (r: Int, g: Int, b: Int)? {
+    guard let cg = cal.cgColor else { return nil }
+    let colorSpace = cg.colorSpace?.model
+    let components = cg.components ?? []
+    if colorSpace == .rgb, components.count >= 3 {
+        return (Int(components[0] * 255), Int(components[1] * 255), Int(components[2] * 255))
+    } else if colorSpace == .monochrome, components.count >= 1 {
+        let w = Int(components[0] * 255)
+        return (w, w, w)
+    }
+    return nil
+}
+
+/// Converts an EKEvent to the plain-data EventDisplayData required by CalendarLib formatters.
+func displayData(for event: EKEvent) -> EventDisplayData {
+    EventDisplayData(
+        title:         event.title ?? "(no title)",
+        start:         event.startDate,
+        end:           event.endDate,
+        isAllDay:      event.isAllDay,
+        calendarName:  event.calendar.title,
+        calendarColor: calendarColor(event.calendar),
+        location:      event.location
+    )
+}
+
 // MARK: - Calendar filter extraction (positional prefix)
 
 let knownCommands: Set<String> = [
@@ -110,96 +138,6 @@ func fetchEvents(in range: ParsedRange, calendars: [EKCalendar]) -> [EKEvent] {
     return sorted.filter { seen.insert($0.eventIdentifier).inserted }
 }
 
-// MARK: - Output formatting
-
-let timeFormatter: DateFormatter = {
-    let f = DateFormatter()
-    f.dateFormat = "h:mm a"
-    return f
-}()
-
-let dayHeaderFormatter: DateFormatter = {
-    let f = DateFormatter()
-    f.dateFormat = "EEEE, MMMM d"
-    return f
-}()
-
-func formatTime(_ date: Date) -> String {
-    timeFormatter.string(from: date)
-}
-
-/// Returns an ANSI true-color foreground escape for the calendar's color, or "" if unavailable.
-/// Respects NO_COLOR and isatty — no color codes when piping output.
-func calendarDot(_ calendar: EKCalendar) -> String {
-    guard ANSI.enabled else { return "  " }
-    guard let cg = calendar.cgColor else { return "  " }
-    let colorSpace = cg.colorSpace?.model
-    let components = cg.components ?? []
-    let r, g, b: Int
-    if colorSpace == .rgb, components.count >= 3 {
-        r = Int(components[0] * 255)
-        g = Int(components[1] * 255)
-        b = Int(components[2] * 255)
-    } else if colorSpace == .monochrome, components.count >= 1 {
-        let w = Int(components[0] * 255)
-        r = w; g = w; b = w
-    } else {
-        return "  "
-    }
-    return "\u{001B}[38;2;\(r);\(g);\(b)m●\u{001B}[0m "
-}
-
-func eventLine(_ event: EKEvent) -> String {
-    let timeCol: String
-    if event.isAllDay {
-        timeCol = " All day              "
-    } else {
-        let start = formatTime(event.startDate)
-        let end   = formatTime(event.endDate)
-        timeCol = String(format: " %8@ – %-8@  ", start as CVarArg, end as CVarArg)
-    }
-    var label = ANSI.bold(event.title ?? "(no title)")
-    if let loc = event.location, !loc.isEmpty {
-        let firstLine = loc.components(separatedBy: "\n").first ?? loc
-        let truncated = firstLine.count > 50 ? String(firstLine.prefix(50)) + "…" : firstLine
-        label += ANSI.dim(" · " + truncated)
-    }
-    return "\(calendarDot(event.calendar))\(timeCol)\(label)"
-}
-
-func printGrouped(_ events: [EKEvent]) {
-    let cal     = Calendar.current
-    let grouped = Dictionary(grouping: events) { cal.startOfDay(for: $0.startDate) }
-    let days    = grouped.keys.sorted()
-    for (i, day) in days.enumerated() {
-        if i > 0 { print("") }
-        print(ANSI.bold(dayHeaderFormatter.string(from: day)))
-        for event in (grouped[day] ?? []).sorted(by: { $0.startDate < $1.startDate }) {
-            print(eventLine(event))
-        }
-    }
-}
-
-func printFlat(_ events: [EKEvent], showHeader: Bool, header: String) {
-    if showHeader { print(header) }
-    for event in events { print(eventLine(event)) }
-}
-
-func nextRelativeLabel(_ date: Date) -> String {
-    let cal  = Calendar.current
-    let now  = Date()
-    if cal.isDateInToday(date)    { return "Today    " }
-    if cal.isDateInTomorrow(date) { return "Tomorrow " }
-    let days = cal.dateComponents([.day], from: cal.startOfDay(for: now),
-                                          to: cal.startOfDay(for: date)).day ?? 99
-    if days < 7 {
-        let f = DateFormatter(); f.dateFormat = "EEE      "
-        return f.string(from: date)
-    }
-    let f = DateFormatter(); f.dateFormat = "MMM d    "
-    return f.string(from: date)
-}
-
 // MARK: - Dispatch
 
 let dispatch = parseArgs(args)
@@ -238,7 +176,7 @@ store.requestFullAccessToEvents { granted, _ in
         for source in grouped.keys.sorted() {
             print(source)
             for cal in (grouped[source] ?? []).sorted(by: { $0.title < $1.title }) {
-                print("  \(calendarDot(cal))\(cal.title)")
+                print("  \(colorDot(calendarColor(cal)))\(cal.title)")
             }
         }
         semaphore.signal()
@@ -254,7 +192,6 @@ store.requestFullAccessToEvents { granted, _ in
             print("Existing config found — running setup will overwrite it.\n")
         }
 
-        // Build numbered flat list
         var numberedCals: [(Int, EKCalendar)] = []
         var n = 1
         let grouped = Dictionary(grouping: all) { $0.source.title }
@@ -262,7 +199,7 @@ store.requestFullAccessToEvents { granted, _ in
         for source in grouped.keys.sorted() {
             print("  \(source)")
             for cal in (grouped[source] ?? []).sorted(by: { $0.title < $1.title }) {
-                print(String(format: "    %2d  \(calendarDot(cal))\(cal.title)", n))
+                print(String(format: "    %2d  \(colorDot(calendarColor(cal)))\(cal.title)", n))
                 numberedCals.append((n, cal))
                 n += 1
             }
@@ -303,9 +240,7 @@ store.requestFullAccessToEvents { granted, _ in
                 if let num = Int(token),
                    let match = numberedCals.first(where: { $0.0 == num }) {
                     calNames.append(match.1.title)
-                } else if let match = all.first(where: {
-                    $0.title.lowercased() == token.lowercased()
-                }) {
+                } else if let match = all.first(where: { $0.title.lowercased() == token.lowercased() }) {
                     calNames.append(match.title)
                 } else {
                     unmatched.append(token)
@@ -351,101 +286,82 @@ store.requestFullAccessToEvents { granted, _ in
 
     case "list":
         guard args.count > 1 else { fail("provide a range (e.g. today, week, 7d, \"march 15 to march 20\")") }
-        let rangeStr  = args.dropFirst().joined(separator: " ")
+        let rangeStr = args.dropFirst().joined(separator: " ")
         guard let range = parseRange(rangeStr) else { fail("unrecognised range: \(rangeStr)") }
-        let calendars = resolveCalendars(calFilter)
-        let events    = fetchEvents(in: range, calendars: calendars)
+        let events = fetchEvents(in: range, calendars: resolveCalendars(calFilter)).map(displayData)
         if events.isEmpty {
             print("No events — \(formatRangeDescription(range))")
         } else if range.isSingleDay {
-            printFlat(events, showHeader: true, header: dayHeaderFormatter.string(from: range.start))
+            printFlat(events, showHeader: true, header: dayHeaderFormatter.string(from: range.start),
+                      calFilter: calFilter)
         } else {
-            printGrouped(events)
+            printGrouped(events, calFilter: calFilter)
         }
         semaphore.signal()
 
     case "today":
-        let range     = parseRange("today")!
-        let calendars = resolveCalendars(calFilter)
-        let events    = fetchEvents(in: range, calendars: calendars)
-        let header    = dayHeaderFormatter.string(from: range.start)
+        let range  = parseRange("today")!
+        let events = fetchEvents(in: range, calendars: resolveCalendars(calFilter)).map(displayData)
+        let header = dayHeaderFormatter.string(from: range.start)
         if events.isEmpty {
             print("\(header)\n  (nothing scheduled)")
         } else {
-            printFlat(events, showHeader: true, header: header)
+            printFlat(events, showHeader: true, header: header, calFilter: calFilter)
         }
         semaphore.signal()
 
     case "week":
-        let range     = parseRange("week")!
-        let calendars = resolveCalendars(calFilter)
-        let events    = fetchEvents(in: range, calendars: calendars)
+        let range  = parseRange("week")!
+        let events = fetchEvents(in: range, calendars: resolveCalendars(calFilter)).map(displayData)
         if events.isEmpty {
             print("No events this week")
         } else {
-            printGrouped(events)
+            printGrouped(events, calFilter: calFilter)
         }
         semaphore.signal()
 
     case "next":
-        let n: Int
-        if args.count > 1, let num = Int(args[1]) {
-            n = num
-        } else {
-            n = 5
-        }
-        let lookAhead = parseRange("90d")!
-        let calendars = resolveCalendars(calFilter)
-        let all       = fetchEvents(in: lookAhead, calendars: calendars)
-        let now       = Date()
-        let upcoming  = Array(all.filter { $0.endDate > now }.prefix(n))
+        let n = args.count > 1 ? (Int(args[1]) ?? 5) : 5
+        let now      = Date()
+        let upcoming = fetchEvents(in: parseRange("90d")!, calendars: resolveCalendars(calFilter))
+            .filter { $0.endDate > now }
+            .prefix(n)
         if upcoming.isEmpty {
             print("No upcoming events in the next 90 days")
         } else {
             for event in upcoming {
-                let dateLabel = nextRelativeLabel(event.startDate)
-                let timeStr   = event.isAllDay ? "All day  " : formatTime(event.startDate)
+                let dateLabel = nextRelativeLabel(for: event.startDate, relativeTo: now)
+                let timeStr   = event.isAllDay ? "All day  " : formatEventTime(event.startDate)
                 var label     = event.title ?? "(no title)"
                 if let loc = event.location, !loc.isEmpty {
                     label += " · " + (loc.components(separatedBy: "\n").first ?? loc)
                 }
-                print("\(calendarDot(event.calendar)) \(dateLabel)  \(timeStr)   \(label)")
+                print("\(colorDot(calendarColor(event.calendar))) \(dateLabel)  \(timeStr)   \(label)")
             }
         }
         semaphore.signal()
 
     case "find":
         guard args.count > 1 else { fail("provide a search query") }
-        let remaining  = Array(args.dropFirst())  // drop "find"
-
-        // Try to find a trailing range argument — last token(s) that form a valid range
+        let remaining = Array(args.dropFirst())
         var query: String
         var range: ParsedRange
-        if remaining.count > 1,
-           let r = parseRange(remaining.dropFirst().joined(separator: " ")) {
-            query = remaining[0]
-            range = r
-        } else if remaining.count > 1,
-                  let r = parseRange(remaining.last!) {
-            query = remaining.dropLast().joined(separator: " ")
-            range = r
+        if remaining.count > 1, let r = parseRange(remaining.dropFirst().joined(separator: " ")) {
+            query = remaining[0]; range = r
+        } else if remaining.count > 1, let r = parseRange(remaining.last!) {
+            query = remaining.dropLast().joined(separator: " "); range = r
         } else {
-            query = remaining.joined(separator: " ")
-            range = parseRange("30d")!
+            query = remaining.joined(separator: " "); range = parseRange("30d")!
         }
-
-        let calendars = resolveCalendars(calFilter)
-        let events    = fetchEvents(in: range, calendars: calendars)
-        let lower     = query.lowercased()
-        let matches   = events.filter {
-            ($0.title?.lowercased().contains(lower) ?? false) ||
-            ($0.notes?.lowercased().contains(lower) ?? false)
-        }
-
+        let lower   = query.lowercased()
+        let matches = fetchEvents(in: range, calendars: resolveCalendars(calFilter))
+            .filter { ($0.title?.lowercased().contains(lower) ?? false) ||
+                      ($0.notes?.lowercased().contains(lower) ?? false) }
+            .map(displayData)
         if matches.isEmpty {
             print("No events matching '\(query)' in \(formatRangeDescription(range))")
         } else {
-            printGrouped(matches)
+            printGrouped(matches, calFilter: calFilter)
         }
         semaphore.signal()
 
@@ -454,50 +370,37 @@ store.requestFullAccessToEvents { granted, _ in
         let title    = args[1]
         let rangeStr = args.count > 2 ? args.dropFirst(2).joined(separator: " ") : nil
         let range    = rangeStr.flatMap { parseRange($0) } ?? parseRange("30d")!
-
-        let all      = store.calendars(for: .event)
-        let events   = fetchEvents(in: range, calendars: all)
         let lower    = title.lowercased()
-        let matches  = events.filter {
-            ($0.title ?? "").caseInsensitiveCompare(title) == .orderedSame ||
-            ($0.title ?? "").lowercased().contains(lower)
-        }
+        let matches  = fetchEvents(in: range, calendars: store.calendars(for: .event))
+            .filter { ($0.title ?? "").caseInsensitiveCompare(title) == .orderedSame ||
+                      ($0.title ?? "").lowercased().contains(lower) }
         guard !matches.isEmpty else { fail("Not found: \(title)") }
         if matches.count > 1 {
             let df = DateFormatter(); df.dateFormat = "EEE MMM d"
             print("Multiple events match '\(title)':")
             for e in matches {
-                let timeStr = e.isAllDay ? "all day" : formatTime(e.startDate)
+                let timeStr = e.isAllDay ? "all day" : formatEventTime(e.startDate)
                 print("  \(df.string(from: e.startDate))  \(timeStr)  \(e.title ?? "")")
             }
             print("Add a date to narrow the search, e.g.: calendar show \"\(title)\" tomorrow")
             exit(1)
         }
         let event = matches[0]
-
-        let cal = Calendar.current
+        let cal   = Calendar.current
         print(event.title ?? "(no title)")
-
         if event.isAllDay {
             let f = DateFormatter(); f.dateFormat = "EEE MMM d, yyyy"
             print("  Date:       \(f.string(from: event.startDate)) (all day)")
         } else {
-            let df = DateFormatter(); df.dateFormat = "EEE MMM d, yyyy"
-            let dateStr = df.string(from: event.startDate)
-            let startStr = formatTime(event.startDate)
-            let endStr   = formatTime(event.endDate)
-            let sameDay  = cal.isDate(event.startDate, inSameDayAs: event.endDate)
-            print("  Date:       \(dateStr), \(startStr) – \(sameDay ? endStr : df.string(from: event.endDate) + " " + endStr)")
+            let df      = DateFormatter(); df.dateFormat = "EEE MMM d, yyyy"
+            let sameDay = cal.isDate(event.startDate, inSameDayAs: event.endDate)
+            let endPart = sameDay ? formatEventTime(event.endDate)
+                                  : df.string(from: event.endDate) + " " + formatEventTime(event.endDate)
+            print("  Date:       \(df.string(from: event.startDate)), \(formatEventTime(event.startDate)) – \(endPart)")
         }
-
         print("  Calendar:   \(event.calendar.title)")
-
-        if let loc = event.location, !loc.isEmpty {
-            print("  Location:   \(loc)")
-        }
-        if let url = event.url {
-            print("  URL:        \(url.absoluteString)")
-        }
+        if let loc = event.location, !loc.isEmpty { print("  Location:   \(loc)") }
+        if let url = event.url { print("  URL:        \(url.absoluteString)") }
         if let attendees = event.attendees, !attendees.isEmpty {
             let names = attendees.compactMap { p -> String? in
                 guard let name = p.name else { return nil }
@@ -510,51 +413,40 @@ store.requestFullAccessToEvents { granted, _ in
                 }
                 return "\(name) (\(status))"
             }
-            if !names.isEmpty {
-                print("  Attendees:  \(names.joined(separator: ", "))")
-            }
+            if !names.isEmpty { print("  Attendees:  \(names.joined(separator: ", "))") }
         }
         if let notes = event.notes, !notes.isEmpty {
-            let firstLine = notes.components(separatedBy: "\n").first ?? notes
-            print("  Notes:      \(firstLine)")
-            let rest = notes.components(separatedBy: "\n").dropFirst()
-            for line in rest where !line.trimmingCharacters(in: .whitespaces).isEmpty {
+            let lines = notes.components(separatedBy: "\n")
+            print("  Notes:      \(lines[0])")
+            for line in lines.dropFirst() where !line.trimmingCharacters(in: .whitespaces).isEmpty {
                 print("              \(line)")
             }
         }
-
         semaphore.signal()
 
     case "add":
         guard args.count > 1 else { fail("provide an event title") }
-        let title     = args[1]
-        let dateStr   = Array(args.dropFirst(2)).joined(separator: " ")
-        let calendars = resolveCalendars(calFilter)
-
+        let title   = args[1]
+        let dateStr = Array(args.dropFirst(2)).joined(separator: " ")
         guard let edt = parseEventDateTime(dateStr.isEmpty ? "today" : dateStr) else {
             fail("unrecognised date/time: \(dateStr)")
         }
-
-        // Pick calendar: first in resolved set
-        guard let targetCal = calendars.first ?? store.defaultCalendarForNewEvents else {
+        guard let targetCal = resolveCalendars(calFilter).first ?? store.defaultCalendarForNewEvents else {
             fail("no calendar available")
         }
-
-        let endDate = edt.end ?? Calendar.current.date(byAdding: .hour, value: 1, to: edt.start)!
-
-        let event        = EKEvent(eventStore: store)
-        event.title      = title
-        event.calendar   = targetCal
-        event.isAllDay   = edt.isAllDay
-        event.startDate  = edt.start
-        event.endDate    = endDate
-
+        let endDate  = edt.end ?? Calendar.current.date(byAdding: .hour, value: 1, to: edt.start)!
+        let event    = EKEvent(eventStore: store)
+        event.title     = title
+        event.calendar  = targetCal
+        event.isAllDay  = edt.isAllDay
+        event.startDate = edt.start
+        event.endDate   = endDate
         do {
             try store.save(event, span: .thisEvent, commit: true)
             try? ActivityLog.write(tool: "calendar", cmd: "add", desc: title, container: targetCal.title)
-            let df = DateFormatter()
-            df.dateFormat = "EEE MMM d"
-            let timeDetail = edt.isAllDay ? "all day" : "\(formatTime(edt.start)) – \(formatTime(endDate))"
+            let df         = DateFormatter(); df.dateFormat = "EEE MMM d"
+            let timeDetail = edt.isAllDay ? "all day"
+                                          : "\(formatEventTime(edt.start)) – \(formatEventTime(endDate))"
             print("Added: \(title) · \(df.string(from: edt.start)) \(timeDetail) (\(targetCal.title))")
         } catch {
             fail("Could not save event: \(error.localizedDescription)")
@@ -563,22 +455,19 @@ store.requestFullAccessToEvents { granted, _ in
 
     case "remove":
         guard args.count > 1 else { fail("provide an event title") }
-        let title     = args[1]
-        let rangeStr  = args.count > 2 ? Array(args.dropFirst(2)).joined(separator: " ") : nil
-        let range     = rangeStr.flatMap { parseRange($0) } ?? parseRange("30d")!
-        let calendars = resolveCalendars(calFilter)
-        let events    = fetchEvents(in: range, calendars: calendars)
-        let lower     = title.lowercased()
-        let matches   = events.filter {
-            ($0.title ?? "").caseInsensitiveCompare(title) == .orderedSame ||
-            ($0.title ?? "").lowercased().contains(lower)
-        }
+        let title    = args[1]
+        let rangeStr = args.count > 2 ? Array(args.dropFirst(2)).joined(separator: " ") : nil
+        let range    = rangeStr.flatMap { parseRange($0) } ?? parseRange("30d")!
+        let lower    = title.lowercased()
+        let matches  = fetchEvents(in: range, calendars: resolveCalendars(calFilter))
+            .filter { ($0.title ?? "").caseInsensitiveCompare(title) == .orderedSame ||
+                      ($0.title ?? "").lowercased().contains(lower) }
         guard !matches.isEmpty else { fail("Not found: \(title)") }
         if matches.count > 1 {
             let df = DateFormatter(); df.dateFormat = "EEE MMM d"
             print("Multiple events match '\(title)':")
             for e in matches {
-                let timeStr = e.isAllDay ? "all day" : formatTime(e.startDate)
+                let timeStr = e.isAllDay ? "all day" : formatEventTime(e.startDate)
                 print("  \(df.string(from: e.startDate))  \(timeStr)  \(e.title ?? "")")
             }
             print("Add a date to narrow the search, e.g.: calendar remove \"\(title)\" tomorrow")
@@ -586,7 +475,7 @@ store.requestFullAccessToEvents { granted, _ in
         }
         let event = matches[0]
         do {
-            let calName  = event.calendar.title
+            let calName    = event.calendar.title
             let eventTitle = event.title ?? ""
             try store.remove(event, span: .thisEvent, commit: true)
             try? ActivityLog.write(tool: "calendar", cmd: "remove", desc: eventTitle, container: calName)
@@ -598,18 +487,17 @@ store.requestFullAccessToEvents { granted, _ in
         semaphore.signal()
 
     default:
-        // Try treating the bare command as a range shorthand: "calendar today", "calendar week",
-        // "calendar monday", "calendar march 15", "calendar 7d", etc.
-        let rangeStr   = args.joined(separator: " ")
+        // Try treating the bare command as a range shorthand: "calendar monday", "calendar 7d", etc.
+        let rangeStr = args.joined(separator: " ")
         if let range = parseRange(rangeStr) {
-            let calendars = resolveCalendars(calFilter)
-            let events    = fetchEvents(in: range, calendars: calendars)
+            let events = fetchEvents(in: range, calendars: resolveCalendars(calFilter)).map(displayData)
             if events.isEmpty {
                 print("No events — \(formatRangeDescription(range))")
             } else if range.isSingleDay {
-                printFlat(events, showHeader: true, header: dayHeaderFormatter.string(from: range.start))
+                printFlat(events, showHeader: true, header: dayHeaderFormatter.string(from: range.start),
+                          calFilter: calFilter)
             } else {
-                printGrouped(events)
+                printGrouped(events, calFilter: calFilter)
             }
         } else {
             usage()
@@ -619,7 +507,6 @@ store.requestFullAccessToEvents { granted, _ in
 }
 
 semaphore.wait()
-
 
 UpdateChecker.spawnBackgroundCheckIfNeeded()
 if let hint = UpdateChecker.hint() { fputs(hint + "\n", stderr) }
