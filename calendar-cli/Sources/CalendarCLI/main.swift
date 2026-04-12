@@ -50,7 +50,8 @@ store.requestFullAccessToEvents { granted, _ in
     case "show":      handleShow(args: args, store: store, semaphore: semaphore)
     case "add":       handleAdd(args: args, store: store, calFilter: calFilter, config: config, semaphore: semaphore)
     case "remove":    handleRemove(args: args, store: store, calFilter: calFilter, config: config, semaphore: semaphore)
-    default:  handleDefault(args: args, store: store, calFilter: calFilter, config: config, semaphore: semaphore)
+    default:
+        if !handleDefault(args: args, store: store, calFilter: calFilter, config: config, semaphore: semaphore) { usage() }
     }
 }
 
