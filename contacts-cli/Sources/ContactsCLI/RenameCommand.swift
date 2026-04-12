@@ -9,7 +9,7 @@ import GetClearKit
 func handleRename(args: [String], store: CNContactStore, semaphore: DispatchSemaphore) {
     guard args.count > 2 else { fail("provide existing name and new name") }
     let oldName = args[1]; let newName = args[2]
-    let all = allContacts(store: store, keysToFetch: keysToFetch)
+    let all = allContacts(store: store)
     guard let contact = cnContact(named: oldName, in: all) else { fail("Not found: \(oldName)") }
     let mutable = contact.mutableCopy() as! CNMutableContact
     let parts = newName.components(separatedBy: " ")

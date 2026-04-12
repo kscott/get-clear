@@ -10,7 +10,7 @@ func handleRemove(args: [String], store: CNContactStore, semaphore: DispatchSema
     guard args.count > 1 else { fail("provide a contact name") }
     let name      = args[1]
     let remaining = Array(args.dropFirst(2))
-    let all       = allContacts(store: store, keysToFetch: keysToFetch)
+    let all       = allContacts(store: store)
 
     if remaining.first == "from" {
         let groupName = Array(remaining.dropFirst()).joined(separator: " ")

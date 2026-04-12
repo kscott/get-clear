@@ -9,7 +9,7 @@ import GetClearKit
 func handleFind(args: [String], store: CNContactStore, semaphore: DispatchSemaphore) {
     guard args.count > 1 else { fail("provide a search query") }
     let query   = args.dropFirst().joined(separator: " ")
-    let matched = matchContacts(query, in: allContacts(store: store, keysToFetch: keysToFetch).map(toRecord))
+    let matched = matchContacts(query, in: allContacts(store: store).map(toRecord))
     if matched.isEmpty {
         print("No contacts matching '\(query)'")
     } else {

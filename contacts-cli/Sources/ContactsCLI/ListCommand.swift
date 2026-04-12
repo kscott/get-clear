@@ -1,4 +1,6 @@
 // ListCommand.swift
+//
+// Lists contacts in a group, or exports them as a paste-ready address string.
 
 import Contacts
 import ContactsLib
@@ -10,9 +12,8 @@ func handleList(args: [String], store: CNContactStore, semaphore: DispatchSemaph
     guard let grp = group(named: groupName, store: store) else { fail("Group not found: \(groupName)") }
     let pred     = CNContact.predicateForContactsInGroup(withIdentifier: grp.identifier)
     let contacts = (try? store.unifiedContacts(matching: pred, keysToFetch: keysToFetch)) ?? []
-    for c in contacts.sorted(by: { toRecord($0).name < toRecord($1).name }) {
-        let r        = toRecord(c)
-        let nameStr  = r.name.isEmpty ? c.organizationName : r.name
+    for r in contacts.map(toRecord).sorted(by: { $0.name < $1.name }) {
+        let nameStr  = r.name.isEmpty ? r.company : r.name
         let emailStr = r.primaryEmail.isEmpty ? "(no email)" : r.primaryEmail
         print("  \(ANSI.bold(nameStr)) \(ANSI.dim("<\(emailStr)>"))")
     }
@@ -25,6 +26,6 @@ func handleExport(args: [String], store: CNContactStore, semaphore: DispatchSema
     guard let grp = group(named: groupName, store: store) else { fail("Group not found: \(groupName)") }
     let pred     = CNContact.predicateForContactsInGroup(withIdentifier: grp.identifier)
     let contacts = (try? store.unifiedContacts(matching: pred, keysToFetch: keysToFetch)) ?? []
-    print(exportAddresses(contacts.map { toRecord($0) }.sorted { $0.name < $1.name }))
+    print(exportAddresses(contacts.map(toRecord).sorted { $0.name < $1.name }))
     semaphore.signal()
 }

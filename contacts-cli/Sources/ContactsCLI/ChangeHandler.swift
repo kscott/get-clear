@@ -14,14 +14,17 @@ func handleChange(args: [String], store: CNContactStore, semaphore: DispatchSema
     nonUnifiedRequest.unifyResults = false
     var candidates: [CNContact] = []
     try? store.enumerateContacts(with: nonUnifiedRequest) { c, _ in candidates.append(c) }
-    guard let first = matchContacts(query, in: candidates.map(toRecord)).first else {
+    let records = candidates.map(toRecord)
+    guard let first = matchContacts(query, in: records).first else {
         fail("Not found: \(query)")
     }
     let changes: ContactChanges
     do { changes = try parseContactChanges(Array(args.dropFirst(2)).joined(separator: " ")) }
     catch { fail("nothing to change — specify [add|remove] email or [add|remove] phone") }
 
-    let linkedCandidates = candidates.filter { toRecord($0).name == first.name }
+    let linkedCandidates = zip(candidates, records)
+        .filter { $1.name == first.name }
+        .map { $0.0 }
     var mutable = linkedCandidates[0].mutableCopy() as! CNMutableContact
     applyChanges(changes, to: &mutable)
 
@@ -41,8 +44,9 @@ func handleChange(args: [String], store: CNContactStore, semaphore: DispatchSema
     }
 
     func emit(_ msg: String) {
-        var out = msg + "\n"
-        out.withUTF8 { write(saved ? STDOUT_FILENO : savedStderrFd, $0.baseAddress, $0.count) }
+        let data = Data((msg + "\n").utf8)
+        let fd = FileHandle(fileDescriptor: saved ? STDOUT_FILENO : savedStderrFd, closeOnDealloc: false)
+        fd.write(data)
     }
 
     if saved {

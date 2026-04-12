@@ -1,4 +1,6 @@
 // WhatCommand.swift
+//
+// Displays activity log entries for the contacts tool.
 
 import Foundation
 import GetClearKit

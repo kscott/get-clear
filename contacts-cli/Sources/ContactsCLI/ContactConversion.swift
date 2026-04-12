@@ -14,7 +14,6 @@ let keysToFetch: [CNKeyDescriptor] = [
     CNContactPhoneNumbersKey as CNKeyDescriptor,
 ]
 
-/// Converts a CNContact to a ContactRecord for use in ContactsLib functions.
 func toRecord(_ c: CNContact) -> ContactRecord {
     ContactRecord(
         name:    [c.givenName, c.familyName].filter { !$0.isEmpty }.joined(separator: " "),
@@ -24,29 +23,25 @@ func toRecord(_ c: CNContact) -> ContactRecord {
     )
 }
 
-/// Returns the first CNContact whose record name matches the given query, or nil.
 func cnContact(named query: String, in contacts: [CNContact]) -> CNContact? {
-    let matched = matchContacts(query, in: contacts.map(toRecord))
-    guard let first = matched.first else { return nil }
-    return contacts.first { toRecord($0).name == first.name }
+    let records = contacts.map(toRecord)
+    guard let first = matchContacts(query, in: records).first else { return nil }
+    return zip(contacts, records).first { $1.name == first.name }?.0
 }
 
-/// Returns all contacts from the store.
-func allContacts(store: CNContactStore, keysToFetch: [CNKeyDescriptor]) -> [CNContact] {
+func allContacts(store: CNContactStore) -> [CNContact] {
     let request = CNContactFetchRequest(keysToFetch: keysToFetch)
     var results: [CNContact] = []
     try? store.enumerateContacts(with: request) { contact, _ in results.append(contact) }
     return results
 }
 
-/// Returns the first group whose name matches case-insensitively, or nil.
 func group(named groupName: String, store: CNContactStore) -> CNGroup? {
     ((try? store.groups(matching: nil)) ?? []).first {
         $0.name.caseInsensitiveCompare(groupName) == .orderedSame
     }
 }
 
-/// Applies a ContactChanges value to a mutable contact.
 func applyChanges(_ changes: ContactChanges, to contact: inout CNMutableContact) {
     switch changes.email {
     case .unchanged: break

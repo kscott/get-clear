@@ -15,7 +15,7 @@ func handleAdd(args: [String], store: CNContactStore, semaphore: DispatchSemapho
     if remaining.first == "to" {
         let groupName = Array(remaining.dropFirst()).joined(separator: " ")
         guard !groupName.isEmpty else { fail("provide a group name after 'to'") }
-        let all = allContacts(store: store, keysToFetch: keysToFetch)
+        let all = allContacts(store: store)
         guard let contact = cnContact(named: name, in: all) else { fail("Not found: \(name)") }
         guard let grp = group(named: groupName, store: store) else { fail("Group not found: \(groupName)") }
         let request = CNSaveRequest()
