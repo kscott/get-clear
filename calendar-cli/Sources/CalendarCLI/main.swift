@@ -47,7 +47,7 @@ store.requestFullAccessToEvents { granted, _ in
     case "week":      handleWeek(store: store, calFilter: calFilter, config: config, semaphore: semaphore)
     case "next":      handleNext(args: args, store: store, calFilter: calFilter, config: config, semaphore: semaphore)
     case "find":      handleFind(args: args, store: store, calFilter: calFilter, config: config, semaphore: semaphore)
-    case "show":      handleShow(args: args, store: store, semaphore: semaphore)
+    case "show":      handleShow(args: args, store: store, calFilter: calFilter, config: config, semaphore: semaphore)
     case "add":       handleAdd(args: args, store: store, calFilter: calFilter, config: config, semaphore: semaphore)
     case "remove":    handleRemove(args: args, store: store, calFilter: calFilter, config: config, semaphore: semaphore)
     default:

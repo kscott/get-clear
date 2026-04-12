@@ -52,13 +52,25 @@ public let dayHeaderFormatter: DateFormatter = {
 
 private let dayNameFormatter: DateFormatter = {
     let f = DateFormatter()
-    f.dateFormat = "EEE      "
+    f.dateFormat = "EEE"
     return f
 }()
 
 private let monthDayFormatter: DateFormatter = {
     let f = DateFormatter()
-    f.dateFormat = "MMM d    "
+    f.dateFormat = "MMM d"
+    return f
+}()
+
+public let shortDateFormatter: DateFormatter = {
+    let f = DateFormatter()
+    f.dateFormat = "EEE MMM d"
+    return f
+}()
+
+public let eventDetailDateFormatter: DateFormatter = {
+    let f = DateFormatter()
+    f.dateFormat = "EEE MMM d, yyyy"
     return f
 }()
 
@@ -79,8 +91,7 @@ public func colorDot(_ color: (r: Int, g: Int, b: Int)?) -> String {
 // MARK: - eventLine
 
 /// Returns a single formatted event line for list/today/week/find output.
-/// `calFilter` is accepted for forward compatibility but does not currently affect output.
-public func eventLine(for event: EventDisplayData, calFilter: String?) -> String {
+public func eventLine(for event: EventDisplayData) -> String {
     let timeCol: String
     if event.isAllDay {
         timeCol = " All day              "
@@ -102,7 +113,8 @@ public func eventLine(for event: EventDisplayData, calFilter: String?) -> String
 
 // MARK: - nextRelativeLabel
 
-/// Returns a fixed-width relative date label for use in `next` output.
+
+/// Returns a fixed-width (9-char) relative date label for use in `next` output.
 /// Examples: "Today    ", "Tomorrow ", "Tue      ", "Jan 25   "
 public func nextRelativeLabel(for date: Date, relativeTo now: Date) -> String {
     let cal = Calendar.current
@@ -112,14 +124,15 @@ public func nextRelativeLabel(for date: Date, relativeTo now: Date) -> String {
     let days = cal.dateComponents([.day],
                                   from: cal.startOfDay(for: now),
                                   to: cal.startOfDay(for: date)).day ?? 99
-    return days < 7 ? dayNameFormatter.string(from: date)
-                    : monthDayFormatter.string(from: date)
+    let raw = days < 7 ? dayNameFormatter.string(from: date)
+                       : monthDayFormatter.string(from: date)
+    return raw.padding(toLength: 9, withPad: " ", startingAt: 0)
 }
 
 // MARK: - Grouped and flat printing
 
 /// Prints events grouped by day with bold day headers.
-public func printGrouped(_ events: [EventDisplayData], calFilter: String?) {
+public func printGrouped(_ events: [EventDisplayData]) {
     let cal     = Calendar.current
     let grouped = Dictionary(grouping: events) { cal.startOfDay(for: $0.start) }
     let days    = grouped.keys.sorted()
@@ -127,13 +140,12 @@ public func printGrouped(_ events: [EventDisplayData], calFilter: String?) {
         if i > 0 { print("") }
         print(ANSI.bold(dayHeaderFormatter.string(from: day)))
         let sorted = (grouped[day] ?? []).sorted { $0.start < $1.start }
-        for event in sorted { print(eventLine(for: event, calFilter: calFilter)) }
+        for event in sorted { print(eventLine(for: event)) }
     }
 }
 
 /// Prints events as a flat list, optionally preceded by a header line.
-public func printFlat(_ events: [EventDisplayData], showHeader: Bool, header: String,
-                      calFilter: String?) {
+public func printFlat(_ events: [EventDisplayData], showHeader: Bool, header: String) {
     if showHeader { print(header) }
-    for event in events { print(eventLine(for: event, calFilter: calFilter)) }
+    for event in events { print(eventLine(for: event)) }
 }

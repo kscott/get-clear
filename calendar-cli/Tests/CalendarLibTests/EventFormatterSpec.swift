@@ -69,22 +69,22 @@ final class EventFormatterSpec: QuickSpec {
 
             context("timed events") {
                 it("contains the event title") {
-                    let line = eventLine(for: timedEvent(title: "Team Sync"), calFilter: nil)
+                    let line = eventLine(for: timedEvent(title: "Team Sync"))
                     expect(line).to(contain("Team Sync"))
                 }
                 it("does not contain 'All day'") {
-                    let line = eventLine(for: timedEvent(), calFilter: nil)
+                    let line = eventLine(for: timedEvent())
                     expect(line).toNot(contain("All day"))
                 }
                 it("contains the start time") {
                     let event = timedEvent(startHour: 14, endHour: 15)
-                    let line = eventLine(for: event, calFilter: nil)
+                    let line = eventLine(for: event)
                     let startStr = formatEventTime(event.start)
                     expect(line).to(contain(startStr))
                 }
                 it("contains the end time") {
                     let event = timedEvent(startHour: 14, endHour: 15)
-                    let line = eventLine(for: event, calFilter: nil)
+                    let line = eventLine(for: event)
                     let endStr = formatEventTime(event.end!)
                     expect(line).to(contain(endStr))
                 }
@@ -92,16 +92,16 @@ final class EventFormatterSpec: QuickSpec {
 
             context("all-day events") {
                 it("contains 'All day'") {
-                    let line = eventLine(for: allDayEvent(), calFilter: nil)
+                    let line = eventLine(for: allDayEvent())
                     expect(line).to(contain("All day"))
                 }
                 it("contains the event title") {
-                    let line = eventLine(for: allDayEvent(title: "New Year"), calFilter: nil)
+                    let line = eventLine(for: allDayEvent(title: "New Year"))
                     expect(line).to(contain("New Year"))
                 }
                 it("does not contain a time") {
                     let event = allDayEvent()
-                    let line = eventLine(for: event, calFilter: nil)
+                    let line = eventLine(for: event)
                     let startStr = formatEventTime(event.start)
                     expect(line).toNot(contain(startStr))
                 }
@@ -109,43 +109,35 @@ final class EventFormatterSpec: QuickSpec {
 
             context("location") {
                 it("appends location after ' · ' separator") {
-                    let line = eventLine(for: timedEvent(location: "Zoom"), calFilter: nil)
+                    let line = eventLine(for: timedEvent(location: "Zoom"))
                     expect(line).to(contain(" · Zoom"))
                 }
                 it("uses only the first line of a multi-line location") {
-                    let line = eventLine(for: timedEvent(location: "123 Main St\nFloor 2"), calFilter: nil)
+                    let line = eventLine(for: timedEvent(location: "123 Main St\nFloor 2"))
                     expect(line).to(contain("123 Main St"))
                     expect(line).toNot(contain("Floor 2"))
                 }
                 it("truncates location longer than 50 characters") {
                     let long = String(repeating: "A", count: 60)
-                    let line = eventLine(for: timedEvent(location: long), calFilter: nil)
+                    let line = eventLine(for: timedEvent(location: long))
                     expect(line).to(contain("…"))
                     expect(line).toNot(contain(long))
                 }
                 it("does not truncate a location of exactly 50 characters") {
                     let exact = String(repeating: "B", count: 50)
-                    let line = eventLine(for: timedEvent(location: exact), calFilter: nil)
+                    let line = eventLine(for: timedEvent(location: exact))
                     expect(line).toNot(contain("…"))
                 }
                 it("omits ' · ' when location is nil") {
-                    let line = eventLine(for: timedEvent(location: nil), calFilter: nil)
+                    let line = eventLine(for: timedEvent(location: nil))
                     expect(line).toNot(contain(" · "))
                 }
                 it("omits ' · ' when location is empty") {
-                    let line = eventLine(for: timedEvent(location: ""), calFilter: nil)
+                    let line = eventLine(for: timedEvent(location: ""))
                     expect(line).toNot(contain(" · "))
                 }
             }
 
-            context("calFilter") {
-                it("produces the same output regardless of calFilter value") {
-                    let event = timedEvent(title: "Stand-up", calendarName: "Work")
-                    let withFilter    = eventLine(for: event, calFilter: "work")
-                    let withoutFilter = eventLine(for: event, calFilter: nil)
-                    expect(withFilter) == withoutFilter
-                }
-            }
         }
 
         // MARK: - nextRelativeLabel

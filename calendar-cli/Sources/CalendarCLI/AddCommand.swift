@@ -24,9 +24,8 @@ func handleAdd(args: [String], store: EKEventStore, calFilter: String?,
     do {
         try store.save(ev, span: .thisEvent, commit: true)
         try? ActivityLog.write(tool: "calendar", cmd: "add", desc: title, container: targetCal.title)
-        let df     = DateFormatter(); df.dateFormat = "EEE MMM d"
         let detail = edt.isAllDay ? "all day" : "\(formatEventTime(edt.start)) – \(formatEventTime(endDate))"
-        print("Added: \(title) · \(df.string(from: edt.start)) \(detail) (\(targetCal.title))")
+        print("Added: \(title) · \(shortDateFormatter.string(from: edt.start)) \(detail) (\(targetCal.title))")
     } catch { fail("Could not save event: \(error.localizedDescription)") }
     semaphore.signal()
 }

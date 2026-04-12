@@ -13,7 +13,7 @@ func handleToday(store: EKEventStore, calFilter: String?,
     if evts.isEmpty {
         print("\(hdr)\n  (nothing scheduled)")
     } else {
-        printFlat(evts, showHeader: true, header: hdr, calFilter: calFilter)
+        printFlat(evts, showHeader: true, header: hdr)
     }
     semaphore.signal()
 }

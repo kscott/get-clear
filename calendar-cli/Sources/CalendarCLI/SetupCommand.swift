@@ -10,9 +10,8 @@ import GetClearKit
 func runSetup(store: EKEventStore) {
     let all = store.calendars(for: .event)
 
-    let configDir = FileManager.default.homeDirectoryForCurrentUser
-        .appendingPathComponent(".config/calendar-cli")
-    let configURL = configDir.appendingPathComponent("config.toml")
+    let configURL = CalendarConfig.configURL
+    let configDir = configURL.deletingLastPathComponent()
 
     if FileManager.default.fileExists(atPath: configURL.path) {
         print("Existing config found — running setup will overwrite it.\n")

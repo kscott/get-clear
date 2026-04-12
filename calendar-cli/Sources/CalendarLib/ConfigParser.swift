@@ -19,15 +19,16 @@ public struct CalendarConfig {
 
     public static let empty = CalendarConfig(subsets: [:])
 
+    public static let configURL: URL = FileManager.default.homeDirectoryForCurrentUser
+        .appendingPathComponent(".config/calendar-cli/config.toml")
+
     public init(subsets: [String: [String]]) {
         self.subsets = subsets
     }
 }
 
 public func loadConfig() -> CalendarConfig {
-    let configURL = FileManager.default.homeDirectoryForCurrentUser
-        .appendingPathComponent(".config/calendar-cli/config.toml")
-    guard let content = try? String(contentsOf: configURL, encoding: .utf8) else {
+    guard let content = try? String(contentsOf: CalendarConfig.configURL, encoding: .utf8) else {
         return .empty
     }
     return parseConfig(content)
@@ -65,11 +66,12 @@ public func parseConfig(_ content: String) -> CalendarConfig {
     return CalendarConfig(subsets: subsets)
 }
 
+private let quotedStringRegex = try! NSRegularExpression(pattern: #""([^"]+)""#)
+
 /// Extract quoted strings from a TOML inline array: ["foo", "bar with spaces", "baz"]
 private func parseStringArray(_ s: String) -> [String] {
     var result: [String] = []
-    let regex = try! NSRegularExpression(pattern: #""([^"]+)""#)
-    let matches = regex.matches(in: s, range: NSRange(s.startIndex..., in: s))
+    let matches = quotedStringRegex.matches(in: s, range: NSRange(s.startIndex..., in: s))
     for match in matches {
         if let range = Range(match.range(at: 1), in: s) {
             result.append(String(s[range]))

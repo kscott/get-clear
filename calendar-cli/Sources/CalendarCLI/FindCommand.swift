@@ -26,7 +26,7 @@ func handleFind(args: [String], store: EKEventStore, calFilter: String?,
     if matches.isEmpty {
         print("No events matching '\(query)' in \(formatRangeDescription(range))")
     } else {
-        printGrouped(matches, calFilter: calFilter)
+        printGrouped(matches)
     }
     semaphore.signal()
 }

@@ -52,3 +52,21 @@ func fetchEvents(in range: ParsedRange, calendars: [EKCalendar], store: EKEventS
     var seen = Set<String>()
     return sorted.filter { seen.insert($0.eventIdentifier).inserted }
 }
+
+/// Returns true when an event title exactly matches or contains the given title string.
+func eventTitleMatches(_ event: EKEvent, title: String, lower: String) -> Bool {
+    let t = event.title ?? ""
+    return t.caseInsensitiveCompare(title) == .orderedSame || t.lowercased().contains(lower)
+}
+
+/// Prints a numbered disambiguation list and exits non-zero.
+func printMultiMatchAndExit(_ matches: [EKEvent], title: String, command: String) -> Never {
+    print("Multiple events match '\(title)':")
+    for e in matches {
+        let dateStr = shortDateFormatter.string(from: e.startDate)
+        let timeStr = e.isAllDay ? "all day" : formatEventTime(e.startDate)
+        print("  \(dateStr)  \(timeStr)  \(e.title ?? "")")
+    }
+    print("Add a date to narrow the search, e.g.: calendar \(command) \"\(title)\" tomorrow")
+    exit(1)
+}

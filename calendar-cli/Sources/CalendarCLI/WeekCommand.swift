@@ -12,7 +12,7 @@ func handleWeek(store: EKEventStore, calFilter: String?,
     if evts.isEmpty {
         print("No events this week")
     } else {
-        printGrouped(evts, calFilter: calFilter)
+        printGrouped(evts)
     }
     semaphore.signal()
 }

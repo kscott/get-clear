@@ -28,12 +28,13 @@ public struct EventDateTime {
 ///
 /// The `relativeTo` parameter anchors all relative date calculations, making
 /// the function testable with a fixed reference date.
+private let timeTokenRegex = try! NSRegularExpression(
+    pattern: #"\b(\d{1,2})(?::(\d{2}))?\s*(am|pm)\b"#, options: .caseInsensitive)
+
 public func parseEventDateTime(_ input: String, relativeTo now: Date = Date()) -> EventDateTime? {
     let cal = Calendar.current
 
-    let timeRegex = try! NSRegularExpression(
-        pattern: #"\b(\d{1,2})(?::(\d{2}))?\s*(am|pm)\b"#, options: .caseInsensitive)
-    let timeMatches = timeRegex.matches(in: input, range: NSRange(input.startIndex..., in: input))
+    let timeMatches = timeTokenRegex.matches(in: input, range: NSRange(input.startIndex..., in: input))
 
     func extractHourMinute(_ m: NSTextCheckingResult) -> (Int, Int)? {
         guard let hourRange = Range(m.range(at: 1), in: input),

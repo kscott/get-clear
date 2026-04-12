@@ -14,10 +14,9 @@ func handleList(args: [String], store: EKEventStore, calFilter: String?,
     if evts.isEmpty {
         print("No events — \(formatRangeDescription(range))")
     } else if range.isSingleDay {
-        printFlat(evts, showHeader: true, header: dayHeaderFormatter.string(from: range.start),
-                  calFilter: calFilter)
+        printFlat(evts, showHeader: true, header: dayHeaderFormatter.string(from: range.start))
     } else {
-        printGrouped(evts, calFilter: calFilter)
+        printGrouped(evts)
     }
     semaphore.signal()
 }
