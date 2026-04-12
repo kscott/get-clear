@@ -31,11 +31,20 @@ final class CalendarResolverSpec: QuickSpec {
                     let ids = resolveCalendarIdentifiers(filter: nil, entries: entries, config: config)
                     expect(ids.count) == 4
                 }
-                it("includes all known identifiers") {
+                it("includes the Work identifier") {
                     let ids = resolveCalendarIdentifiers(filter: nil, entries: entries, config: config)
                     expect(ids).to(contain("id-work"))
+                }
+                it("includes the Meetings identifier") {
+                    let ids = resolveCalendarIdentifiers(filter: nil, entries: entries, config: config)
                     expect(ids).to(contain("id-meetings"))
+                }
+                it("includes the Home identifier") {
+                    let ids = resolveCalendarIdentifiers(filter: nil, entries: entries, config: config)
                     expect(ids).to(contain("id-home"))
+                }
+                it("includes the Family identifier") {
+                    let ids = resolveCalendarIdentifiers(filter: nil, entries: entries, config: config)
                     expect(ids).to(contain("id-family"))
                 }
             }
@@ -57,9 +66,12 @@ final class CalendarResolverSpec: QuickSpec {
                     let ids = resolveCalendarIdentifiers(filter: "work", entries: entries, config: config)
                     expect(ids).toNot(contain("id-home"))
                 }
-                it("personal subset returns Home and Family identifiers") {
+                it("personal subset includes Home identifier") {
                     let ids = resolveCalendarIdentifiers(filter: "personal", entries: entries, config: config)
                     expect(ids).to(contain("id-home"))
+                }
+                it("personal subset includes Family identifier") {
+                    let ids = resolveCalendarIdentifiers(filter: "personal", entries: entries, config: config)
                     expect(ids).to(contain("id-family"))
                 }
                 it("personal subset excludes work calendars") {
@@ -69,12 +81,15 @@ final class CalendarResolverSpec: QuickSpec {
             }
 
             context("case sensitivity") {
-                it("filter matching is case-insensitive") {
-                    let lower = resolveCalendarIdentifiers(filter: "work",  entries: entries, config: config)
-                    let upper = resolveCalendarIdentifiers(filter: "WORK",  entries: entries, config: config)
-                    let mixed = resolveCalendarIdentifiers(filter: "Work",  entries: entries, config: config)
-                    expect(lower) == upper
-                    expect(lower) == mixed
+                it("uppercase filter returns the same identifiers as lowercase") {
+                    let lower = resolveCalendarIdentifiers(filter: "work", entries: entries, config: config)
+                    let upper = resolveCalendarIdentifiers(filter: "WORK", entries: entries, config: config)
+                    expect(upper) == lower
+                }
+                it("mixed-case filter returns the same identifiers as lowercase") {
+                    let lower = resolveCalendarIdentifiers(filter: "work", entries: entries, config: config)
+                    let mixed = resolveCalendarIdentifiers(filter: "Work", entries: entries, config: config)
+                    expect(mixed) == lower
                 }
             }
 
@@ -93,10 +108,14 @@ final class CalendarResolverSpec: QuickSpec {
             }
 
             context("subset names missing from entries") {
-                it("skips calendar names in config that are not in the entries list") {
+                it("returns one result when only one config calendar is present in entries") {
                     let partial: [CalendarEntry] = [CalendarEntry(name: "Work", identifier: "id-work")]
                     let ids = resolveCalendarIdentifiers(filter: "work", entries: partial, config: config)
                     expect(ids.count) == 1
+                }
+                it("includes the matched identifier when others in the subset are absent") {
+                    let partial: [CalendarEntry] = [CalendarEntry(name: "Work", identifier: "id-work")]
+                    let ids = resolveCalendarIdentifiers(filter: "work", entries: partial, config: config)
                     expect(ids).to(contain("id-work"))
                 }
             }

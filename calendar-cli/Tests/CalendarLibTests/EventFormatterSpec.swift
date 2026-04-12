@@ -115,6 +115,9 @@ final class EventFormatterSpec: QuickSpec {
                 it("uses only the first line of a multi-line location") {
                     let line = eventLine(for: timedEvent(location: "123 Main St\nFloor 2"))
                     expect(line).to(contain("123 Main St"))
+                }
+                it("omits subsequent lines of a multi-line location") {
+                    let line = eventLine(for: timedEvent(location: "123 Main St\nFloor 2"))
                     expect(line).toNot(contain("Floor 2"))
                 }
                 it("truncates location longer than 50 characters") {
@@ -180,11 +183,10 @@ final class EventFormatterSpec: QuickSpec {
                     let label = nextRelativeLabel(for: tenDays, relativeTo: now)
                     expect(label).to(beginWith("Jan 25"))
                 }
-                it("does not return a day name for a date 10 days out") {
+                it("does not use an abbreviated day name even when the date falls on a Sunday") {
+                    // Jan 25 2026 is a Sunday — 10 days after the reference date
                     let tenDays = cal.date(byAdding: .day, value: 10, to: now)!
                     let label = nextRelativeLabel(for: tenDays, relativeTo: now)
-                    expect(label).toNot(beginWith("Mon"))
-                    expect(label).toNot(beginWith("Tue"))
                     expect(label).toNot(beginWith("Sun"))
                 }
             }
