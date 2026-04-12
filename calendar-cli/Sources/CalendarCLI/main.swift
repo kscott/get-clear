@@ -50,15 +50,7 @@ store.requestFullAccessToEvents { granted, _ in
     case "show":      handleShow(args: args, store: store, semaphore: semaphore)
     case "add":       handleAdd(args: args, store: store, calFilter: calFilter, config: config, semaphore: semaphore)
     case "remove":    handleRemove(args: args, store: store, calFilter: calFilter, config: config, semaphore: semaphore)
-    default:
-        let rangeStr = args.joined(separator: " ")
-        if let range = parseRange(rangeStr) {
-            let evts = fetchEvents(in: range, calendars: resolveCalendars(calFilter, store: store, config: config), store: store).map(displayData)
-            if evts.isEmpty { print("No events — \(formatRangeDescription(range))") }
-            else if range.isSingleDay { printFlat(evts, showHeader: true, header: dayHeaderFormatter.string(from: range.start), calFilter: calFilter) }
-            else { printGrouped(evts, calFilter: calFilter) }
-        } else { usage() }
-        semaphore.signal()
+    default:  handleDefault(args: args, store: store, calFilter: calFilter, config: config, semaphore: semaphore)
     }
 }
 
