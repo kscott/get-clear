@@ -13,6 +13,9 @@ let package = Package(
         // Pure logic — no Apple framework dependencies, fully testable
         .target(
             name: "CalendarLib",
+            dependencies: [
+                .product(name: "GetClearKit", package: "get-clear"),
+            ],
             path: "Sources/CalendarLib"
         ),
         // Main binary — depends on CalendarLib plus EventKit/AppKit

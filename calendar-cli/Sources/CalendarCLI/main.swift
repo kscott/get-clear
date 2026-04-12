@@ -200,82 +200,6 @@ func nextRelativeLabel(_ date: Date) -> String {
     return f.string(from: date)
 }
 
-// MARK: - Event date/time parsing for `add`
-
-/// Parses the arguments after the title for `calendar add`.
-/// Handles:
-///   "march 15"                 → all-day event on March 15
-///   "tomorrow 2pm to 3pm"      → timed event, explicit end
-///   "today 9:30am to 11am"     → timed event, explicit end
-///   "monday at 2pm"            → 1-hour timed event
-struct EventDateTime {
-    let start:    Date
-    let end:      Date
-    let isAllDay: Bool
-}
-
-func parseEventDateTime(_ input: String) -> EventDateTime? {
-    let cal = Calendar.current
-    let now = Date()
-
-    let timeRegex = try! NSRegularExpression(
-        pattern: #"\b(\d{1,2})(?::(\d{2}))?\s*(am|pm)\b"#, options: .caseInsensitive)
-    let timeMatches = timeRegex.matches(in: input, range: NSRange(input.startIndex..., in: input))
-
-    func extractHourMinute(_ m: NSTextCheckingResult) -> (Int, Int)? {
-        guard let hourRange = Range(m.range(at: 1), in: input),
-              let hour = Int(input[hourRange]) else { return nil }
-        let minute: Int
-        if let minRange = Range(m.range(at: 2), in: input) { minute = Int(input[minRange]) ?? 0 }
-        else { minute = 0 }
-        var h = hour
-        if let apRange = Range(m.range(at: 3), in: input) {
-            let ap = input[apRange].lowercased()
-            if ap == "pm" && h < 12 { h += 12 }
-            if ap == "am" && h == 12 { h = 0 }
-        }
-        return (h, minute)
-    }
-
-    if timeMatches.isEmpty {
-        // All-day: parse entire input as a date
-        guard let date = parseSingleDate(input.lowercased().trimmingCharacters(in: .whitespaces),
-                                         cal: cal, now: now) else { return nil }
-        let start = cal.startOfDay(for: date)
-        let end   = cal.date(byAdding: DateComponents(day: 1, second: -1), to: start)!
-        return EventDateTime(start: start, end: end, isAllDay: true)
-    }
-
-    // Date part = everything before the first time token
-    let firstTimeRange = Range(timeMatches[0].range, in: input)!
-    let datePart = String(input[..<firstTimeRange.lowerBound])
-        .replacingOccurrences(of: #"\bat\b"#, with: "", options: .regularExpression)
-        .trimmingCharacters(in: .whitespaces)
-    let baseDate: Date
-    if datePart.isEmpty {
-        baseDate = now
-    } else {
-        guard let d = parseSingleDate(datePart.lowercased(), cal: cal, now: now) else { return nil }
-        baseDate = d
-    }
-
-    guard let (startH, startM) = extractHourMinute(timeMatches[0]) else { return nil }
-    var startComps = cal.dateComponents([.year, .month, .day], from: baseDate)
-    startComps.hour = startH; startComps.minute = startM
-    let start = cal.date(from: startComps)!
-
-    let end: Date
-    if timeMatches.count >= 2, let (endH, endM) = extractHourMinute(timeMatches[1]) {
-        var endComps = startComps
-        endComps.hour = endH; endComps.minute = endM
-        end = cal.date(from: endComps)!
-    } else {
-        end = cal.date(byAdding: .hour, value: 1, to: start)!
-    }
-
-    return EventDateTime(start: start, end: end, isAllDay: false)
-}
-
 // MARK: - Dispatch
 
 let dispatch = parseArgs(args)
@@ -616,19 +540,21 @@ store.requestFullAccessToEvents { granted, _ in
             fail("no calendar available")
         }
 
+        let endDate = edt.end ?? Calendar.current.date(byAdding: .hour, value: 1, to: edt.start)!
+
         let event        = EKEvent(eventStore: store)
         event.title      = title
         event.calendar   = targetCal
         event.isAllDay   = edt.isAllDay
         event.startDate  = edt.start
-        event.endDate    = edt.end
+        event.endDate    = endDate
 
         do {
             try store.save(event, span: .thisEvent, commit: true)
             try? ActivityLog.write(tool: "calendar", cmd: "add", desc: title, container: targetCal.title)
             let df = DateFormatter()
             df.dateFormat = "EEE MMM d"
-            let timeDetail = edt.isAllDay ? "all day" : "\(formatTime(edt.start)) – \(formatTime(edt.end))"
+            let timeDetail = edt.isAllDay ? "all day" : "\(formatTime(edt.start)) – \(formatTime(endDate))"
             print("Added: \(title) · \(df.string(from: edt.start)) \(timeDetail) (\(targetCal.title))")
         } catch {
             fail("Could not save event: \(error.localizedDescription)")
