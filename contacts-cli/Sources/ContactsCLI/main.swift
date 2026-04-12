@@ -1,8 +1,6 @@
 // main.swift
 //
-// Entry point for contacts-bin executable.
-// Handles argument parsing and all Contacts/AppKit interactions.
-// Matching and formatting logic delegated to ContactsLib for unit testing.
+// Entry point for contacts-bin: argument parsing and command dispatch only.
 
 import Foundation
 import AppKit
@@ -10,7 +8,6 @@ import Contacts
 import ContactsLib
 import GetClearKit
 
-let version = builtVersion
 let versionString = "\(builtVersion) (Get Clear \(suiteVersion))"
 
 let store     = CNContactStore()
@@ -40,428 +37,41 @@ func usage() -> Never {
     exit(0)
 }
 
-// MARK: - Helpers
-
-let keysToFetch: [CNKeyDescriptor] = [
-    CNContactGivenNameKey as CNKeyDescriptor,
-    CNContactFamilyNameKey as CNKeyDescriptor,
-    CNContactOrganizationNameKey as CNKeyDescriptor,
-    CNContactEmailAddressesKey as CNKeyDescriptor,
-    CNContactPhoneNumbersKey as CNKeyDescriptor,
-]
-
-func allContacts() -> [CNContact] {
-    let request = CNContactFetchRequest(keysToFetch: keysToFetch)
-    var results: [CNContact] = []
-    try? store.enumerateContacts(with: request) { contact, _ in results.append(contact) }
-    return results
-}
-
-func toRecord(_ c: CNContact) -> ContactRecord {
-    ContactRecord(
-        name:    [c.givenName, c.familyName].filter { !$0.isEmpty }.joined(separator: " "),
-        emails:  c.emailAddresses.map { (cleanLabel($0.label ?? ""), $0.value as String) },
-        phones:  c.phoneNumbers.map   { (cleanLabel($0.label ?? ""), $0.value.stringValue) },
-        company: c.organizationName
-    )
-}
-
-func cnContact(named query: String) -> CNContact? {
-    let records = allContacts()
-    let matched = matchContacts(query, in: records.map(toRecord))
-    guard let first = matched.first else { return nil }
-    return records.first { toRecord($0).name == first.name }
-}
-
-func printCard(_ c: CNContact) {
-    let r = toRecord(c)
-    let name = r.name.isEmpty ? c.organizationName : r.name
-    print(ANSI.bold(name))
-    if !r.company.isEmpty && !r.name.isEmpty { print("  \(ANSI.dim("Company:"))  \(r.company)") }
-    for (label, value) in r.emails { print("  \(ANSI.dim("Email:"))    \(value)\(label.isEmpty ? "" : ANSI.dim(" (\(label))"))")  }
-    for (label, value) in r.phones { print("  \(ANSI.dim("Phone:"))    \(value)\(label.isEmpty ? "" : ANSI.dim(" (\(label))"))")  }
-}
-
-// MARK: - Dispatch
-
-private enum Cmd {
-    case open, what, lists, list, export, find, show, add, change, rename, remove
-
-    init?(_ c: Command) {
-        switch c {
-        case .open:   self = .open
-        case .what:   self = .what
-        case .lists:  self = .lists
-        case .list:   self = .list
-        case .export: self = .export
-        case .find:   self = .find
-        case .show:   self = .show
-        case .add:    self = .add
-        case .change: self = .change
-        case .rename: self = .rename
-        case .remove: self = .remove
-        default:      return nil
-        }
-    }
-}
-
 runCLI(args: args, version: versionString, usage: usage) { command, args in
-    guard let cmd = Cmd(command) else { usage() }
-
     store.requestAccess(for: .contacts) { granted, _ in
         guard granted else { fail("Contacts access denied") }
 
-        switch cmd {
-
-        case .what:
-            let rangeStr = args.count > 1 ? Array(args.dropFirst()).joined(separator: " ") : "today"
-            guard let range = parseRange(rangeStr) else { fail("Unrecognised range: \(rangeStr)") }
-            let isToday = rangeStr == "today"
-            let entries: [ActivityLogEntry]
-            var dateUsed = Date()
-            if isToday {
-                let result = ActivityLogReader.entriesForDisplay(in: range.start...range.end)
-                entries  = result.entries
-                dateUsed = result.dateUsed
-            } else {
-                entries = ActivityLogReader.entries(in: range.start...range.end, tool: "contacts")
-            }
-            print(ActivityLogFormatter.perToolWhat(entries: entries, range: range, rangeStr: rangeStr,
-                                                   tool: "contacts", dateUsed: dateUsed))
-            semaphore.signal()
-
+        switch command {
         case .open:
             NSWorkspace.shared.open(URL(fileURLWithPath: "/System/Applications/Contacts.app"))
             semaphore.signal()
-
+        case .what:
+            handleWhat(args: args, semaphore: semaphore)
         case .lists:
             let groups = (try? store.groups(matching: nil)) ?? []
             for g in groups.sorted(by: { $0.name < $1.name }) { print(g.name) }
             semaphore.signal()
-
         case .list:
-            guard args.count > 1 else { fail("provide a group name") }
-            let groupName = args.dropFirst().joined(separator: " ")
-            guard let group = ((try? store.groups(matching: nil)) ?? []).first(where: {
-                $0.name.caseInsensitiveCompare(groupName) == .orderedSame
-            }) else { fail("Group not found: \(groupName)") }
-
-            let pred     = CNContact.predicateForContactsInGroup(withIdentifier: group.identifier)
-            let contacts = (try? store.unifiedContacts(matching: pred, keysToFetch: keysToFetch)) ?? []
-            for c in contacts.sorted(by: { toRecord($0).name < toRecord($1).name }) {
-                let r = toRecord(c)
-                let nameStr = r.name.isEmpty ? c.organizationName : r.name
-                let emailStr = r.primaryEmail.isEmpty ? "(no email)" : r.primaryEmail
-                print("  \(ANSI.bold(nameStr)) \(ANSI.dim("<\(emailStr)>"))")
-            }
-            semaphore.signal()
-
+            handleList(args: args, store: store, semaphore: semaphore)
         case .export:
-            guard args.count > 1 else { fail("provide a group name") }
-            let groupName = args.dropFirst().joined(separator: " ")
-            guard let group = ((try? store.groups(matching: nil)) ?? []).first(where: {
-                $0.name.caseInsensitiveCompare(groupName) == .orderedSame
-            }) else { fail("Group not found: \(groupName)") }
-
-            let pred     = CNContact.predicateForContactsInGroup(withIdentifier: group.identifier)
-            let contacts = (try? store.unifiedContacts(matching: pred, keysToFetch: keysToFetch)) ?? []
-            let records  = contacts.map(toRecord).sorted { $0.name < $1.name }
-            print(exportAddresses(records))
-            semaphore.signal()
-
+            handleExport(args: args, store: store, semaphore: semaphore)
         case .find:
-            guard args.count > 1 else { fail("provide a search query") }
-            let query   = args.dropFirst().joined(separator: " ")
-            let records = allContacts().map(toRecord)
-            let matched = matchContacts(query, in: records)
-            if matched.isEmpty {
-                print("No contacts matching '\(query)'")
-            } else {
-                for r in matched {
-                    let nameStr  = r.name.isEmpty ? r.company : r.name
-                    let emailStr = r.primaryEmail.isEmpty ? "" : " <\(r.primaryEmail)>"
-                    let compStr  = (!r.company.isEmpty && !r.name.isEmpty) ? " — \(r.company)" : ""
-                    print("  \(ANSI.bold(nameStr))\(emailStr)\(ANSI.dim(compStr))")
-                }
-            }
-            semaphore.signal()
-
+            handleFind(args: args, store: store, semaphore: semaphore)
         case .show:
-            guard args.count > 1 else { fail("provide a contact name") }
-            let query = args.dropFirst().joined(separator: " ")
-            guard let contact = cnContact(named: query) else { fail("Not found: \(query)") }
-            printCard(contact)
-            semaphore.signal()
-
+            handleShow(args: args, store: store, semaphore: semaphore)
         case .add:
-            guard args.count > 1 else { fail("provide a contact name") }
-            let name      = args[1]
-            let remaining = Array(args.dropFirst(2))
-
-            // "add <name> to <group>" — group membership
-            if remaining.first == "to" {
-                let groupName = Array(remaining.dropFirst()).joined(separator: " ")
-                guard !groupName.isEmpty else { fail("provide a group name after 'to'") }
-                guard let contact = cnContact(named: name) else { fail("Not found: \(name)") }
-                guard let group = ((try? store.groups(matching: nil)) ?? []).first(where: {
-                    $0.name.caseInsensitiveCompare(groupName) == .orderedSame
-                }) else { fail("Group not found: \(groupName)") }
-                let request = CNSaveRequest()
-                request.addMember(contact, to: group)
-                do {
-                    try store.execute(request)
-                    try? ActivityLog.write(tool: "contacts", cmd: "add", desc: "\(name) → \(group.name)", container: group.name)
-                    print("Added \(name) to \(group.name)")
-                } catch {
-                    fail("Could not add to group: \(error.localizedDescription)")
-                }
-                semaphore.signal()
-                return
-            }
-
-            // "add <name> [email E] [phone P]" — create contact
-            var email = ""
-            var phone = ""
-            let work  = remaining.joined(separator: " ")
-
-            var trimmed = work
-            if let r = trimmed.range(of: #"\bemail\b"#, options: .regularExpression) {
-                email   = String(trimmed[r.upperBound...]).trimmingCharacters(in: .whitespaces)
-                            .components(separatedBy: " ").first ?? ""
-                trimmed = String(trimmed[..<r.lowerBound]).trimmingCharacters(in: .whitespaces)
-            }
-            if let r = trimmed.range(of: #"\bphone\b"#, options: .regularExpression) {
-                phone   = String(trimmed[r.upperBound...]).trimmingCharacters(in: .whitespaces)
-                            .components(separatedBy: " ").first ?? ""
-            }
-
-            let nameParts = name.components(separatedBy: " ")
-            let contact   = CNMutableContact()
-            contact.givenName  = nameParts.first ?? ""
-            contact.familyName = nameParts.count > 1 ? nameParts.dropFirst().joined(separator: " ") : ""
-            if !email.isEmpty {
-                contact.emailAddresses = [CNLabeledValue(label: CNLabelWork, value: email as NSString)]
-            }
-            if !phone.isEmpty {
-                contact.phoneNumbers = [CNLabeledValue(label: CNLabelPhoneNumberMain,
-                                                       value: CNPhoneNumber(stringValue: phone))]
-            }
-            let request = CNSaveRequest()
-            request.add(contact, toContainerWithIdentifier: nil)
-            do {
-                try store.execute(request)
-                try? ActivityLog.write(tool: "contacts", cmd: "add", desc: name, container: nil)
-                var parts = ["Added: \(name)"]
-                if !email.isEmpty { parts.append("email \(email)") }
-                if !phone.isEmpty { parts.append("phone \(phone)") }
-                print(parts.joined(separator: " · "))
-            } catch {
-                fail("Could not save contact: \(error.localizedDescription)")
-            }
-            semaphore.signal()
-
+            handleAdd(args: args, store: store, semaphore: semaphore)
         case .change:
-            guard args.count > 1 else { fail("provide a contact name") }
-            let query = args[1]
-            // Fetch non-unified contacts — unified contacts can't be saved back (CoreData 134092).
-            // unifyResults = false gives us the underlying writable record from its source container.
-            let nonUnifiedRequest = CNContactFetchRequest(keysToFetch: keysToFetch)
-            nonUnifiedRequest.unifyResults = false
-            var candidates: [CNContact] = []
-            try? store.enumerateContacts(with: nonUnifiedRequest) { c, _ in candidates.append(c) }
-            let matched = matchContacts(query, in: candidates.map(toRecord))
-            guard let first = matched.first else { fail("Not found: \(query)") }
-            guard let contact = candidates.first(where: { toRecord($0).name == first.name }) else {
-                fail("Not found: \(query)")
-            }
-            let mutable = contact.mutableCopy() as! CNMutableContact
-
-            var changes: [String] = []
-            let work = Array(args.dropFirst(2)).joined(separator: " ")
-            if !work.isEmpty {
-                // email: "add email E" / "remove email E" / "email E" / "email none"
-                if let r = work.range(of: #"\badd email\b"#, options: .regularExpression) {
-                    let val = String(work[r.upperBound...]).trimmingCharacters(in: .whitespaces)
-                                .components(separatedBy: " ").first ?? ""
-                    if !val.isEmpty {
-                        mutable.emailAddresses.append(
-                            CNLabeledValue(label: CNLabelWork, value: val as NSString))
-                        changes.append("email +\(val)")
-                    }
-                } else if let r = work.range(of: #"\bremove email\b"#, options: .regularExpression) {
-                    let val = String(work[r.upperBound...]).trimmingCharacters(in: .whitespaces)
-                                .components(separatedBy: " ").first ?? ""
-                    let before = mutable.emailAddresses.count
-                    mutable.emailAddresses.removeAll {
-                        ($0.value as String).caseInsensitiveCompare(val) == .orderedSame
-                    }
-                    if mutable.emailAddresses.count < before {
-                        changes.append("email -\(val)")
-                    } else {
-                        fail("Email not found: \(val)")
-                    }
-                } else if let r = work.range(of: #"\bemail\b"#, options: .regularExpression) {
-                    let val = String(work[r.upperBound...]).trimmingCharacters(in: .whitespaces)
-                                .components(separatedBy: " ").first ?? ""
-                    if val.lowercased() == "none" {
-                        mutable.emailAddresses = []
-                        changes.append("email cleared")
-                    } else {
-                        mutable.emailAddresses = [CNLabeledValue(label: CNLabelWork, value: val as NSString)]
-                        changes.append("email → \(val)")
-                    }
-                }
-
-                // phone: "add phone P" / "remove phone P" / "phone P" / "phone none"
-                if let r = work.range(of: #"\badd phone\b"#, options: .regularExpression) {
-                    let val = String(work[r.upperBound...]).trimmingCharacters(in: .whitespaces)
-                                .components(separatedBy: " ").first ?? ""
-                    if !val.isEmpty {
-                        mutable.phoneNumbers.append(
-                            CNLabeledValue(label: CNLabelPhoneNumberMain,
-                                           value: CNPhoneNumber(stringValue: val)))
-                        changes.append("phone +\(val)")
-                    }
-                } else if let r = work.range(of: #"\bremove phone\b"#, options: .regularExpression) {
-                    let val = String(work[r.upperBound...]).trimmingCharacters(in: .whitespaces)
-                                .components(separatedBy: " ").first ?? ""
-                    let before = mutable.phoneNumbers.count
-                    mutable.phoneNumbers.removeAll {
-                        $0.value.stringValue.caseInsensitiveCompare(val) == .orderedSame
-                    }
-                    if mutable.phoneNumbers.count < before {
-                        changes.append("phone -\(val)")
-                    } else {
-                        fail("Phone not found: \(val)")
-                    }
-                } else if let r = work.range(of: #"\bphone\b"#, options: .regularExpression) {
-                    let val = String(work[r.upperBound...]).trimmingCharacters(in: .whitespaces)
-                                .components(separatedBy: " ").first ?? ""
-                    if val.lowercased() == "none" {
-                        mutable.phoneNumbers = []
-                        changes.append("phone cleared")
-                    } else {
-                        mutable.phoneNumbers = [CNLabeledValue(label: CNLabelPhoneNumberMain,
-                                                               value: CNPhoneNumber(stringValue: val))]
-                        changes.append("phone → \(val)")
-                    }
-                }
-            }
-
-            guard !changes.isEmpty else {
-                fail("nothing to change — specify [add|remove] email or [add|remove] phone")
-            }
-
-            // Some contacts exist in multiple containers (e.g. iCloud + Fastmail CardDAV).
-            // Modifying a linked contact can trigger CoreData 134092 due to cross-container
-            // reconciliation. Try each linked record until one saves successfully.
-            //
-            // The framework also prints CoreData noise to stderr asynchronously after a failed
-            // save — even after we'd normally restore stderr. Suppress stderr for the remainder
-            // of the process and route our own output through the saved fd directly.
-            let linkedCandidates = candidates.filter { toRecord($0).name == first.name }
-            var saved = false
-            var lastError: Error? = nil
-            let savedStderrFd = dup(STDERR_FILENO)
-            freopen("/dev/null", "w", stderr)
-
-            for source in linkedCandidates {
-                let m = source.mutableCopy() as! CNMutableContact
-                m.emailAddresses = mutable.emailAddresses
-                m.phoneNumbers   = mutable.phoneNumbers
-                let req = CNSaveRequest()
-                req.update(m)
-                do {
-                    try store.execute(req)
-                    saved = true
-                    break
-                } catch {
-                    lastError = error
-                }
-            }
-
-            func emit(_ msg: String) {
-                var out = msg + "\n"
-                out.withUTF8 { write(saved ? STDOUT_FILENO : savedStderrFd, $0.baseAddress, $0.count) }
-            }
-
-            if saved {
-                try? ActivityLog.write(tool: "contacts", cmd: "change", desc: query, container: nil)
-                emit("Updated \"\(query)\": \(changes.joined(separator: ", "))")
-            } else if let err = lastError as NSError?, err.code == 134092 {
-                emit("Error: Conflict saving contact — iCloud sync may be in progress, try again shortly")
-                close(savedStderrFd)
-                exit(1)
-            } else {
-                emit("Error: Could not save: \(lastError?.localizedDescription ?? "unknown error")")
-                close(savedStderrFd)
-                exit(1)
-            }
-            close(savedStderrFd)
-            semaphore.signal()
-
+            handleChange(args: args, store: store, semaphore: semaphore)
         case .rename:
-            guard args.count > 2 else { fail("provide existing name and new name") }
-            let oldName = args[1]
-            let newName = args[2]
-            guard let contact = cnContact(named: oldName) else { fail("Not found: \(oldName)") }
-            let mutable = contact.mutableCopy() as! CNMutableContact
-            let parts = newName.components(separatedBy: " ")
-            mutable.givenName  = parts.first ?? ""
-            mutable.familyName = parts.count > 1 ? parts.dropFirst().joined(separator: " ") : ""
-            let renameRequest = CNSaveRequest()
-            renameRequest.update(mutable)
-            do {
-                try store.execute(renameRequest)
-                try? ActivityLog.write(tool: "contacts", cmd: "rename", desc: "\(oldName) → \(newName)", container: nil)
-                print("Renamed: \"\(oldName)\" → \"\(newName)\"")
-            } catch {
-                fail("Could not rename: \(error.localizedDescription)")
-            }
-            semaphore.signal()
-
+            handleRename(args: args, store: store, semaphore: semaphore)
         case .remove:
-            guard args.count > 1 else { fail("provide a contact name") }
-            let name      = args[1]
-            let remaining = Array(args.dropFirst(2))
-
-            // "remove <name> from <group>" — group membership
-            if remaining.first == "from" {
-                let groupName = Array(remaining.dropFirst()).joined(separator: " ")
-                guard !groupName.isEmpty else { fail("provide a group name after 'from'") }
-                guard let contact = cnContact(named: name) else { fail("Not found: \(name)") }
-                guard let group = ((try? store.groups(matching: nil)) ?? []).first(where: {
-                    $0.name.caseInsensitiveCompare(groupName) == .orderedSame
-                }) else { fail("Group not found: \(groupName)") }
-                let request = CNSaveRequest()
-                request.removeMember(contact, from: group)
-                do {
-                    try store.execute(request)
-                    try? ActivityLog.write(tool: "contacts", cmd: "remove", desc: "\(name) → \(group.name)", container: group.name)
-                    print("Removed \(name) from \(group.name)")
-                } catch {
-                    fail("Could not remove from group: \(error.localizedDescription)")
-                }
-            } else {
-                // "remove <name>" — delete contact
-                guard let contact = cnContact(named: name) else { fail("Not found: \(name)") }
-                let mutable = contact.mutableCopy() as! CNMutableContact
-                let request = CNSaveRequest()
-                request.delete(mutable)
-                do {
-                    try store.execute(request)
-                    try? ActivityLog.write(tool: "contacts", cmd: "remove", desc: name, container: nil)
-                    print("Removed: \(name)")
-                } catch {
-                    fail("Could not remove contact: \(error.localizedDescription)")
-                }
-            }
-            semaphore.signal()
+            handleRemove(args: args, store: store, semaphore: semaphore)
+        default:
+            usage()
         }
     }
 }
 
 semaphore.wait()
-
 UpdateChecker.spawnBackgroundCheckIfNeeded()
-if let hint = UpdateChecker.hint() { fputs(hint + "\n", stderr) }

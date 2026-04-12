@@ -13,6 +13,9 @@ let package = Package(
         // Pure logic — no Apple framework dependencies, fully testable
         .target(
             name: "ContactsLib",
+            dependencies: [
+                .product(name: "GetClearKit", package: "get-clear"),
+            ],
             path: "Sources/ContactsLib"
         ),
         // Main binary — depends on ContactsLib plus Contacts/AppKit
