@@ -49,17 +49,17 @@ The boundary is enforced by the Swift package structure: `*Lib` targets do not i
 | `TimespanFormatter.swift` | Human-readable timespan formatting |
 | `UpdateChecker.swift` | Background version check; hint on stderr at most once per hour |
 
-### Tool Lib targets (as of 2026-04-10)
+### Tool Lib targets (as of 2026-04-11)
 
-Each tool has a `*Lib` target. Current state is incomplete — business logic extraction is tracked in #35–39.
+Each tool has a `*Lib` target. Business logic extraction tracked in #35–39; reminders-cli complete.
 
-| Tool | Lib contains today | Should also contain (tracked) |
-|---|---|---|
-| reminders | `RecurrenceParsing`, `OptionsParsing`, `DateParsing` (tombstone) | `RecurrenceConversion`, `ReminderFormatter`, `ChangeCommand` (#35) |
-| calendar | `ConfigParser`, `TimeRangeParser` (tombstone) | `EventDateTime`, `EventFormatter`, `CalendarResolver` (#36) |
-| contacts | `ContactRecord`, `matchContacts`, `exportAddresses`, `cleanLabel` | `ChangeCommand`, `ContactStore`, `ContactFormatter` (#37) |
-| mail | JMAP types, some helpers | `MailConfiguration`, `JMAPClient`, `MailFormatter`, `SetupCommand`, `SendCommand` (#38) |
-| text | Contact resolution helpers | `MessagesClient` (#39) |
+| Tool | Lib contains today | CLI helpers (EventKit boundary) | Still needed (tracked) |
+|---|---|---|---|
+| reminders | `RecurrenceParsing`, `OptionsParsing`, `ReminderFormatter`, `ChangeCommand` | `RecurrenceConversion`, `Sorting` | — (#35 done) |
+| calendar | `ConfigParser` | — | `EventDateTime`, `EventFormatter`, `CalendarResolver` (#36) |
+| contacts | `ContactRecord`, `matchContacts`, `exportAddresses`, `cleanLabel` | — | `ChangeCommand`, `ContactStore`, `ContactFormatter` (#37) |
+| mail | JMAP types, some helpers | — | `MailConfiguration`, `JMAPClient`, `MailFormatter`, `SetupCommand`, `SendCommand` (#38) |
+| text | Contact resolution helpers | — | `MessagesClient` (#39) |
 
 ### Command dispatch (as of 2026-04-10)
 
@@ -125,9 +125,9 @@ mail-cli uses `async/await` throughout. reminders, calendar, contacts use `Dispa
 
 `"\(builtVersion) (Get Clear \(suiteVersion))"` appears in all five main.swift files. Belongs in GetClearKit as a shared function taking the two constants. Small, low-risk, easy win during any tool's next touch.
 
-### `TestRunner` duplicated across all five test files
+### ~~`TestRunner` duplicated across all five test files~~ — resolved
 
-Tracked in design.md but not yet a GitHub issue. When extracted to a shared package, all five test suites benefit at once. File an issue when starting any test coverage work.
+All six test suites migrated to Quick + Nimble (2026-04-11). Custom TestRunner removed from all repos.
 
 ### UpdateChecker tail duplicated in every tool
 
