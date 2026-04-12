@@ -1,10 +1,16 @@
 // ListCommand.swift
 //
-// Lists contacts in a group, or exports them as a paste-ready address string.
+// Lists all groups, contacts in a group, or exports a group as a paste-ready address string.
 
 import Contacts
 import ContactsLib
 import GetClearKit
+
+func handleLists(store: CNContactStore, semaphore: DispatchSemaphore) {
+    let groups = (try? store.groups(matching: nil)) ?? []
+    for g in groups.sorted(by: { $0.name < $1.name }) { print(g.name) }
+    semaphore.signal()
+}
 
 func handleList(args: [String], store: CNContactStore, semaphore: DispatchSemaphore) {
     guard args.count > 1 else { fail("provide a group name") }
