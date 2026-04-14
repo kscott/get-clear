@@ -7,7 +7,8 @@ import EventKit
 import CalendarLib
 import GetClearKit
 
-func runSetup(store: EKEventStore) {
+func handleSetup(store: EKEventStore, semaphore: DispatchSemaphore) {
+    defer { semaphore.signal() }
     let all = store.calendars(for: .event)
 
     let configURL = CalendarConfig.configURL

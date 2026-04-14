@@ -4,7 +4,6 @@
 // Argument parsing and dispatch only — all logic lives in CalendarLib or CalendarCLI helpers.
 
 import Foundation
-import AppKit
 import EventKit
 import CalendarLib
 import GetClearKit
@@ -39,9 +38,9 @@ store.requestFullAccessToEvents { granted, _ in
 
     switch cmd {
     case "what":      handleWhat(args: args, semaphore: semaphore)
-    case "open":      NSWorkspace.shared.open(URL(fileURLWithPath: "/System/Applications/Calendar.app")); semaphore.signal()
+    case "open":      handleOpen(semaphore: semaphore)
     case "calendars": handleCalendars(store: store, semaphore: semaphore)
-    case "setup":     runSetup(store: store); semaphore.signal()
+    case "setup":     handleSetup(store: store, semaphore: semaphore)
     case "list":      handleList(args: args, store: store, calFilter: calFilter, config: config, semaphore: semaphore)
     case "today":     handleToday(store: store, calFilter: calFilter, config: config, semaphore: semaphore)
     case "week":      handleWeek(store: store, calFilter: calFilter, config: config, semaphore: semaphore)
