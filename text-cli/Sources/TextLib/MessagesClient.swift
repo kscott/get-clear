@@ -19,8 +19,7 @@ public func appleScriptLiteral(_ s: String) -> String {
 
 /// Build the AppleScript string that sends a message to a recipient.
 ///
-/// Both arguments are escaped via `appleScriptLiteral` before embedding.
-/// This is a pure function — separately testable from the Process execution in `sendViaMessages`.
+/// Pure function — separately testable from the Process execution in `sendViaMessages`.
 public func buildScript(recipient: String, message: String) -> String {
     """
     tell application "Messages"
