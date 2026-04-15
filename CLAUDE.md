@@ -52,6 +52,18 @@ Get Clear is a suite of five Swift CLIs connecting Claude to Apple Reminders, Ca
 - Tool repos: `~/dev/reminders-cli/`, `~/dev/calendar-cli/`, `~/dev/contacts-cli/`, `~/dev/mail-cli/`, `~/dev/text-cli/`
 - Monorepo migration planned — tracked in get-clear #34
 
+## Development workflow
+
+One issue at a time on a local feature branch. See `design.md` for full rationale.
+
+```bash
+git checkout -b issue-37       # start
+# work, commit...
+                               # review DoD, pick nits until satisfied
+gh issue close 37              # close BEFORE merging — branch stays live until nothing is left to fix
+git checkout main && git merge issue-37 && git branch -d issue-37
+```
+
 ## Build and test
 
 ```bash

@@ -258,6 +258,30 @@ Current structure: one repo per tool (`reminders-cli`, `calendar-cli`, etc.) plu
 
 ---
 
+## Development workflow: feature branches
+
+Work one issue at a time on a local feature branch. Merge to main when the issue is complete and all tests pass.
+
+```bash
+git checkout -b issue-36       # start of session
+# ... commits ...
+                               # review DoD, pick nits, add commits until satisfied
+                               # read new files against engineering expectations in design.md
+                               # run /simplify — reuse, quality, efficiency pass; fix before closing
+gh issue close 36              # close the issue before touching main
+git checkout main
+git merge issue-36             # done — main moves in a meaningful unit
+git branch -d issue-36
+```
+
+**Why:** committing directly to main during active work means there's no clean rollback point if something goes wrong mid-issue. A branch makes the completion event explicit — main only moves when the work is done. No PR or remote branch needed; this is local discipline, not process overhead.
+
+**Close before merge, not after.** The issue stays open as long as the branch is live. Review the definition of done, pick any nits, and add commits until fully satisfied — the branch is still there. Close the issue only when nothing is left to fix. Merging to main is the final act, not the decision point.
+
+**Scope:** one branch per going-live issue. Cross-cutting or exploratory work follows the same pattern. Branch names match the issue: `issue-36`, `issue-37`, etc.
+
+---
+
 ## Architecture: the Lib/CLI split
 
 Every tool has a pure `*Lib` target and a `*CLI` target.
