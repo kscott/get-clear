@@ -25,18 +25,18 @@ case "check-update":
     exit(0)
 
 case "what":
-    runWhat(args: args)
+    handleWhat(args: args)
 
 case "update":
-    runUpdate()
+    handleUpdate()
 
 case "setup":
     UpdateChecker.spawnBackgroundCheckIfNeeded()
-    if runSetup() { print("Try it: get-clear recap") }
+    if handleSetup() { print("Try it: get-clear recap") }
     if let hint = UpdateChecker.hint() { fputs(hint + "\n", stderr) }
 
 case "recap":
-    runRecap(args: args)
+    handleRecap(args: args)
 
 default:
     usage()

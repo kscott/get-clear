@@ -4,7 +4,7 @@
 import Foundation
 import GetClearKit
 
-func runWhat(args: [String]) {
+func handleWhat(args: [String]) {
     UpdateChecker.spawnBackgroundCheckIfNeeded()
     let rangeStr = args.count > 1 ? Array(args.dropFirst()).joined(separator: " ") : "today"
     guard let range = parseRange(rangeStr) else { fail("Unrecognised range: \(rangeStr)") }

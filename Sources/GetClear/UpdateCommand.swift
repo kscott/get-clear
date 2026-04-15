@@ -4,7 +4,7 @@
 import Foundation
 import GetClearKit
 
-func runUpdate() {
+func handleUpdate() {
     guard let installed = UpdateChecker.installedVersion() else {
         print("get-clear update is only available for PKG installs.")
         print("Download from https://github.com/kscott/get-clear/releases")

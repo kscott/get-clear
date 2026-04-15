@@ -5,12 +5,12 @@ import Foundation
 import EventKit
 import GetClearKit
 
-func runRecap(args: [String]) {
+func handleRecap(args: [String]) {
     UpdateChecker.spawnBackgroundCheckIfNeeded()
     var config = loadGetClearConfig()
     if !config.isRecapConfigured {
         print("First, choose which calendars to include in recap.\n")
-        guard runSetup() else { exit(0) }
+        guard handleSetup() else { exit(0) }
         config = loadGetClearConfig()
         guard config.isRecapConfigured else { exit(0) }
         print("")
