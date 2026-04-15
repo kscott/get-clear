@@ -5,9 +5,16 @@ import Foundation
 import EventKit
 import GetClearKit
 
+/// Top-level dispatch for the setup command.
+func handleSetup() {
+    UpdateChecker.spawnBackgroundCheckIfNeeded()
+    if pickAndSaveCalendars() { print("Try it: get-clear recap") }
+    if let hint = UpdateChecker.hint() { fputs(hint + "\n", stderr) }
+}
+
 /// Presents the calendar picker and writes the recap config.
 /// Returns true if config was successfully written, false if cancelled or no valid input.
-func handleSetup() -> Bool {
+func pickAndSaveCalendars() -> Bool {
     // Install SIGINT handler here rather than at the call site — setup is the only command
     // that blocks on user input, so this is the only place where Ctrl-C needs clean handling.
     signal(SIGINT) { _ in print("\nCancelled."); exit(0) }

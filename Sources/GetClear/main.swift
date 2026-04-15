@@ -31,9 +31,7 @@ case "update":
     handleUpdate()
 
 case "setup":
-    UpdateChecker.spawnBackgroundCheckIfNeeded()
-    if handleSetup() { print("Try it: get-clear recap") }
-    if let hint = UpdateChecker.hint() { fputs(hint + "\n", stderr) }
+    handleSetup()
 
 case "recap":
     handleRecap(args: args)

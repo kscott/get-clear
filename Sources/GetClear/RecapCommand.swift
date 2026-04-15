@@ -10,7 +10,7 @@ func handleRecap(args: [String]) {
     var config = loadGetClearConfig()
     if !config.isRecapConfigured {
         print("First, choose which calendars to include in recap.\n")
-        guard handleSetup() else { exit(0) }
+        guard pickAndSaveCalendars() else { exit(0) }
         config = loadGetClearConfig()
         guard config.isRecapConfigured else { exit(0) }
         print("")
