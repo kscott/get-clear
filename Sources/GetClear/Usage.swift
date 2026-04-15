@@ -2,11 +2,10 @@
 // Prints the usage string for get-clear and exits.
 
 import Foundation
-import GetClearKit
 
 func usage() -> Never {
     print("""
-    \(versionString(tool: "get-clear", built: builtVersion, suite: suiteVersion)) — Your commitments, your contacts, your communications
+    \(displayVersion) — Your commitments, your contacts, your communications
 
     Usage:
       get-clear what [range]          # Everything across all tools

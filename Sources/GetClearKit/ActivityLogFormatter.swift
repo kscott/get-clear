@@ -152,7 +152,7 @@ public struct ActivityLogFormatter {
     }
 
     /// Format a date as "Tuesday March 18".
-    private static func dateHeader(for date: Date) -> String {
+    public static func dateHeader(for date: Date) -> String {
         let fmt = DateFormatter()
         fmt.dateFormat = "EEEE MMMM d"
         return fmt.string(from: date)

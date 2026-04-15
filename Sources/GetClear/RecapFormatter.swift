@@ -26,26 +26,6 @@ func calendarDot(_ calendar: EKCalendar) -> String {
     return "\u{001B}[38;2;\(r);\(g);\(b)m●\u{001B}[0m "
 }
 
-// MARK: - Date formatting
-
-func recapDateHeader(for date: Date) -> String {
-    let fmt = DateFormatter()
-    fmt.dateFormat = "EEEE MMMM d"
-    return fmt.string(from: date)
-}
-
-func formatTimespanResult(_ ts: TimespanResult) -> String {
-    let fmt = DateFormatter()
-    fmt.dateFormat = "h:mma"
-    fmt.amSymbol = "am"
-    fmt.pmSymbol = "pm"
-    let start = fmt.string(from: ts.start)
-    if let end = ts.end {
-        return "\(start) → \(fmt.string(from: end))"
-    }
-    return start
-}
-
 // MARK: - Group and recap formatting
 
 func formatSentItem(_ entry: ActivityLogEntry) -> String {
@@ -111,8 +91,8 @@ func formatRecap(
     var lines: [String] = []
 
     if range.isSingleDay {
-        var header = recapDateHeader(for: dateUsed)
-        if let ts = result.timespan { header += " · \(formatTimespanResult(ts))" }
+        var header = ActivityLogFormatter.dateHeader(for: dateUsed)
+        if let ts = result.timespan { header += " · \(TimespanFormatter.format(first: ts.start, last: ts.end))" }
         lines.append(header)
         lines.append("")
         lines += formatRecapGroups(result.groups)
@@ -133,7 +113,7 @@ func formatRecap(
         }
         for (i, day) in days.sorted().enumerated() {
             if i > 0 { lines.append("") }
-            lines.append(recapDateHeader(for: day))
+            lines.append(ActivityLogFormatter.dateHeader(for: day))
             lines.append("")
             var dayGroups: [RecapGroup] = []
             for group in result.groups {

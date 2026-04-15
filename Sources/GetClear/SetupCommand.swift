@@ -7,8 +7,9 @@ import GetClearKit
 
 /// Presents the calendar picker and writes the recap config.
 /// Returns true if config was successfully written, false if cancelled or no valid input.
-@discardableResult
 func runSetup() -> Bool {
+    // Install SIGINT handler here rather than at the call site — setup is the only command
+    // that blocks on user input, so this is the only place where Ctrl-C needs clean handling.
     signal(SIGINT) { _ in print("\nCancelled."); exit(0) }
     let sem   = DispatchSemaphore(value: 0)
     let store = EKEventStore()

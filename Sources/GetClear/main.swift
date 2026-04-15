@@ -7,10 +7,11 @@ import Foundation
 import EventKit
 import GetClearKit
 
-let args = Array(CommandLine.arguments.dropFirst())
+let args           = Array(CommandLine.arguments.dropFirst())
+let displayVersion = versionString(tool: "get-clear", built: builtVersion, suite: suiteVersion)
 
 guard let cmd = args.first else { usage() }
-if isVersionFlag(cmd) { print(versionString(tool: "get-clear", built: builtVersion, suite: suiteVersion)); exit(0) }
+if isVersionFlag(cmd) { print(displayVersion); exit(0) }
 if isHelpFlag(cmd)    { usage() }
 
 switch cmd {
