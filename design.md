@@ -404,6 +404,12 @@ makes the gap visible and gives the future implementation a ready-made acceptanc
 
 A test suite that cannot be described in one sentence is not ready to be written.
 
+### New code conforms to existing code
+
+Before writing any new file, find and read its nearest equivalent elsewhere in the suite. In a monorepo, that equivalent is always nearby. The file structure, naming conventions, and internal patterns you find there are not suggestions — they are the standard. A new `main.swift` that doesn't match the others isn't just inconsistent; it's wrong.
+
+This applies to every layer: dispatch conventions in `main.swift`, handler naming, formatter structure, test file layout. If something looks different from what already exists, that difference needs a reason. "I didn't look" is not a reason.
+
 ### Flag code quality proactively
 
 When writing or reviewing code in this project, apply these disciplines without
