@@ -4,6 +4,13 @@
 import Foundation
 import GetClearKit
 
+func handleCheckUpdate() {
+    if let release = UpdateChecker.fetchLatestRelease(userAgent: "get-clear/\(builtVersion)") {
+        UpdateChecker.writeCache(version: release.version, url: release.url)
+    }
+    exit(0)
+}
+
 func handleUpdate() {
     guard let installed = UpdateChecker.installedVersion() else {
         print("get-clear update is only available for PKG installs.")
