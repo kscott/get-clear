@@ -20,7 +20,8 @@ func handleRecap(args: [String]) {
     guard let range = parseRange(rangeStr) else { fail("Unrecognised range: \(rangeStr)") }
     let isToday = rangeStr == "today"
 
-    // FR-018: for today, substitute the most recent active day if today has no entries yet
+    // FR-018: early in the day there may be no log entries yet — show the last active day
+    // so recap isn't empty when the user hasn't done anything in the current session
     var effectiveRange = range.start...range.end
     var dateUsed       = range.start
     if isToday {

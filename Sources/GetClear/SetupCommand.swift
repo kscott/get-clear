@@ -1,5 +1,5 @@
 // SetupCommand.swift
-// Runs the interactive recap calendar setup flow.
+// handleSetup() dispatches the setup command; pickAndSaveCalendars() runs the interactive picker.
 
 import Foundation
 import EventKit
