@@ -1,4 +1,6 @@
 # Compiled binary — build locally with `./contacts setup`
 contacts-bin
+contacts
 .DS_Store
 .build/
+.swiftpm/
