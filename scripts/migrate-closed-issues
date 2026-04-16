@@ -1,0 +1,172 @@
+#!/usr/bin/env python3
+"""
+Migrate closed issues from a tool repo into kscott/get-clear.
+
+Usage:
+    scripts/migrate-closed-issues <tool-repo>
+
+Example:
+    scripts/migrate-closed-issues reminders-cli
+
+For each closed issue in the tool repo:
+  - Creates it in get-clear with original body + backlink footer
+  - Applies original labels plus the appropriate tool:xxx label
+  - Recreates comments verbatim
+  - Closes the issue
+
+State file: /tmp/migrated-<tool-repo>.json
+  Tracks completed issue numbers so partial runs can be resumed safely.
+  Delete it to force a full re-run (will create duplicates if issues already exist).
+"""
+
+import json
+import subprocess
+import sys
+import time
+from pathlib import Path
+
+DEST_REPO = "kscott/get-clear"
+SLEEP_BETWEEN_ISSUES = 1  # seconds
+
+
+def gh(*args):
+    result = subprocess.run(["gh"] + list(args), capture_output=True, text=True)
+    if result.returncode != 0:
+        raise RuntimeError(f"gh {' '.join(args)} failed:\n{result.stderr}")
+    return result.stdout.strip()
+
+
+def gh_json(*args):
+    return json.loads(gh(*args))
+
+
+def get_closed_issues(source_repo):
+    issues = []
+    page = 1
+    while True:
+        batch = gh_json("api", f"repos/{source_repo}/issues?state=closed&per_page=100&page={page}")
+        if not batch:
+            break
+        # Filter out pull requests (GitHub returns PRs in issue list)
+        issues.extend(i for i in batch if "pull_request" not in i)
+        if len(batch) < 100:
+            break
+        page += 1
+    return issues
+
+
+def get_comments(source_repo, issue_number):
+    return gh_json("api", f"repos/{source_repo}/issues/{issue_number}/comments")
+
+
+def create_issue(title, body, labels):
+    args = ["issue", "create", "--repo", DEST_REPO, "--title", title, "--body", body]
+    for label in labels:
+        args += ["--label", label]
+    url = gh(*args)
+    # Extract issue number from URL
+    return int(url.rstrip("/").split("/")[-1])
+
+
+def add_comment(issue_number, body):
+    gh("issue", "comment", str(issue_number), "--repo", DEST_REPO, "--body", body)
+
+
+def close_issue(issue_number):
+    gh("issue", "close", str(issue_number), "--repo", DEST_REPO)
+
+
+def load_state(state_file):
+    if state_file.exists():
+        return set(json.loads(state_file.read_text()))
+    return set()
+
+
+def save_state(state_file, completed):
+    state_file.write_text(json.dumps(sorted(completed)))
+
+
+def tool_label(source_repo):
+    # reminders-cli → tool:reminders, mail-cli → tool:mail, etc.
+    name = source_repo.removesuffix("-cli")
+    return f"tool:{name}"
+
+
+def main():
+    args = sys.argv[1:]
+    dry_run = "--dry-run" in args
+    args = [a for a in args if a != "--dry-run"]
+
+    if len(args) != 1:
+        print("Usage: scripts/migrate-closed-issues [--dry-run] <tool-repo>")
+        print("Example: scripts/migrate-closed-issues reminders-cli")
+        print("         scripts/migrate-closed-issues --dry-run reminders-cli")
+        sys.exit(1)
+
+    source_repo = f"kscott/{args[0]}"
+    label = tool_label(args[0])
+    state_file = Path(f"/tmp/migrated-{args[0]}.json")
+
+    if dry_run:
+        print("DRY RUN — no issues will be created\n")
+
+    completed = load_state(state_file)
+    if completed and not dry_run:
+        print(f"Resuming — {len(completed)} issues already migrated: {sorted(completed)}")
+
+    issues = get_closed_issues(source_repo)
+    print(f"Found {len(issues)} closed issues in {source_repo}")
+
+    for issue in reversed(issues):  # oldest first
+        number = issue["number"]
+        if number in completed:
+            print(f"  #{number} — skipping (already migrated)")
+            continue
+
+        title = issue["title"]
+        original_url = f"https://github.com/{source_repo}/issues/{number}"
+        backlink = f"\n\n---\n*Migrated from [{source_repo}#{number}]({original_url})*"
+        body = (issue["body"] or "") + backlink
+
+        existing_labels = [l["name"] for l in issue["labels"]]
+        labels = list(set(existing_labels + [label]))
+
+        comments = get_comments(source_repo, number)
+
+        if dry_run:
+            print(f"  #{number} — {title}")
+            print(f"    labels: {labels}")
+            print(f"    comments: {len(comments)}")
+            print(f"    body preview: {body[:120].strip()}...")
+            continue
+
+        print(f"  #{number} — {title}")
+
+        try:
+            new_number = create_issue(title, body, labels)
+
+            for comment in comments:
+                add_comment(new_number, comment["body"])
+
+            close_issue(new_number)
+
+            completed.add(number)
+            save_state(state_file, completed)
+            print(f"    → get-clear #{new_number} ({'with ' + str(len(comments)) + ' comment(s)' if comments else 'no comments'})")
+
+        except Exception as e:
+            print(f"    ERROR: {e}")
+            print(f"    State saved — re-run to resume from this issue")
+            sys.exit(1)
+
+        time.sleep(SLEEP_BETWEEN_ISSUES)
+
+    if dry_run:
+        print(f"\nDry run complete — {len(issues)} issues would be migrated.")
+    else:
+        print(f"\nDone. {len(completed)} issues migrated.")
+        print(f"State file: {state_file} (delete when finished)")
+
+
+if __name__ == "__main__":
+    main()
