@@ -1,0 +1,4 @@
+# Compiled binary — build locally with `./text setup`
+text-bin
+.DS_Store
+.build/
