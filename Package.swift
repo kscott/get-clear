@@ -7,12 +7,20 @@ let package = Package(
     products: [
         .library(name: "GetClearKit", targets: ["GetClearKit"]),
         .executable(name: "get-clear", targets: ["GetClear"]),
+        .executable(name: "reminders-bin", targets: ["reminders-bin"]),
+        .executable(name: "calendar-bin", targets: ["calendar-bin"]),
+        .executable(name: "contacts-bin", targets: ["contacts-bin"]),
+        .executable(name: "mail-bin", targets: ["mail-bin"]),
+        .executable(name: "text-bin", targets: ["text-bin"]),
     ],
     dependencies: [
         .package(url: "https://github.com/Quick/Quick.git", from: "7.0.0"),
         .package(url: "https://github.com/Quick/Nimble.git", from: "13.0.0"),
     ],
     targets: [
+
+        // MARK: - GetClearKit
+
         .target(
             name: "GetClearKit",
             path: "Sources/GetClearKit"
@@ -23,7 +31,6 @@ let package = Package(
             path: "Sources/GetClear",
             exclude: ["get-clear.entitlements"]
         ),
-        // Test suite — run via: swift test
         .testTarget(
             name: "GetClearKitTests",
             dependencies: [
@@ -32,6 +39,134 @@ let package = Package(
                 .product(name: "Nimble", package: "Nimble"),
             ],
             path: "Tests/GetClearKitTests"
+        ),
+
+        // MARK: - reminders
+
+        .target(
+            name: "RemindersLib",
+            dependencies: ["GetClearKit"],
+            path: "reminders-cli/Sources/RemindersLib"
+        ),
+        .executableTarget(
+            name: "reminders-bin",
+            dependencies: ["RemindersLib", "GetClearKit"],
+            path: "reminders-cli/Sources/RemindersCLI",
+            linkerSettings: [
+                .linkedFramework("EventKit"),
+                .linkedFramework("AppKit"),
+            ]
+        ),
+        .testTarget(
+            name: "RemindersLibTests",
+            dependencies: [
+                "RemindersLib",
+                "GetClearKit",
+                .product(name: "Quick", package: "Quick"),
+                .product(name: "Nimble", package: "Nimble"),
+            ],
+            path: "reminders-cli/Tests/RemindersLibTests"
+        ),
+
+        // MARK: - calendar
+
+        .target(
+            name: "CalendarLib",
+            dependencies: ["GetClearKit"],
+            path: "calendar-cli/Sources/CalendarLib"
+        ),
+        .executableTarget(
+            name: "calendar-bin",
+            dependencies: ["CalendarLib", "GetClearKit"],
+            path: "calendar-cli/Sources/CalendarCLI",
+            linkerSettings: [
+                .linkedFramework("EventKit"),
+                .linkedFramework("AppKit"),
+            ]
+        ),
+        .testTarget(
+            name: "CalendarLibTests",
+            dependencies: [
+                "CalendarLib",
+                "GetClearKit",
+                .product(name: "Quick", package: "Quick"),
+                .product(name: "Nimble", package: "Nimble"),
+            ],
+            path: "calendar-cli/Tests/CalendarLibTests"
+        ),
+
+        // MARK: - contacts
+
+        .target(
+            name: "ContactsLib",
+            dependencies: ["GetClearKit"],
+            path: "contacts-cli/Sources/ContactsLib"
+        ),
+        .executableTarget(
+            name: "contacts-bin",
+            dependencies: ["ContactsLib", "GetClearKit"],
+            path: "contacts-cli/Sources/ContactsCLI",
+            linkerSettings: [
+                .linkedFramework("Contacts"),
+                .linkedFramework("AppKit"),
+            ]
+        ),
+        .testTarget(
+            name: "ContactsLibTests",
+            dependencies: [
+                "ContactsLib",
+                .product(name: "Quick", package: "Quick"),
+                .product(name: "Nimble", package: "Nimble"),
+            ],
+            path: "contacts-cli/Tests/ContactsLibTests"
+        ),
+
+        // MARK: - mail
+
+        .target(
+            name: "MailLib",
+            path: "mail-cli/Sources/MailLib"
+        ),
+        .executableTarget(
+            name: "mail-bin",
+            dependencies: ["MailLib", "GetClearKit"],
+            path: "mail-cli/Sources/MailCLI",
+            linkerSettings: [
+                .linkedFramework("Contacts"),
+            ]
+        ),
+        .testTarget(
+            name: "MailLibTests",
+            dependencies: [
+                "MailLib",
+                .product(name: "Quick", package: "Quick"),
+                .product(name: "Nimble", package: "Nimble"),
+            ],
+            path: "mail-cli/Tests/MailLibTests"
+        ),
+
+        // MARK: - text
+
+        .target(
+            name: "TextLib",
+            path: "text-cli/Sources/TextLib"
+        ),
+        .executableTarget(
+            name: "text-bin",
+            dependencies: ["TextLib", "GetClearKit"],
+            path: "text-cli/Sources/TextCLI",
+            linkerSettings: [
+                .linkedFramework("Contacts"),
+            ]
+        ),
+        .testTarget(
+            name: "TextLibTests",
+            dependencies: [
+                "TextLib",
+                .product(name: "Quick", package: "Quick"),
+                .product(name: "Nimble", package: "Nimble"),
+            ],
+            path: "text-cli/Tests/TextLibTests"
         ),
     ]
 )
