@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# bump-version — update the Get Clear suite version and push
+# bump-version — update the Get Clear suite version and trigger a release build
 #
-# Always updates suiteVersion in all tool repos.
+# Always updates suiteVersion in all Version.swift files.
 # Optionally updates builtVersion for specific tools.
 #
 # Usage:
@@ -38,101 +38,59 @@ if [[ "$NEW_SUITE" == "$OLD_SUITE" && ${#TOOL_VERSIONS[@]} -eq 0 ]]; then
   exit 0
 fi
 
-TOOLS=(reminders-cli calendar-cli contacts-cli mail-cli text-cli)
 TOOL_NAMES=(reminders calendar contacts mail text)
+TOOL_DIRS=(reminders-cli calendar-cli contacts-cli mail-cli text-cli)
 TOOL_SOURCES=(RemindersCLI CalendarCLI ContactsCLI MailCLI TextCLI)
+
+VERSION_HEADER="// Generated — do not edit manually. Use scripts/bump-version in get-clear."
 
 # ── Update get-clear umbrella ──────────────────────────────────────────────────
 
-# get-clear umbrella: builtVersion == suiteVersion always
 echo "$NEW_SUITE" > VERSION
-printf "// Generated — do not edit manually. Use scripts/bump-version in get-clear.\nlet builtVersion = \"$NEW_SUITE\"\nlet suiteVersion = \"$NEW_SUITE\"\n" \
+printf "%s\nlet builtVersion = \"%s\"\nlet suiteVersion = \"%s\"\n" \
+  "$VERSION_HEADER" "$NEW_SUITE" "$NEW_SUITE" \
   > Sources/GetClear/Version.swift
-git add VERSION Sources/GetClear/Version.swift
-git commit -m "Bump suite version to $NEW_SUITE"
-git push origin main
 echo "get-clear: $OLD_SUITE → $NEW_SUITE"
 
-# ── Update each tool repo ──────────────────────────────────────────────────────
+# ── Update each tool ──────────────────────────────────────────────────────────
 
-for i in "${!TOOLS[@]}"; do
-  tool="${TOOLS[$i]}"
+for i in "${!TOOL_NAMES[@]}"; do
   name="${TOOL_NAMES[$i]}"
+  dir="${TOOL_DIRS[$i]}"
   src="${TOOL_SOURCES[$i]}"
-  repo="$HOME/dev/$tool"
+  version_file="$dir/Sources/$src/Version.swift"
+  old_built=$(grep 'let builtVersion' "$version_file" | grep -o '"[^"]*"' | tr -d '"')
 
-  if [[ ! -d "$repo" ]]; then
-    echo "  skipped $tool (not found at $repo)"
-    continue
-  fi
-
-  OLD_BUILT=$(cat "$repo/VERSION" 2>/dev/null || echo "0.0.0")
-
-  # Use explicit override if provided, otherwise keep existing builtVersion
   if [[ -v TOOL_VERSIONS[$name] ]]; then
-    NEW_BUILT="${TOOL_VERSIONS[$name]}"
+    new_built="${TOOL_VERSIONS[$name]}"
   else
-    NEW_BUILT="$OLD_BUILT"
+    new_built="$old_built"
   fi
 
-  # Skip if nothing changes
-  if [[ "$NEW_BUILT" == "$OLD_BUILT" && "$NEW_SUITE" == "$OLD_SUITE" ]]; then
-    echo "  $tool: already at $NEW_BUILT (suite $NEW_SUITE) — skipped"
-    continue
-  fi
+  printf "%s\nlet builtVersion = \"%s\"\nlet suiteVersion = \"%s\"\n" \
+    "$VERSION_HEADER" "$new_built" "$NEW_SUITE" \
+    > "$version_file"
 
-  echo "$NEW_BUILT" > "$repo/VERSION"
-  printf "// Generated — do not edit manually. Use scripts/bump-version in get-clear.\nlet builtVersion = \"$NEW_BUILT\"\nlet suiteVersion = \"$NEW_SUITE\"\n" \
-    > "$repo/Sources/$src/Version.swift"
-
-  msg="Bump suite version to $NEW_SUITE"
-  if [[ "$NEW_BUILT" != "$OLD_BUILT" ]]; then
-    msg="Bump version to $NEW_BUILT (Get Clear $NEW_SUITE)"
-  fi
-
-  (cd "$repo" && git add VERSION "Sources/$src/Version.swift" \
-    && git commit -m "$msg" \
-    && git push origin main)
-
-  if [[ "$NEW_BUILT" != "$OLD_BUILT" ]]; then
-    echo "  $tool: $OLD_BUILT → $NEW_BUILT (suite $NEW_SUITE)"
+  if [[ "$new_built" != "$old_built" ]]; then
+    echo "  $name: $old_built → $new_built (suite $NEW_SUITE)"
   else
-    echo "  $tool: $OLD_BUILT unchanged, suite → $NEW_SUITE"
+    echo "  $name: $old_built unchanged, suite → $NEW_SUITE"
   fi
 done
+
+# ── Commit and push ───────────────────────────────────────────────────────────
+
+git add VERSION Sources/GetClear/Version.swift
+for i in "${!TOOL_NAMES[@]}"; do
+  git add "${TOOL_DIRS[$i]}/Sources/${TOOL_SOURCES[$i]}/Version.swift"
+done
+
+git commit -m "Bump suite version to $NEW_SUITE"
+git push origin main
 
 echo ""
 echo "Done: suite $OLD_SUITE → $NEW_SUITE"
-echo "Waiting for tool binaries to be published..."
-
-# Record when we started pushing — used to verify each binary is freshly built,
-# not the pre-existing one at releases/latest.
-PUSH_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-
-# Poll each tool repo until the signed binary at releases/latest was uploaded
-# after PUSH_TIME. Each tool CI takes ~1-2 minutes; timeout after 10 minutes.
-TOOL_BINS=(reminders calendar contacts mail text)
-TIMEOUT=600
-for bin in "${TOOL_BINS[@]}"; do
-  deadline=$((SECONDS + TIMEOUT))
-  while [[ $SECONDS -lt $deadline ]]; do
-    updated=$(gh release view latest --repo "kscott/${bin}-cli" --json assets \
-      --jq ".assets[] | select(.name == \"${bin}-bin\") | .updatedAt" 2>/dev/null || true)
-    if [[ -n "$updated" && "$updated" > "$PUSH_TIME" ]]; then
-      echo "  ${bin}-bin ready ($updated)"
-      break
-    fi
-    echo "  waiting for ${bin}-bin..."
-    sleep 30
-  done
-  if [[ $SECONDS -ge $deadline ]]; then
-    echo "  timeout waiting for ${bin}-bin — trigger PKG build manually:"
-    echo "  gh workflow run release.yml --repo kscott/get-clear"
-    exit 1
-  fi
-done
-
+echo "CI is building. Watch it at: https://github.com/kscott/get-clear/actions"
 echo ""
-echo "All binaries ready. Triggering PKG build..."
-gh workflow run release.yml --repo kscott/get-clear
-echo "PKG build started. Watch it at: https://github.com/kscott/get-clear/actions"
+echo "When CI passes, trigger the PKG release:"
+echo "  gh workflow run release.yml --repo kscott/get-clear"

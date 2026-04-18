@@ -45,30 +45,31 @@ jobs:
           rm /tmp/installer.p12
           security set-key-partition-list -S apple-tool:,apple: -s -k "" $KEYCHAIN
 
-      - name: Build and sign get-clear umbrella binary
+      - name: Build all binaries
+        run: swift build -c release
+
+      - name: Sign binaries
         run: |
-          swift build -c release --product get-clear
           codesign --sign "Developer ID Application: Kenneth Scott (6Q96Q79QN8)" \
             --entitlements Sources/GetClear/get-clear.entitlements \
             --options runtime \
             --timestamp \
             .build/release/get-clear
+          for tool in reminders calendar contacts mail text; do
+            codesign --sign "Developer ID Application: Kenneth Scott (6Q96Q79QN8)" \
+              --options runtime \
+              --timestamp \
+              .build/release/${tool}-bin
+          done
+
+      - name: Assemble payload
+        run: |
           mkdir -p payload/usr/local/bin
           cp .build/release/get-clear payload/usr/local/bin/get-clear
-          chmod +x payload/usr/local/bin/get-clear
-
-      - name: Download binaries
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
           for tool in reminders calendar contacts mail text; do
-            echo "Downloading $tool..."
-            gh release download latest \
-              --repo kscott/${tool}-cli \
-              --pattern "${tool}-bin" \
-              --output payload/usr/local/bin/$tool
-            chmod +x payload/usr/local/bin/$tool
+            cp .build/release/${tool}-bin payload/usr/local/bin/${tool}
           done
+          chmod +x payload/usr/local/bin/*
           mkdir -p payload/usr/local/share/get-clear
           cp scripts/uninstall payload/usr/local/share/get-clear/uninstall.sh
           chmod +x payload/usr/local/share/get-clear/uninstall.sh
