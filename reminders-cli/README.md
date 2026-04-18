@@ -49,9 +49,9 @@ On first run, macOS will prompt you to grant Reminders access.
 
 ```bash
 xcode-select --install   # if not already installed
-git clone https://github.com/kscott/reminders-cli.git ~/dev/reminders-cli
-cd ~/dev/reminders-cli
-swift build -c release
+git clone https://github.com/kscott/get-clear.git ~/dev/get-clear
+cd ~/dev/get-clear
+swift build -c release --product reminders-bin
 cp .build/release/reminders-bin /usr/local/bin/reminders
 ```
 

@@ -34,9 +34,9 @@ mail setup
 
 ```bash
 xcode-select --install   # if not already installed
-git clone https://github.com/kscott/mail-cli.git ~/dev/mail-cli
-cd ~/dev/mail-cli
-swift build -c release
+git clone https://github.com/kscott/get-clear.git ~/dev/get-clear
+cd ~/dev/get-clear
+swift build -c release --product mail-bin
 cp .build/release/mail-bin /usr/local/bin/mail
 mail setup
 ```

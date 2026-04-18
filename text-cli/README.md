@@ -27,9 +27,9 @@ On first run, macOS will prompt you to grant Contacts access.
 
 ```bash
 xcode-select --install   # if not already installed
-git clone https://github.com/kscott/text-cli.git ~/dev/text-cli
-cd ~/dev/text-cli
-swift build -c release
+git clone https://github.com/kscott/get-clear.git ~/dev/get-clear
+cd ~/dev/get-clear
+swift build -c release --product text-bin
 cp .build/release/text-bin /usr/local/bin/text
 ```
 

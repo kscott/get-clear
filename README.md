@@ -18,11 +18,11 @@ You say what needs to happen. Get Clear handles the rest.
 
 | Tool | What it does |
 |---|---|
-| [**Contacts**](https://github.com/kscott/contacts-cli) | The people you've committed to |
-| [**Reminders**](https://github.com/kscott/reminders-cli) | The promises you can't afford to forget |
-| [**Calendar**](https://github.com/kscott/calendar-cli) | When you said you'd be there |
-| [**Mail**](https://github.com/kscott/mail-cli) | The thing you said you'd send |
-| [**Messages**](https://github.com/kscott/text-cli) | The quick word |
+| **Contacts** | The people you've committed to |
+| **Reminders** | The promises you can't afford to forget |
+| **Calendar** | When you said you'd be there |
+| **Mail** | The thing you said you'd send |
+| **Messages** | The quick word |
 
 `add` · `find` · `show` · `change` · `rename` · `remove` — six words across all five tools. Use one, know them all.
 

@@ -44,9 +44,9 @@ On first run, macOS will prompt you to grant Calendar access.
 
 ```bash
 xcode-select --install   # if not already installed
-git clone https://github.com/kscott/calendar-cli.git ~/dev/calendar-cli
-cd ~/dev/calendar-cli
-swift build -c release
+git clone https://github.com/kscott/get-clear.git ~/dev/get-clear
+cd ~/dev/get-clear
+swift build -c release --product calendar-bin
 cp .build/release/calendar-bin /usr/local/bin/calendar
 ```
 

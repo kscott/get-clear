@@ -27,9 +27,9 @@ On first run, macOS will prompt you to grant Contacts access.
 
 ```bash
 xcode-select --install   # if not already installed
-git clone https://github.com/kscott/contacts-cli.git ~/dev/contacts-cli
-cd ~/dev/contacts-cli
-swift build -c release
+git clone https://github.com/kscott/get-clear.git ~/dev/get-clear
+cd ~/dev/get-clear
+swift build -c release --product contacts-bin
 cp .build/release/contacts-bin /usr/local/bin/contacts
 ```
 
