@@ -297,6 +297,43 @@ Tests use **Quick + Nimble** across all repos. Run via `swift test`. No custom h
 
 ---
 
+## Apple vs. Google backends
+
+Three tools support a second backend via Google APIs: reminders-cli (Google Tasks), calendar-cli (Google Calendar), contacts-cli (Google Contacts). The native Apple backends remain the default.
+
+### The offline advantage
+
+The native Apple backends sync to the device. Reminders, Calendar, and Contacts all maintain a local store — you can read and write while offline, and changes queue for sync when the connection returns. This is the core reason the Apple backends are default and not just equal alternatives.
+
+Google backends have no local cache. If the network is unavailable, every operation fails. For a tool designed to handle commitments reliably, that's a meaningful tradeoff the user needs to understand before switching.
+
+### Mail is already the exception
+
+mail-cli sends via SMTP, which requires a live connection regardless of backend. The offline story for mail is identical whether the backend is an SMTP relay or the Gmail API — both fail immediately without a connection. The Apple "offline advantage" does not apply to mail.
+
+**Deferred send** is not handled automatically. A failed send fails — there is no retry queue. `mail send ... --draft` is the explicit offline workaround: it saves to IMAP and the user sends from their mail client when online. This is intentional. Silent retry queues create their own problems (did it send? when? did it fail quietly?). The user makes the call.
+
+### Google Workspace service availability
+
+Google Tasks, Contacts (People API), and Calendar are included with all personal Gmail accounts. On **Google Workspace** accounts, administrators can disable individual services. Tasks is the most commonly restricted — many enterprise and education environments turn it off. Calendar and Gmail are almost never disabled.
+
+**The rule:** catch this at `setup` time, not at command time. After OAuth authorization, each tool's `setup google` flow makes a live validation call before writing anything to config or Keychain. If the service is unavailable:
+
+```
+✗ Google Tasks is not available on your account.
+  Google Tasks is commonly disabled on Google Workspace accounts.
+  Contact your administrator, or use the default Apple Reminders backend.
+  Config was not saved.
+```
+
+Nothing is written if validation fails. Each backend is independent — a failed Tasks setup does not affect Calendar or Contacts setup.
+
+### text-cli has no Google equivalent
+
+Google Voice is the only Google SMS service, and it has no official API. text-cli stays Apple-only. This is not a gap to fill.
+
+---
+
 ## Engineering disciplines — inviolable
 
 These are not guidelines. They apply to every line of code written in this project,
