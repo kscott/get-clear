@@ -4,7 +4,7 @@ import EventKit
 import GetClearKit
 import RemindersLib
 
-func handleAdd(args: [String], store: EKEventStore, semaphore: DispatchSemaphore) {
+func handleAdd(args: [String], store: EKEventStore) async {
     guard args.count > 1 else { fail("provide a reminder title") }
     let title = args[1]
     var listName: String? = nil
@@ -14,7 +14,7 @@ func handleAdd(args: [String], store: EKEventStore, semaphore: DispatchSemaphore
         let remaining = Array(args.dropFirst(2))
         let rawString: String
         if allCalendars.contains(where: { $0.title == remaining[0] }) {
-            listName = remaining[0]
+            listName  = remaining[0]
             rawString = remaining.dropFirst().joined(separator: " ")
         } else {
             rawString = remaining.joined(separator: " ")
@@ -36,7 +36,7 @@ func handleAdd(args: [String], store: EKEventStore, semaphore: DispatchSemaphore
         fail("List not found: \(listName ?? "default")")
     }
     let reminder = EKReminder(eventStore: store)
-    reminder.title = title
+    reminder.title    = title
     reminder.calendar = cal
     if let pd = parsedDate {
         let fields: Set<Calendar.Component> = pd.hasTime ? [.year, .month, .day, .hour, .minute] : [.year, .month, .day]
@@ -59,5 +59,4 @@ func handleAdd(args: [String], store: EKEventStore, semaphore: DispatchSemaphore
     } catch {
         fail("Could not save reminder: \(error.localizedDescription)")
     }
-    semaphore.signal()
 }

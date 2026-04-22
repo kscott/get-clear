@@ -5,12 +5,11 @@ import Foundation
 import EventKit
 import GetClearKit
 
-func handleRecap(args: [String]) {
-    UpdateChecker.spawnBackgroundCheckIfNeeded()
+func handleRecap(args: [String]) async {
     var config = loadGetClearConfig()
     if !config.isRecapConfigured {
         print("First, choose which calendars to include in recap.\n")
-        guard pickAndSaveCalendars() else { exit(0) }
+        guard await pickAndSaveCalendars() else { exit(0) }
         config = loadGetClearConfig()
         guard config.isRecapConfigured else { exit(0) }
         print("")
@@ -35,14 +34,9 @@ func handleRecap(args: [String]) {
         }
     }
 
-    let sem   = DispatchSemaphore(value: 0)
-    let store = EKEventStore()
-    RecapAggregator.fetch(in: effectiveRange, store: store,
-                          calendarNames: config.recapCalendars) { result in
-        print(formatRecap(result, range: range, rangeStr: rangeStr,
-                          isToday: isToday, dateUsed: dateUsed))
-        sem.signal()
-    }
-    sem.wait()
-    if let hint = UpdateChecker.hint() { fputs(hint + "\n", stderr) }
+    let store  = EKEventStore()
+    let result = await RecapAggregator.fetch(in: effectiveRange, store: store,
+                                             calendarNames: config.recapCalendars)
+    print(formatRecap(result, range: range, rangeStr: rangeStr,
+                      isToday: isToday, dateUsed: dateUsed))
 }

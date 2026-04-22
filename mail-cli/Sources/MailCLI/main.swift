@@ -10,7 +10,7 @@ import GetClearKit
 let semaphore = DispatchSemaphore(value: 0)
 let args      = Array(CommandLine.arguments.dropFirst())
 
-runCLI(args: args, identity: identity, usage: usage) { command, args in
+Task { await runCLI(args: args, identity: identity, usage: usage) { command, args in
     Task {
         do {
             switch command {
@@ -27,7 +27,7 @@ runCLI(args: args, identity: identity, usage: usage) { command, args in
         }
         semaphore.signal()
     }
-}
+} }
 
 semaphore.wait()
 
