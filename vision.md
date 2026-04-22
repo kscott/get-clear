@@ -262,3 +262,20 @@ That's what's new. You don't have to know how to build the thing to build it any
 
 Most people can't do that part. You did.
 
+
+---
+
+## Graceful degradation — handling the unexpected
+
+*Captured April 22, 2026*
+
+When a command can't be carried out, the right response isn't always failure. Sometimes the intent can be honored a different way.
+
+The example that surfaced this: `mail send` while offline. The network is gone — the send can't happen. But the intent is clear. The full request is already documented in the command: the recipient, the subject, the body, the attachments. Rather than failing and losing that intent, the tool could shell out to `reminders add` and create a reminder containing the exact `mail send` command. When the user is back online — or when Claude next picks up the conversation — the reminder is there, and the action is one step away.
+
+The shell-out matters. Mail-cli doesn't need to know anything about reminders internals. It just calls `reminders add` the same way Claude would. The tools stay independent. The behavior emerges from their cooperation.
+
+This is a small thing that would feel surprisingly good to a user. The tool was supposed to fail. Instead it adapted. The commitment was preserved. That's the spirit of Get Clear — handled, even in the awkward moments.
+
+The pattern generalises beyond mail. Any command that can't complete its primary action might find a secondary one. The question to ask: *if this can't happen now, what's the next best thing we can do with what we already know?* Often the answer is a reminder. Sometimes it's something else. The instinct is worth following.
+
