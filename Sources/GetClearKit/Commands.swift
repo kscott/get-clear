@@ -22,12 +22,15 @@ public enum Command: String {
     case send
     case setup
     // Tool-specific
-    case done       // reminders
-    case export     // contacts
-    case calendars  // calendar — see get-clear#31 for rename discussion
-    case today      // calendar
-    case week       // calendar
-    case next       // calendar
+    case done        // reminders
+    case export      // contacts
+    case calendars   // calendar — see get-clear#31 for rename discussion
+    case today       // calendar
+    case week        // calendar
+    case next        // calendar
+    case update      // get-clear
+    case recap       // get-clear
+    case checkUpdate = "check-update"  // get-clear
 }
 
 /// Parse args, handle version/help/empty, and dispatch to `handler` with a typed `Command`.
@@ -35,7 +38,7 @@ public enum Command: String {
 /// - `.version` → prints identity and exits
 /// - `.help` / `.empty` → calls `usage()`
 /// - Unrecognised command string → calls `usage()`
-/// - Known command → calls `handler` with the typed `Command` and filtered arg list
+/// - Known command → awaits `handler`, then runs UpdateChecker
 ///
 /// The arg list passed to `handler` mirrors the raw args with flag tokens stripped;
 /// the command name remains at index 0 so handler code uses `args[1]`, `args[2]`, etc.
@@ -43,8 +46,8 @@ public func runCLI(
     args: [String],
     identity: ToolIdentity,
     usage: () -> Never,
-    handler: (Command, [String]) -> Void
-) {
+    handler: (Command, [String]) async throws -> Void
+) async {
     switch parseArgs(args) {
     case .version:
         print(identity)
@@ -53,6 +56,13 @@ public func runCLI(
         usage()
     case .command(let raw, let cmdArgs):
         guard let command = Command(rawValue: raw) else { usage() }
-        handler(command, cmdArgs)
+        do {
+            try await handler(command, cmdArgs)
+        } catch {
+            fputs("Error: \(error.localizedDescription)\n", stderr)
+            exit(1)
+        }
+        UpdateChecker.spawnBackgroundCheckIfNeeded()
+        if let hint = UpdateChecker.hint() { fputs(hint + "\n", stderr) }
     }
 }
