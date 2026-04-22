@@ -32,7 +32,7 @@ public enum Command: String {
 
 /// Parse args, handle version/help/empty, and dispatch to `handler` with a typed `Command`.
 ///
-/// - `.version` → prints version string and exits
+/// - `.version` → prints identity and exits
 /// - `.help` / `.empty` → calls `usage()`
 /// - Unrecognised command string → calls `usage()`
 /// - Known command → calls `handler` with the typed `Command` and filtered arg list
@@ -41,13 +41,13 @@ public enum Command: String {
 /// the command name remains at index 0 so handler code uses `args[1]`, `args[2]`, etc.
 public func runCLI(
     args: [String],
-    version: String,
+    identity: ToolIdentity,
     usage: () -> Never,
     handler: (Command, [String]) -> Void
 ) {
     switch parseArgs(args) {
     case .version:
-        print(version)
+        print(identity)
         exit(0)
     case .help, .empty:
         usage()

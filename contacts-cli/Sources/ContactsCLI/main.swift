@@ -11,7 +11,7 @@ let store     = CNContactStore()
 let semaphore = DispatchSemaphore(value: 0)
 let args      = Array(CommandLine.arguments.dropFirst())
 
-runCLI(args: args, version: "\(identity)", usage: usage) { command, args in
+runCLI(args: args, identity: identity, usage: usage) { command, args in
     store.requestAccess(for: .contacts) { granted, _ in
         guard granted else { fail("Contacts access denied") }
 
