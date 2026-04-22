@@ -4,14 +4,14 @@
 import Foundation
 import GetClearKit
 
-func handleCheckUpdate() {
+func handleCheckUpdate() async {
     if let release = UpdateChecker.fetchLatestRelease(userAgent: "get-clear/\(builtVersion)") {
         UpdateChecker.writeCache(version: release.version, url: release.url)
     }
     exit(0)
 }
 
-func handleUpdate() {
+func handleUpdate() async {
     guard let installed = UpdateChecker.installedVersion() else {
         print("get-clear update is only available for PKG installs.")
         print("Download from https://github.com/kscott/get-clear/releases")
@@ -44,18 +44,10 @@ func handleUpdate() {
 
     let pkgURL  = URL(string: downloadURL)!
     let tempPkg = URL(fileURLWithPath: "/tmp/get-clear-\(latestVersion).pkg")
-    var downloadError: Error? = nil
-    let dlSem = DispatchSemaphore(value: 0)
-    URLSession.shared.dataTask(with: pkgURL) { data, _, error in
-        defer { dlSem.signal() }
-        if let error = error { downloadError = error; return }
-        guard let data = data else { downloadError = NSError(domain: "get-clear", code: 1); return }
-        do { try data.write(to: tempPkg, options: .atomic) }
-        catch { downloadError = error }
-    }.resume()
-    dlSem.wait()
-
-    if let error = downloadError {
+    do {
+        let (data, _) = try await URLSession.shared.data(from: pkgURL)
+        try data.write(to: tempPkg, options: .atomic)
+    } catch {
         try? FileManager.default.removeItem(at: tempPkg)
         fail("Download failed: \(error.localizedDescription)")
     }

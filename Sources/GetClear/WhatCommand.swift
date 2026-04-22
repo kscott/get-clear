@@ -4,8 +4,7 @@
 import Foundation
 import GetClearKit
 
-func handleWhat(args: [String]) {
-    UpdateChecker.spawnBackgroundCheckIfNeeded()
+func handleWhat(args: [String]) async {
     let rangeStr = args.count > 1 ? Array(args.dropFirst()).joined(separator: " ") : "today"
     guard let range = parseRange(rangeStr) else { fail("Unrecognised range: \(rangeStr)") }
     let isToday = rangeStr == "today"
@@ -20,5 +19,4 @@ func handleWhat(args: [String]) {
     }
     print(ActivityLogFormatter.suiteWhat(entries: entries, range: range, rangeStr: rangeStr,
                                          dateUsed: dateUsed))
-    if let hint = UpdateChecker.hint() { fputs(hint + "\n", stderr) }
 }

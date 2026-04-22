@@ -22,7 +22,7 @@ if let first = args.first,
     calFilter = args.removeFirst()
 }
 
-runCLI(args: args, identity: identity, usage: usage) { command, args in
+Task { await runCLI(args: args, identity: identity, usage: usage) { command, args in
     store.requestFullAccessToEvents { granted, _ in
         guard granted else { fail("Calendar access denied") }
 
@@ -43,7 +43,7 @@ runCLI(args: args, identity: identity, usage: usage) { command, args in
             if !handleDefault(args: args, store: store, calFilter: calFilter, config: config, semaphore: semaphore) { usage() }
         }
     }
-}
+} }
 
 semaphore.wait()
 UpdateChecker.spawnBackgroundCheckIfNeeded()

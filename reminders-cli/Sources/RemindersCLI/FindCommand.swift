@@ -4,29 +4,22 @@ import EventKit
 import GetClearKit
 import RemindersLib
 
-func handleFind(args: [String], store: EKEventStore, semaphore: DispatchSemaphore) {
+func handleFind(args: [String], store: EKEventStore) async {
     guard args.count > 1 else { fail("provide a search query") }
     let query = args.dropFirst().joined(separator: " ")
-    let lower = query.lowercased()
     let predicate = store.predicateForIncompleteReminders(
         withDueDateStarting: nil, ending: nil, calendars: store.calendars(for: .reminder))
-    store.fetchReminders(matching: predicate) { reminders in
-        let cal = Calendar.current
-        let matches = (reminders ?? []).filter {
-            ($0.title ?? "").lowercased().contains(lower) ||
-            ($0.notes ?? "").lowercased().contains(lower)
-        }.sorted(by: byDue)
-        if matches.isEmpty {
-            print("No reminders matching '\(query)'")
-        } else {
-            for r in matches {
-                var meta = "  [\(r.calendar.title)]"
-                if let comps = r.dueDateComponents, let date = cal.date(from: comps) {
-                    meta = "  ·  due \(formatDate(date, showTime: comps.hour != nil))" + meta
-                }
-                print("\(calendarDot(r.calendar))\(ANSI.bold(r.title ?? ""))\(ANSI.dim(meta))")
-            }
+    let reminders = await fetchReminders(matching: predicate, from: store)
+    let items = reminders.map(ReminderItem.init)
+    let cmp   = comparator(for: .due)
+    let pairs = Array(zip(reminders, items))
+        .filter { matchesQuery($0.1, query: query) }
+        .sorted { cmp($0.1, $1.1) }
+    if pairs.isEmpty {
+        print("No reminders matching '\(query)'")
+    } else {
+        for (reminder, item) in pairs {
+            print("\(calendarDot(reminder.calendar))\(formatFindRow(item))")
         }
-        semaphore.signal()
     }
 }

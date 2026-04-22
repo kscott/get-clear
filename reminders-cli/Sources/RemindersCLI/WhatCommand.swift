@@ -3,7 +3,7 @@
 import Foundation
 import GetClearKit
 
-func handleWhat(args: [String], semaphore: DispatchSemaphore) {
+func handleWhat(args: [String]) async {
     let rangeStr = args.count > 1 ? Array(args.dropFirst()).joined(separator: " ") : "today"
     guard let range = parseRange(rangeStr) else { fail("Unrecognised range: \(rangeStr)") }
     let isToday = rangeStr == "today"
@@ -17,5 +17,4 @@ func handleWhat(args: [String], semaphore: DispatchSemaphore) {
     }
     print(ActivityLogFormatter.perToolWhat(entries: entries, range: range, rangeStr: rangeStr,
                                            tool: "reminders", dateUsed: dateUsed))
-    semaphore.signal()
 }

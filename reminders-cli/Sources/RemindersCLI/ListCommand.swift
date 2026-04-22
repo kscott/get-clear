@@ -4,11 +4,11 @@ import EventKit
 import GetClearKit
 import RemindersLib
 
-func handleList(args: [String], store: EKEventStore, semaphore: DispatchSemaphore) {
+func handleList(args: [String], store: EKEventStore) async {
     var listArgs = Array(args.dropFirst())
-    var sortBy = "due"
+    var order: ReminderSortOrder = .due
     if let byIdx = listArgs.firstIndex(of: "by"), byIdx + 1 < listArgs.count {
-        sortBy = listArgs[byIdx + 1].lowercased()
+        order = ReminderSortOrder(rawValue: listArgs[byIdx + 1].lowercased()) ?? .due
         listArgs.removeSubrange(byIdx...(byIdx + 1))
     }
     let filterList = listArgs.first
@@ -23,44 +23,26 @@ func handleList(args: [String], store: EKEventStore, semaphore: DispatchSemaphor
         listCalendars = store.calendars(for: .reminder)
     }
 
-    let predicate = store.predicateForIncompleteReminders(withDueDateStarting: nil, ending: nil, calendars: listCalendars)
-    store.fetchReminders(matching: predicate) { reminders in
-        let cal = Calendar.current
-        let sortFn: (EKReminder, EKReminder) -> Bool
-        switch sortBy {
-        case "priority": sortFn = byPriority
-        case "title":    sortFn = byTitle
-        case "created":  sortFn = byCreated
-        default:         sortFn = byDue
-        }
+    let predicate = store.predicateForIncompleteReminders(
+        withDueDateStarting: nil, ending: nil, calendars: listCalendars)
+    let reminders = await fetchReminders(matching: predicate, from: store)
+    let items = reminders.map(ReminderItem.init)
+    let cmp   = comparator(for: order)
+    let pairs = Array(zip(reminders, items))
 
-        func metaFor(_ r: EKReminder) -> String {
-            let formattedDue = r.dueDateComponents.flatMap { comps in
-                cal.date(from: comps).map { formatDate($0, showTime: comps.hour != nil) }
-            }
-            return metaLine(for: ReminderMeta(
-                formattedDue: formattedDue,
-                isRepeating: r.hasRecurrenceRules,
-                priority: r.priority,
-                hasNote: r.notes != nil,
-                hasURL: r.url != nil
-            ))
+    if filterList != nil {
+        for (reminder, item) in pairs.sorted(by: { cmp($0.1, $1.1) }) {
+            print("\(calendarDot(reminder.calendar))\(formatListRow(item))")
         }
-
-        if filterList != nil {
-            for r in (reminders ?? []).sorted(by: sortFn) {
-                print("\(calendarDot(r.calendar))\(ANSI.bold(r.title ?? ""))\(ANSI.dim(metaFor(r)))")
-            }
-        } else {
-            let grouped = Dictionary(grouping: reminders ?? [], by: { $0.calendar.title })
-            for listName in grouped.keys.sorted() {
-                let dot = listCalendars.first { $0.title == listName }.map { calendarDot($0) } ?? "  "
-                print("\(dot)\(ANSI.bold(listName))")
-                for r in (grouped[listName] ?? []).sorted(by: sortFn) {
-                    print("\(calendarDot(r.calendar))\(ANSI.bold(r.title ?? ""))\(ANSI.dim(metaFor(r)))")
-                }
+    } else {
+        let grouped = Dictionary(grouping: pairs, by: { $1.calendarTitle })
+        for listName in grouped.keys.sorted() {
+            let grpPairs = (grouped[listName] ?? []).sorted(by: { cmp($0.1, $1.1) })
+            let dot = grpPairs.first.map { calendarDot($0.0.calendar) } ?? "  "
+            print("\(dot)\(ANSI.bold(listName))")
+            for (reminder, item) in grpPairs {
+                print("\(calendarDot(reminder.calendar))\(formatListRow(item))")
             }
         }
-        semaphore.signal()
     }
 }

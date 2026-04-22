@@ -2,12 +2,19 @@
 
 import EventKit
 import GetClearKit
+import RemindersLib
 
-func handleDone(args: [String], store: EKEventStore, semaphore: DispatchSemaphore) {
-    withReminder(args: args, cmd: .done, store: store, semaphore: semaphore) { reminder, title in
-        reminder.isCompleted = true
+func handleDone(args: [String], store: EKEventStore) async {
+    guard args.count > 1 else { fail("provide a reminder title") }
+    let title    = args[1]
+    let list     = args.count > 2 ? args[2] : nil
+    let reminder = await resolveReminder(title: title, list: list, cmd: "done", store: store)
+    reminder.isCompleted = true
+    do {
         try store.save(reminder, commit: true)
         try? ActivityLog.write(tool: "reminders", cmd: "done", desc: title, container: reminder.calendar.title)
         print("Done: \(title)")
+    } catch {
+        fail("Could not save: \(error.localizedDescription)")
     }
 }

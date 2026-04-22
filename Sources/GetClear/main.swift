@@ -6,17 +6,15 @@
 import Foundation
 import GetClearKit
 
-let args     = Array(CommandLine.arguments.dropFirst())
+let args = Array(CommandLine.arguments.dropFirst())
 
-let dispatch = parseArgs(args)
-if case .version = dispatch { print(identity); exit(0) }
-guard case .command(let cmd, let cmdArgs) = dispatch else { usage() }
-
-switch cmd {
-case "check-update":  handleCheckUpdate()
-case "what":          handleWhat(args: cmdArgs)
-case "update":        handleUpdate()
-case "setup":         handleSetup()
-case "recap":         handleRecap(args: cmdArgs)
-default:              usage()
+await runCLI(args: args, identity: identity, usage: usage) { command, args in
+    switch command {
+    case .checkUpdate: await handleCheckUpdate()
+    case .what:        await handleWhat(args: args)
+    case .update:      await handleUpdate()
+    case .setup:       await handleSetup()
+    case .recap:       await handleRecap(args: args)
+    default:           usage()
+    }
 }
