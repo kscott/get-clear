@@ -6,7 +6,7 @@ import Foundation
 
 func usage() -> Never {
     print("""
-    text \(versionString) — Send iMessages and SMS from the terminal
+    \(identity)
 
     Usage:
       text send <contact> <message...>     # Send a message

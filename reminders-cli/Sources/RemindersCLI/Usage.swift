@@ -5,7 +5,7 @@ import GetClearKit
 
 func usage() -> Never {
     print("""
-    reminders \(versionString) — CLI for Apple Reminders
+    \(identity)
 
     Usage:
       reminders open                                   # Open the Reminders app

@@ -8,8 +8,6 @@ import EventKit
 import CalendarLib
 import GetClearKit
 
-let versionString = "\(builtVersion) (Get Clear \(suiteVersion))"
-
 let store     = EKEventStore()
 let semaphore = DispatchSemaphore(value: 0)
 var args      = Array(CommandLine.arguments.dropFirst())
@@ -30,7 +28,7 @@ if let first = args.first,
 }
 
 let dispatch = parseArgs(args)
-if case .version = dispatch { print(versionString); exit(0) }
+if case .version = dispatch { print(identity); exit(0) }
 guard case .command(let cmd, let args) = dispatch else { usage() }
 
 store.requestFullAccessToEvents { granted, _ in

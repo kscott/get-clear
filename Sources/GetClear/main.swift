@@ -6,11 +6,10 @@
 import Foundation
 import GetClearKit
 
-let args           = Array(CommandLine.arguments.dropFirst())
-let displayVersion = versionString(tool: "get-clear", built: builtVersion, suite: suiteVersion)
+let args     = Array(CommandLine.arguments.dropFirst())
 
 let dispatch = parseArgs(args)
-if case .version = dispatch { print(displayVersion); exit(0) }
+if case .version = dispatch { print(identity); exit(0) }
 guard case .command(let cmd, let cmdArgs) = dispatch else { usage() }
 
 switch cmd {

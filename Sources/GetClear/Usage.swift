@@ -5,7 +5,7 @@ import Foundation
 
 func usage() -> Never {
     print("""
-    \(displayVersion) — Your commitments, your contacts, your communications
+    \(identity)
 
     Usage:
       get-clear what [range]          # Everything across all tools
