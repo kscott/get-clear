@@ -7,29 +7,26 @@ import Foundation
 import MailLib
 import GetClearKit
 
-let args = Array(CommandLine.arguments.dropFirst())
-
-let dispatch = parseArgs(args)
-if case .version = dispatch { print(identity); exit(0) }
-guard case .command(let cmd, let args) = dispatch else { usage() }
-
 let semaphore = DispatchSemaphore(value: 0)
+let args      = Array(CommandLine.arguments.dropFirst())
 
-Task {
-    do {
-        switch cmd {
-        case "what":  handleWhat(args: args)
-        case "open":  try handleOpen()
-        case "setup": try await handleSetup(args: args)
-        case "send":  try await handleSend(args: args)
-        case "find":  try await handleFind(args: args)
-        default:      usage()
+runCLI(args: args, identity: identity, usage: usage) { command, args in
+    Task {
+        do {
+            switch command {
+            case .what:  handleWhat(args: args)
+            case .open:  try handleOpen()
+            case .setup: try await handleSetup(args: args)
+            case .send:  try await handleSend(args: args)
+            case .find:  try await handleFind(args: args)
+            default:     usage()
+            }
+        } catch {
+            fputs("Error: \(error.localizedDescription)\n", stderr)
+            exit(1)
         }
-    } catch {
-        fputs("Error: \(error.localizedDescription)\n", stderr)
-        exit(1)
+        semaphore.signal()
     }
-    semaphore.signal()
 }
 
 semaphore.wait()

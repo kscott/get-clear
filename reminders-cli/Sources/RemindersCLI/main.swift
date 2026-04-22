@@ -12,25 +12,24 @@ let store = EKEventStore()
 let semaphore = DispatchSemaphore(value: 0)
 let args = Array(CommandLine.arguments.dropFirst())
 
-let dispatch = parseArgs(args)
-if case .version = dispatch { print(identity); exit(0) }
-guard case .command(let cmd, let args) = dispatch else { usage() }
+runCLI(args: args, identity: identity, usage: usage) { command, args in
+    store.requestFullAccessToReminders { granted, _ in
+        guard granted else { fail("Reminders access denied") }
 
-store.requestFullAccessToReminders { granted, _ in
-    guard granted else { fail("Reminders access denied") }
-
-    switch cmd {
-    case "what":           handleWhat(args: args, semaphore: semaphore)
-    case "open":           handleOpen(semaphore: semaphore)
-    case "lists":          handleLists(store: store, semaphore: semaphore)
-    case "list":           handleList(args: args, store: store, semaphore: semaphore)
-    case "add":            handleAdd(args: args, store: store, semaphore: semaphore)
-    case "change":         handleChange(args: args, store: store, semaphore: semaphore)
-    case "show":           handleShow(args: args, store: store, semaphore: semaphore)
-    case "rename":         handleRename(args: args, store: store, semaphore: semaphore)
-    case "find":           handleFind(args: args, store: store, semaphore: semaphore)
-    case "done", "remove": handleDoneOrRemove(cmd: cmd, args: args, store: store, semaphore: semaphore)
-    default:               usage()
+        switch command {
+        case .what:   handleWhat(args: args, semaphore: semaphore)
+        case .open:   handleOpen(semaphore: semaphore)
+        case .lists:  handleLists(store: store, semaphore: semaphore)
+        case .list:   handleList(args: args, store: store, semaphore: semaphore)
+        case .add:    handleAdd(args: args, store: store, semaphore: semaphore)
+        case .change: handleChange(args: args, store: store, semaphore: semaphore)
+        case .show:   handleShow(args: args, store: store, semaphore: semaphore)
+        case .rename: handleRename(args: args, store: store, semaphore: semaphore)
+        case .find:   handleFind(args: args, store: store, semaphore: semaphore)
+        case .done:   handleDone(args: args, store: store, semaphore: semaphore)
+        case .remove: handleRemove(args: args, store: store, semaphore: semaphore)
+        default:      usage()
+        }
     }
 }
 
