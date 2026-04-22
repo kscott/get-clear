@@ -6,6 +6,25 @@
 import EventKit
 import GetClearKit
 
+/// Validates args, resolves the reminder, and calls `action` with the matched reminder and title.
+/// Handles error output and signals `semaphore` when done.
+func withReminder(
+    args: [String], cmd: String, store: EKEventStore, semaphore: DispatchSemaphore,
+    action: @escaping (EKReminder, _ title: String) throws -> Void
+) {
+    guard args.count > 1 else { fail("provide a reminder title") }
+    let title = args[1]
+    let listName = args.count > 2 ? args[2] : nil
+    resolveReminder(title: title, list: listName, cmd: cmd, store: store) { reminder in
+        do {
+            try action(reminder, title)
+        } catch {
+            fail("Operation failed: \(error.localizedDescription)")
+        }
+        semaphore.signal()
+    }
+}
+
 /// Fetches the single incomplete reminder matching `title` (case-insensitive), optionally
 /// scoped to `list`. Calls `fail()` if not found; prints disambiguation and exits if multiple
 /// match. Calls `completion` with the matched reminder — caller signals the semaphore.
