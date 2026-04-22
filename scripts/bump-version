@@ -41,15 +41,36 @@ fi
 TOOL_NAMES=(reminders calendar contacts mail text)
 TOOL_DIRS=(reminders-cli calendar-cli contacts-cli mail-cli text-cli)
 TOOL_SOURCES=(RemindersCLI CalendarCLI ContactsCLI MailCLI TextCLI)
+TOOL_SUMMARIES=(
+  "CLI for Apple Reminders"
+  "CLI for Apple Calendar"
+  "CLI for Apple Contacts"
+  "CLI for Apple Mail"
+  "CLI for Apple Messages"
+)
 
 VERSION_HEADER="// Generated — do not edit manually. Use scripts/bump-version in get-clear."
 
-# ── Update get-clear umbrella ──────────────────────────────────────────────────
+# ── Update GetClearKit suite version ──────────────────────────────────────────
 
 echo "$NEW_SUITE" > VERSION
-printf "%s\nlet builtVersion = \"%s\"\nlet suiteVersion = \"%s\"\n" \
-  "$VERSION_HEADER" "$NEW_SUITE" "$NEW_SUITE" \
-  > Sources/GetClear/Version.swift
+printf "%s\npublic let suiteVersion = \"%s\"\n" \
+  "$VERSION_HEADER" "$NEW_SUITE" \
+  > Sources/GetClearKit/SuiteVersion.swift
+echo "suiteVersion: $OLD_SUITE → $NEW_SUITE"
+
+# ── Update get-clear umbrella ──────────────────────────────────────────────────
+
+cat > Sources/GetClear/Version.swift << SWIFT
+$VERSION_HEADER
+import GetClearKit
+let builtVersion = "$NEW_SUITE"
+let identity = ToolIdentity(
+    tool: "get-clear",
+    built: builtVersion,
+    summary: "Five tools for macOS. Claude as the conductor."
+)
+SWIFT
 echo "get-clear: $OLD_SUITE → $NEW_SUITE"
 
 # ── Update each tool ──────────────────────────────────────────────────────────
@@ -58,6 +79,7 @@ for i in "${!TOOL_NAMES[@]}"; do
   name="${TOOL_NAMES[$i]}"
   dir="${TOOL_DIRS[$i]}"
   src="${TOOL_SOURCES[$i]}"
+  summary="${TOOL_SUMMARIES[$i]}"
   version_file="$dir/Sources/$src/Version.swift"
   old_built=$(grep 'let builtVersion' "$version_file" | grep -o '"[^"]*"' | tr -d '"')
 
@@ -67,9 +89,16 @@ for i in "${!TOOL_NAMES[@]}"; do
     new_built="$old_built"
   fi
 
-  printf "%s\nlet builtVersion = \"%s\"\nlet suiteVersion = \"%s\"\n" \
-    "$VERSION_HEADER" "$new_built" "$NEW_SUITE" \
-    > "$version_file"
+  cat > "$version_file" << SWIFT
+$VERSION_HEADER
+import GetClearKit
+let builtVersion = "$new_built"
+let identity = ToolIdentity(
+    tool: "$name",
+    built: builtVersion,
+    summary: "$summary"
+)
+SWIFT
 
   if [[ "$new_built" != "$old_built" ]]; then
     echo "  $name: $old_built → $new_built (suite $NEW_SUITE)"
@@ -80,7 +109,7 @@ done
 
 # ── Commit and push ───────────────────────────────────────────────────────────
 
-git add VERSION Sources/GetClear/Version.swift
+git add VERSION Sources/GetClearKit/SuiteVersion.swift Sources/GetClear/Version.swift
 for i in "${!TOOL_NAMES[@]}"; do
   git add "${TOOL_DIRS[$i]}/Sources/${TOOL_SOURCES[$i]}/Version.swift"
 done

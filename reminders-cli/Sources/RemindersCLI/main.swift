@@ -8,14 +8,12 @@ import EventKit
 import RemindersLib
 import GetClearKit
 
-let versionString = "\(builtVersion) (Get Clear \(suiteVersion))"
-
 let store = EKEventStore()
 let semaphore = DispatchSemaphore(value: 0)
 let args = Array(CommandLine.arguments.dropFirst())
 
 let dispatch = parseArgs(args)
-if case .version = dispatch { print(versionString); exit(0) }
+if case .version = dispatch { print(identity); exit(0) }
 guard case .command(let cmd, let args) = dispatch else { usage() }
 
 store.requestFullAccessToReminders { granted, _ in

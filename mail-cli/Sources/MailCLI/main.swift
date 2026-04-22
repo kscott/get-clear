@@ -8,10 +8,9 @@ import MailLib
 import GetClearKit
 
 let args = Array(CommandLine.arguments.dropFirst())
-let versionString = "\(builtVersion) (Get Clear \(suiteVersion))"
 
 let dispatch = parseArgs(args)
-if case .version = dispatch { print(versionString); exit(0) }
+if case .version = dispatch { print(identity); exit(0) }
 guard case .command(let cmd, let args) = dispatch else { usage() }
 
 let semaphore = DispatchSemaphore(value: 0)

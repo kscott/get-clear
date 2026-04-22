@@ -7,7 +7,7 @@ import MailLib
 
 func usage() -> Never {
     print("""
-    mail \(versionString) — CLI for Fastmail via JMAP
+    \(identity)
 
     Usage:
       mail setup [token]                   # Store JMAP token, discover identities

@@ -7,7 +7,7 @@ import GetClearKit
 
 func usage() -> Never {
     print("""
-    contacts \(versionString) — CLI for Apple Contacts
+    \(identity)
 
     Usage:
       contacts open                             # Open the Contacts app

@@ -5,7 +5,7 @@ import GetClearKit
 
 func usage() -> Never {
     print("""
-    calendar \(versionString) — CLI for Apple Calendar
+    \(identity)
 
     Usage:
       calendar open                               # Open the Calendar app
