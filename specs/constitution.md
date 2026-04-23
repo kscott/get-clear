@@ -94,7 +94,7 @@ Adding a fourth level requires a style guide. Three levels can be applied by rul
 
 ## GetClearKit first
 
-Shared behavior lives in GetClearKit. If logic already exists in GetClearKit, duplicating it in a tool repo is wrong by definition. When writing new code in a tool repo, search GetClearKit first. When logic appears in two tool repos, it moves to GetClearKit before either ships.
+Shared behavior lives in GetClearKit. If logic already exists in GetClearKit, duplicating it is wrong by definition. When writing new code in a tool, search GetClearKit first. When logic appears in two tools, it moves to GetClearKit before either ships.
 
 The test: could a new sixth tool get this behavior by importing GetClearKit alone, with no copy-paste? If not, the wrong thing is in the wrong place.
 

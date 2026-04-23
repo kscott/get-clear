@@ -10,14 +10,16 @@ This document has three sections: current structure, decision log, and improveme
 
 ### Repositories
 
-Currently six separate repos; monorepo migration planned (#34).
+Single monorepo at `~/dev/get-clear/` (#34 complete 2026-04-16). All standalone repos archived. Tool source lives under `<tool>-cli/Sources/` subdirectories within the monorepo.
 
-- `get-clear/` — umbrella repo: GetClearKit shared library, PKG installer, scripts, specs
-- `reminders-cli/` — Apple Reminders CLI
-- `calendar-cli/` — Apple Calendar CLI
-- `contacts-cli/` — Apple Contacts CLI
-- `mail-cli/` — Mail CLI (Fastmail/JMAP; Gmail planned in #14)
-- `text-cli/` — Messages CLI (osascript)
+- `Sources/GetClearKit/` — shared library: ANSI, Fail, Flags, DateParser, RangeParser, Commands, ArgParsing, ActivityLog, UpdateChecker, ToolIdentity
+- `Sources/GetClear/` — umbrella `get-clear` binary (what, recap, check-update)
+- `reminders-cli/Sources/` — RemindersLib + RemindersCLI
+- `calendar-cli/Sources/` — CalendarLib + CalendarCLI
+- `contacts-cli/Sources/` — ContactsLib + ContactsCLI
+- `mail-cli/Sources/` — MailLib + MailCLI (JMAP/Fastmail; Gmail #61)
+- `text-cli/Sources/` — TextLib + TextCLI (osascript → Messages.app)
+- `Tests/GetClearKitTests/` — ~200 Quick/Nimble specs; per-tool test coverage open in #41–45
 
 ### Layer model
 
@@ -49,17 +51,19 @@ The boundary is enforced by the Swift package structure: `*Lib` targets do not i
 | `TimespanFormatter.swift` | Human-readable timespan formatting |
 | `UpdateChecker.swift` | Background version check; hint on stderr at most once per hour |
 
-### Tool Lib targets (as of 2026-04-11)
+### Tool Lib targets (as of 2026-04-22)
 
-Each tool has a `*Lib` target. Business logic extraction tracked in #35–39; reminders-cli complete.
+All five extractions complete (#35–39). Each tool's `main.swift` is ≤60 lines — dispatch only.
 
-| Tool | Lib contains today | CLI helpers (EventKit boundary) | Still needed (tracked) |
-|---|---|---|---|
-| reminders | `RecurrenceParsing`, `OptionsParsing`, `ReminderFormatter`, `ChangeCommand` | `RecurrenceConversion`, `Sorting` | — (#35 done) |
-| calendar | `ConfigParser` | — | `EventDateTime`, `EventFormatter`, `CalendarResolver` (#36) |
-| contacts | `ContactRecord`, `matchContacts`, `exportAddresses`, `cleanLabel` | — | `ChangeCommand`, `ContactStore`, `ContactFormatter` (#37) |
-| mail | JMAP types, some helpers | — | `MailConfiguration`, `JMAPClient`, `MailFormatter`, `SetupCommand`, `SendCommand` (#38) |
-| text | Contact resolution helpers | — | `MessagesClient` (#39) |
+| Tool | Lib contains |
+|---|---|
+| reminders | `ChangeCommand`, `OptionsParsing`, `RecurrenceParsing`, `ReminderFilter`, `ReminderFormatter`, `ReminderItem`, `ReminderLookup`, `ReminderSorting` |
+| calendar | `CalendarResolver`, `ConfigParser`, `EventDateTime`, `EventFormatter`, `ChangeCommand` |
+| contacts | `ArgumentParser`, `ChangeCommand`, `ContactFormatter`, `Matching` |
+| mail | `JMAPClient`, `MailConfiguration`, `MailErrors`, `MailFormatter`, `RecipientResolver`, `SendCommand`, `SetupCommand` |
+| text | `MessagesClient`, `PhoneNormalizer`, `TextErrors` |
+
+Protocol abstraction layer (CalendarStore, ContactStore, MailClient, MessageSender, ReminderStore) tracked in #140–143, #147. Required before Google backends (#145, #146).
 
 ### Command dispatch (as of 2026-04-10)
 
@@ -117,26 +121,17 @@ Complex stderr suppression and multi-source retry logic for saving contacts acro
 
 `design.md` already flags this: "The `--draft` flag in mail is the current exception to audit next." Flags are wrong per the design principles. Needs a proper command name or removal.
 
-### Async/await inconsistency across tools
+### ~~Async/await inconsistency across tools~~ — resolved
 
-mail-cli uses `async/await` throughout. reminders, calendar, contacts use `DispatchSemaphore`. text uses synchronous Process. The suite has no consistent threading model. mail-cli is right; the others should converge to the same pattern. Not blocking anything today but will matter as complexity grows.
-
-### `versionString` construction duplicated in every tool
-
-`"\(builtVersion) (Get Clear \(suiteVersion))"` appears in all five main.swift files. Belongs in GetClearKit as a shared function taking the two constants. Small, low-risk, easy win during any tool's next touch.
+All five tools migrated to async/await in #139 (2026-04-22). DispatchSemaphore removed. UpdateChecker ownership moved into `runCLI` in the same migration.
 
 ### ~~`TestRunner` duplicated across all five test files~~ — resolved
 
 All six test suites migrated to Quick + Nimble (2026-04-11). Custom TestRunner removed from all repos.
 
-### UpdateChecker tail duplicated in every tool
+### ~~UpdateChecker tail duplicated in every tool~~ — resolved
 
-Two lines at the end of every main.swift:
-```swift
-UpdateChecker.spawnBackgroundCheckIfNeeded()
-if let hint = UpdateChecker.hint() { fputs(hint + "\n", stderr) }
-```
-Belongs in `runCLI` in GetClearKit. When `runCLI` is the entry point for all tools, this moves once.
+Moved into `runCLI` in GetClearKit as part of #139 (2026-04-22).
 
 ### `FieldChange<T>` will be duplicated across reminders and contacts
 

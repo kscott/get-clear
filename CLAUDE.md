@@ -48,9 +48,7 @@ Test framework is **Quick + Nimble** across all repos. Run via `swift test`. Eac
 
 Get Clear is a suite of five Swift CLIs connecting Claude to Apple Reminders, Calendar, Contacts, Mail, and Messages. It ships as a signed, notarized PKG installer and a curl one-liner.
 
-- Umbrella repo: `~/dev/get-clear/` — GetClearKit shared library, PKG, scripts
-- Tool repos: `~/dev/reminders-cli/`, `~/dev/calendar-cli/`, `~/dev/contacts-cli/`, `~/dev/mail-cli/`, `~/dev/text-cli/`
-- Monorepo migration planned — tracked in get-clear #34
+Everything lives in this monorepo (migration #34 complete). Tool source lives under `<tool>-cli/Sources/` subdirectories. All standalone repos are archived. All issues tracked here.
 
 ## Development workflow
 
@@ -67,15 +65,12 @@ git checkout main && git merge issue-37 && git branch -d issue-37
 ## Build and test
 
 ```bash
-# GetClearKit tests
+# All tests (run from monorepo root)
 cd ~/dev/get-clear && swift test
 
-# Individual tool — build release and install
-cd ~/dev/<tool>-cli && swift build -c release
+# Build release and install a specific tool
+cd ~/dev/get-clear && swift build -c release
 cp .build/release/<tool>-bin ~/.local/bin/<tool>
-
-# Individual tool — run tests
-cd ~/dev/<tool>-cli && swift test
 ```
 
 ## Key files
@@ -84,21 +79,27 @@ cd ~/dev/<tool>-cli && swift test
 |---|---|
 | `design.md` | Product + engineering principles — read every session |
 | `ARCHITECTURE.md` | Current structure, decisions, improvement backlog — read every session |
-| `going-live.md` | Launch checklist — all Phase 4 items are pre-launch blockers |
+| `going-live.md` | Launch checklist — all blockers are pre-launch blockers, ordered by dependency |
 | `Sources/GetClearKit/Commands.swift` | Command enum + runCLI — suite-wide dispatch |
 | `Sources/GetClearKit/ArgParsing.swift` | Argument parsing — parseArgs, ParsedArgs |
 | `pkg/resources/welcome.html` | PKG installer welcome page |
 | `pkg/resources/conclusion.html` | PKG installer conclusion page |
 
-## Active go-live blockers (Phase 4)
+## Active go-live blockers
 
 All of these must be complete before public release. See `going-live.md` for full detail.
 
-- **#33** — Command enum + runCLI across all tools (contacts done; reminders, calendar, mail, text remain)
-- **#34** — Monorepo migration
-- **#35–39** — Extract business logic from each tool's main.swift into Lib targets
+Done: #33 (Command enum), #34 (monorepo), #35–39 (business logic extraction), #139 (async/await)
+
+Remaining, in priority order:
+- **#144** — reminders-cli second-pass refactors (start here)
+- **#147, #140–143** — Protocol abstractions: ReminderStore first (template), then CalendarStore, ContactStore, MailClient, MessageSender
+- **#61** — Gmail support (hard launch blocker; depends on MailClient #142)
+- **#53, #80, #68** — Feature additions: `calendar change`, move reminder to list, multi-recipient text
 - **#40** — GetClearKit shared utilities (what command, multi-match, field updates, error type)
-- **#41–45** — Test coverage for each tool
+- **#41–45** — Test coverage for each tool's Lib targets
+- **#30** — Bundle Claude Code skills with PKG/curl installer (independent)
+- **#135** — Smoke tests: --version and --help for all five binaries
 
 ## Versioning
 
@@ -106,6 +107,6 @@ Two constants in each tool's `Version.swift`:
 - `builtVersion` — this tool's semver
 - `suiteVersion` — the PKG release version
 
-Display: `reminders 1.3.0 (Get Clear 1.3.0)`
+Display: `reminders 1.3.1 (Get Clear 1.3.1)` — current suite version is 1.3.1
 
 Use `scripts/bump-version <suite-version> [tool:version ...]` to bump. Never edit version constants by hand.

@@ -2,8 +2,7 @@
 
 Covers: reminders-cli, calendar-cli, contacts-cli, mail-cli, text-cli
 
-Repos live at `~/dev/<tool>-cli/`. Each has its own DEVELOPMENT.md for tool-specific
-conventions. This document captures the principles that span the whole suite.
+All code lives in the monorepo at `~/dev/get-clear/`. This document captures the principles that span the whole suite.
 
 ---
 
@@ -226,35 +225,9 @@ and its tests were deleted in the same commit.
 
 ---
 
-## MCP is a suite-level project
+## Repo structure: monorepo
 
-The five MCP issues (reminders #4, calendar #8, contacts #6, mail #7, sms #5) are one
-project, not five. A single MCP server exposes the whole suite to Claude. The value
-compounds: Claude can add a reminder, send a confirmation email, and add the
-recipient to a contact group — across tools, in one conversation.
-
-Build it as a standalone `mcp-cli-suite` project that shells out to the installed
-binaries. That way the CLIs stay clean and the MCP layer is independently deployable.
-
----
-
-## Repo structure: 6 repos vs. monorepo
-
-Current structure: one repo per tool (`reminders-cli`, `calendar-cli`, etc.) plus the umbrella `get-clear` repo that hosts GetClearKit.
-
-**Why separate repos work:**
-- Per-tool versioning, changelogs, and GitHub issues — clean signal per project
-- Users can depend on one tool as a Swift package without pulling the others
-- Releases are per-tool; the PKG installer tags specific versions
-- PRs are scoped; changes to reminders don't appear in calendar history
-
-**Why a monorepo would be better:**
-- GetClearKit changes require push → wait for resolution → update each tool → push each tool. This propagation lag is the main pain point today
-- Cross-cutting work (color pass, flag handling, date parsing migration) spans 5+ repos — hard to review as a unit, easy to leave one tool behind
-- 5 `Package.swift` files to keep in sync; CI configured in 6 places
-- Issues land in the wrong repo; cross-repo references are awkward
-
-**Current verdict:** keep separate repos for now. The per-tool GitHub releases and issue tracking are worth more than the merge convenience at this stage. Revisit when GetClearKit churn settles down or when cross-cutting changes become the norm rather than the exception. Migrating is a one-time cost — rewriting git history, redirecting issue URLs, updating install scripts — so it's worth doing deliberately, not reactively.
+All five tools and GetClearKit live in a single monorepo at `~/dev/get-clear/` (#34, completed 2026-04-16). Standalone per-tool repos are archived. One `Package.swift`, one CI run, one place for cross-cutting changes.
 
 ---
 
@@ -294,6 +267,14 @@ it belongs in the Lib. The boundary is enforced by not importing system framewor
 in the Lib target.
 
 Tests use **Quick + Nimble** across all repos. Run via `swift test`. No custom harness.
+
+### The conversion layer
+
+Framework types (`EKReminder`, `EKEvent`, `CNContact`) are converted to pure value types (`ReminderItem`, `EventItem`, `ContactItem`) at the CLI boundary — the moment the framework object is fetched. From that point on, all Lib logic operates on the pure type. The framework is never passed into the Lib.
+
+This is what makes the Lib testable: a `ReminderItem` can be constructed in a test with no EventKit dependency. The conversion is a one-way door — in at the boundary, pure values everywhere else.
+
+The protocol abstraction layer (#147, #140–143) puts this into practice for all five tools, introducing store protocols (`ReminderStore`, `CalendarStore`, etc.) with Apple-backed implementations that own the conversion. Until that work lands, the conversion happens inline in `main.swift`.
 
 ---
 
