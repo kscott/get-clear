@@ -1,31 +1,44 @@
 // main.swift
-//
-// Entry point for reminders-bin. Argument dispatch and EventKit lifecycle only.
-// Business logic lives in RemindersLib. EventKit helpers live in RemindersCLI/*.swift.
+// Entry point for reminders-bin. Requests EventKit access, creates AppleReminderStore,
+// dispatches to handlers in RemindersLib.
 
-import Foundation
 import EventKit
 import GetClearKit
+import RemindersLib
+import RemindersEventKit
 
-let store = EKEventStore()
-let args  = Array(CommandLine.arguments.dropFirst())
+let ek   = EKEventStore()
+let args = Array(CommandLine.arguments.dropFirst())
 
 await runCLI(args: args, identity: identity, usage: usage) { command, args in
-    let granted = try await store.requestFullAccessToReminders()
-    guard granted else { fail("Reminders access denied") }
-
     switch command {
-    case .what:   await handleWhat(args: args)
-    case .open:   await handleOpen()
-    case .lists:  await handleLists(store: store)
-    case .list:   await handleList(args: args, store: store)
-    case .add:    await handleAdd(args: args, store: store)
-    case .change: await handleChange(args: args, store: store)
-    case .show:   await handleShow(args: args, store: store)
-    case .rename: await handleRename(args: args, store: store)
-    case .find:   await handleFind(args: args, store: store)
-    case .done:   await handleDone(args: args, store: store)
-    case .remove: await handleRemove(args: args, store: store)
-    default:      usage()
+    case .what: await handleWhat(args: args); return
+    case .open: await handleOpen(); return
+    default: break
+    }
+
+    let granted = try await ek.requestFullAccessToReminders()
+    guard granted else { fail("Reminders access denied") }
+    let store = AppleReminderStore(ek)
+
+    do {
+        let output: String
+        switch command {
+        case .lists:  output = try await handleLists(store: store)
+        case .list:   output = try await handleList(args: args, store: store)
+        case .find:   output = try await handleFind(args: args, store: store)
+        case .show:   output = try await handleShow(args: args, store: store)
+        case .add:    output = try await handleAdd(args: args, store: store)
+        case .change: output = try await handleChange(args: args, store: store)
+        case .done:   output = try await handleDone(args: args, store: store)
+        case .rename: output = try await handleRename(args: args, store: store)
+        case .remove: output = try await handleRemove(args: args, store: store)
+        default:      usage()
+        }
+        print(output)
+    } catch let e as ReminderHandlerError {
+        fail(e.message)
+    } catch {
+        fail(error.localizedDescription)
     }
 }

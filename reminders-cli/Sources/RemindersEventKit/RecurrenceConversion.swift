@@ -1,7 +1,5 @@
 // RecurrenceConversion.swift
-//
-// Converts a RecurrenceSpec to an EKRecurrenceRule for saving to EventKit.
-// Lives in RemindersCLI — not RemindersLib — because the return type is an EventKit object.
+// Converts RecurrenceSpec ↔ EKRecurrenceRule at the EventKit boundary.
 
 import EventKit
 import RemindersLib

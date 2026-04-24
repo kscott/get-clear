@@ -1,20 +1,17 @@
 // ReminderConversion.swift
-// Converts EKReminder to ReminderItem — the thin boundary between EventKit and pure logic.
+// Converts EKReminder ↔ ReminderItem at the EventKit boundary.
 
 import EventKit
 import RemindersLib
 
 extension ReminderItem {
     init(_ r: EKReminder) {
-        let recDesc = r.recurrenceRules?.first.map {
-            describeRecurrenceRule(frequency: $0.frequency.rawValue, interval: $0.interval)
-        }
         self.init(
-            identifier: r.calendarItemIdentifier,
-            title:      r.title ?? "",
-            list:       ReminderList(ekCalendar: r.calendar),
+            identifier:            r.calendarItemIdentifier,
+            title:                 r.title ?? "",
+            list:                  ReminderList(ekCalendar: r.calendar),
             dueDateComponents:     r.dueDateComponents,
-            recurrenceDescription: recDesc,
+            recurrenceDescription: r.recurrenceRules?.first.map { describeEKRule($0) },
             priority:              r.priority,
             notes:                 r.notes,
             url:                   r.url,
@@ -35,7 +32,7 @@ extension ReminderList {
     }
 }
 
-private func hexColor(from cgColor: CGColor?) -> String? {
+func hexColor(from cgColor: CGColor?) -> String? {
     guard let cg = cgColor, let components = cg.components, !components.isEmpty else { return nil }
     let r, g, b: Int
     switch cg.colorSpace?.model {

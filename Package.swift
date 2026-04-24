@@ -48,9 +48,14 @@ let package = Package(
             dependencies: ["GetClearKit"],
             path: "reminders-cli/Sources/RemindersLib"
         ),
+        .target(
+            name: "RemindersEventKit",
+            dependencies: ["RemindersLib", "GetClearKit"],
+            path: "reminders-cli/Sources/RemindersEventKit"
+        ),
         .executableTarget(
             name: "reminders-bin",
-            dependencies: ["RemindersLib", "GetClearKit"],
+            dependencies: ["RemindersEventKit", "GetClearKit"],
             path: "reminders-cli/Sources/RemindersCLI",
             linkerSettings: [
                 .linkedFramework("EventKit"),
