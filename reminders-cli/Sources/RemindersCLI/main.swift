@@ -11,11 +11,7 @@ let ek   = EKEventStore()
 let args = Array(CommandLine.arguments.dropFirst())
 
 await runCLI(args: args, identity: identity, usage: usage) { command, args in
-    switch command {
-    case .what: await handleWhat(args: args); return
-    case .open: await handleOpen(); return
-    default: break
-    }
+    if command == .open { await handleOpen(); return }
 
     let granted = try await ek.requestFullAccessToReminders()
     guard granted else { fail("Reminders access denied") }
@@ -24,6 +20,7 @@ await runCLI(args: args, identity: identity, usage: usage) { command, args in
     do {
         let output: String
         switch command {
+        case .what:   output = try await handleWhat(args: args)
         case .lists:  output = try await handleLists(store: store)
         case .list:   output = try await handleList(args: args, store: store)
         case .find:   output = try await handleFind(args: args, store: store)

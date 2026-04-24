@@ -1,11 +1,14 @@
-// WhatCommand.swift
+// WhatHandler.swift
+// Will collapse to a one-liner when GetClearKit adds runWhatCommand (#40).
 
 import Foundation
 import GetClearKit
 
-func handleWhat(args: [String]) async {
+public func handleWhat(args: [String]) async throws -> String {
     let rangeStr = args.count > 1 ? Array(args.dropFirst()).joined(separator: " ") : "today"
-    guard let range = parseRange(rangeStr) else { fail("Unrecognised range: \(rangeStr)") }
+    guard let range = parseRange(rangeStr) else {
+        throw ReminderHandlerError("Unrecognised range: \(rangeStr)")
+    }
     let isToday = rangeStr == "today"
     var dateUsed = Date()
     let entries: [ActivityLogEntry]
@@ -15,6 +18,6 @@ func handleWhat(args: [String]) async {
     } else {
         entries = ActivityLogReader.entries(in: range.start...range.end, tool: "reminders")
     }
-    print(ActivityLogFormatter.perToolWhat(entries: entries, range: range, rangeStr: rangeStr,
-                                           tool: "reminders", dateUsed: dateUsed))
+    return ActivityLogFormatter.perToolWhat(
+        entries: entries, range: range, rangeStr: rangeStr, tool: "reminders", dateUsed: dateUsed)
 }
