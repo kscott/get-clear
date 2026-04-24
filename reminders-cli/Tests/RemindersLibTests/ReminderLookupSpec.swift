@@ -8,10 +8,6 @@ import RemindersLib
 final class ReminderLookupSpec: QuickSpec {
     override class func spec() {
 
-        func makeItem(title: String, list: String = "Test") -> ReminderItem {
-            ReminderItem(title: title, list: ReminderList(title: list))
-        }
-
         describe("lookup") {
 
             context("single match") {
@@ -46,16 +42,16 @@ final class ReminderLookupSpec: QuickSpec {
             context("multiple matches") {
                 it("returns ambiguous with indices of all matching items") {
                     let items = [
-                        makeItem(title: "Pay rent", list: "Personal"),
+                        makeItem(title: "Pay rent", list: personalList),
                         makeItem(title: "Buy groceries"),
-                        makeItem(title: "Pay rent", list: "Work"),
+                        makeItem(title: "Pay rent", list: workList),
                     ]
                     expect(lookup(title: "Pay rent", in: items)) == .ambiguous([0, 2])
                 }
                 it("is case-insensitive for ambiguous matches") {
                     let items = [
-                        makeItem(title: "Pay Rent", list: "Personal"),
-                        makeItem(title: "PAY RENT", list: "Work"),
+                        makeItem(title: "Pay Rent", list: personalList),
+                        makeItem(title: "PAY RENT", list: workList),
                     ]
                     expect(lookup(title: "pay rent", in: items)) == .ambiguous([0, 1])
                 }

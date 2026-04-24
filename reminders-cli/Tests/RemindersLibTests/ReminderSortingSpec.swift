@@ -21,7 +21,7 @@ final class ReminderSortingSpec: QuickSpec {
             }
             return ReminderItem(
                 title: title,
-                list: ReminderList(title: "Test"),
+                list: testList,
                 dueDateComponents: comps,
                 priority: priority,
                 creationDate: creationOffset.map { now.addingTimeInterval($0) }

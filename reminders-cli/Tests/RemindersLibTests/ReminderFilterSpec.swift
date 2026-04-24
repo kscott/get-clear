@@ -8,10 +8,6 @@ import RemindersLib
 final class ReminderFilterSpec: QuickSpec {
     override class func spec() {
 
-        func makeItem(title: String, notes: String? = nil) -> ReminderItem {
-            ReminderItem(title: title, list: ReminderList(title: "Test"), notes: notes)
-        }
-
         describe("filtered") {
 
             context("title matching") {
@@ -71,7 +67,7 @@ final class ReminderFilterSpec: QuickSpec {
                 expect(matchesQuery(makeItem(title: "Buy groceries"), query: "dentist")) == false
             }
             it("returns false when notes is nil and title does not match") {
-                expect(matchesQuery(makeItem(title: "Buy groceries", notes: nil), query: "dentist")) == false
+                expect(matchesQuery(makeItem(title: "Buy groceries"), query: "dentist")) == false
             }
         }
     }
