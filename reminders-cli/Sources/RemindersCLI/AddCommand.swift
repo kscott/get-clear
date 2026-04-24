@@ -7,20 +7,11 @@ import RemindersLib
 func handleAdd(args: [String], store: EKEventStore) async {
     guard args.count > 1 else { fail("provide a reminder title") }
     let title = args[1]
-    var listName: String? = nil
-    var opts = ParsedOptions()
     let allCalendars = store.calendars(for: .reminder)
-    if args.count > 2 {
-        let remaining = Array(args.dropFirst(2))
-        let rawString: String
-        if allCalendars.contains(where: { $0.title == remaining[0] }) {
-            listName  = remaining[0]
-            rawString = remaining.dropFirst().joined(separator: " ")
-        } else {
-            rawString = remaining.joined(separator: " ")
-        }
-        opts = parseOptions(rawString)
-    }
+    let calTitles    = allCalendars.map(\.title)
+    let (listName, rawString) = splitListAndOptions(
+        from: Array(args.dropFirst(2)), calendarTitles: calTitles)
+    let opts = parseOptions(rawString)
     let parsedDate = opts.date.isEmpty ? nil : parseDate(opts.date)
     let recurrenceSpec: RecurrenceSpec?
     if opts.recurrence.isEmpty {
@@ -46,17 +37,12 @@ func handleAdd(args: [String], store: EKEventStore) async {
     if let p = parsePriority(opts.priority) { reminder.priority = p }
     if !opts.note.isEmpty                   { reminder.notes = opts.note }
     if !opts.url.isEmpty, let u = URL(string: opts.url) { reminder.url = u }
-    do {
-        try store.save(reminder, commit: true)
-        try? ActivityLog.write(tool: "reminders", cmd: "add", desc: title, container: cal.title)
-        var parts = ["Added: \(title) (in \(cal.title))"]
-        if let pd = parsedDate    { parts.append("due \(formatDate(pd.date, showTime: pd.hasTime))") }
-        if let s = recurrenceSpec { parts.append(describeRecurrence(s)) }
-        if !opts.priority.isEmpty { parts.append("priority \(opts.priority)") }
-        if !opts.note.isEmpty     { parts.append("+ note") }
-        if !opts.url.isEmpty      { parts.append("url \(opts.url)") }
-        print(parts.joined(separator: " · "))
-    } catch {
-        fail("Could not save reminder: \(error.localizedDescription)")
-    }
+    commitAndLog(
+        { try store.save(reminder, commit: true) },
+        cmd: "add", desc: title, container: cal.title,
+        confirmation: formatAddConfirmation(
+            title: title, list: cal.title,
+            date: parsedDate, recurrence: recurrenceSpec,
+            priority: opts.priority, hasNote: !opts.note.isEmpty, url: opts.url),
+        failMessage: "Could not save reminder")
 }

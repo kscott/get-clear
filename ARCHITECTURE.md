@@ -133,6 +133,14 @@ All six test suites migrated to Quick + Nimble (2026-04-11). Custom TestRunner r
 
 Moved into `runCLI` in GetClearKit as part of #139 (2026-04-22).
 
+### Test suite is regression coverage — close the gap via SpecKit
+
+The existing Quick/Nimble specs were written after (or alongside) extractions from `main.swift`. Tests written this way never fail on first run — they're designed to pass. They catch regressions but didn't drive design: interfaces were frozen before tests were written.
+
+The extraction work in #35–39, #139, and #144 couldn't avoid this; the interface was inherited. But new features have no such excuse.
+
+**SpecKit creates the right conditions for genuine TDD:** the plan step defines interface contracts (inputs, outputs) before any implementation code exists. The correct workflow for new features is: plan defines the interface → write failing specs against that interface → `/speckit.implement` makes them pass. A spec that's never been red is not a spec — it's a description of code that already exists.
+
 ### `FieldChange<T>` will be duplicated across reminders and contacts
 
 `FieldChange<T>` (`.unchanged`, `.cleared`, `.set(T)`) is introduced in both `RemindersLib/ChangeCommand.swift` (#35) and `ContactsLib/ChangeCommand.swift` (#37) as the pattern for "was this field specified, and if so, set or clear?" When the monorepo lands (#34), this moves to GetClearKit — one definition, used by all stateful tools. File an issue at that point.

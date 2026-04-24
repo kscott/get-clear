@@ -5,6 +5,7 @@
 import Quick
 import Nimble
 import Foundation
+import GetClearKit
 import RemindersLib
 
 final class ReminderFormatterSpec: QuickSpec {
@@ -141,6 +142,100 @@ final class ReminderFormatterSpec: QuickSpec {
                 let msg = disambiguationMessage(title: "Pay rent", matches: matches, cmd: "done")
                 expect(msg).to(contain("reminders done"))
                 expect(msg).to(contain("Personal"))
+            }
+        }
+
+        describe("formatAddConfirmation") {
+            context("title only") {
+                it("includes 'Added:' prefix with title and list") {
+                    let result = formatAddConfirmation(
+                        title: "Pay rent", list: "Personal",
+                        date: nil, recurrence: nil,
+                        priority: "", hasNote: false, url: "")
+                    expect(result) == "Added: Pay rent (in Personal)"
+                }
+            }
+            context("with due date") {
+                it("appends due date segment") {
+                    let pd = ParsedDate(date: Date(timeIntervalSince1970: 0), hasTime: false, hasDate: true)
+                    let result = formatAddConfirmation(
+                        title: "Pay rent", list: "Personal",
+                        date: pd, recurrence: nil,
+                        priority: "", hasNote: false, url: "")
+                    expect(result).to(contain("due"))
+                }
+            }
+            context("with recurrence") {
+                it("appends recurrence description") {
+                    let spec = RecurrenceSpec(frequency: .monthly, interval: 1)
+                    let result = formatAddConfirmation(
+                        title: "Pay rent", list: "Personal",
+                        date: nil, recurrence: spec,
+                        priority: "", hasNote: false, url: "")
+                    expect(result).to(contain("repeat monthly"))
+                }
+            }
+            context("with priority") {
+                it("appends priority label") {
+                    let result = formatAddConfirmation(
+                        title: "Pay rent", list: "Personal",
+                        date: nil, recurrence: nil,
+                        priority: "high", hasNote: false, url: "")
+                    expect(result).to(contain("priority high"))
+                }
+                it("omits priority segment when priority is empty") {
+                    let result = formatAddConfirmation(
+                        title: "Pay rent", list: "Personal",
+                        date: nil, recurrence: nil,
+                        priority: "", hasNote: false, url: "")
+                    expect(result).notTo(contain("priority"))
+                }
+            }
+            context("with note") {
+                it("appends '+ note' when hasNote is true") {
+                    let result = formatAddConfirmation(
+                        title: "Pay rent", list: "Personal",
+                        date: nil, recurrence: nil,
+                        priority: "", hasNote: true, url: "")
+                    expect(result).to(contain("+ note"))
+                }
+                it("omits note segment when hasNote is false") {
+                    let result = formatAddConfirmation(
+                        title: "Pay rent", list: "Personal",
+                        date: nil, recurrence: nil,
+                        priority: "", hasNote: false, url: "")
+                    expect(result).notTo(contain("note"))
+                }
+            }
+            context("with url") {
+                it("appends url value") {
+                    let result = formatAddConfirmation(
+                        title: "Pay rent", list: "Personal",
+                        date: nil, recurrence: nil,
+                        priority: "", hasNote: false, url: "https://example.com")
+                    expect(result).to(contain("url https://example.com"))
+                }
+                it("omits url segment when url is empty") {
+                    let result = formatAddConfirmation(
+                        title: "Pay rent", list: "Personal",
+                        date: nil, recurrence: nil,
+                        priority: "", hasNote: false, url: "")
+                    expect(result).notTo(contain("url"))
+                }
+            }
+            context("all fields populated") {
+                it("joins all segments with ' · '") {
+                    let spec = RecurrenceSpec(frequency: .weekly, interval: 1)
+                    let result = formatAddConfirmation(
+                        title: "Pay rent", list: "Personal",
+                        date: nil, recurrence: spec,
+                        priority: "high", hasNote: true, url: "https://example.com")
+                    expect(result).to(contain(" · "))
+                    expect(result).to(contain("repeat weekly"))
+                    expect(result).to(contain("priority high"))
+                    expect(result).to(contain("+ note"))
+                    expect(result).to(contain("url https://example.com"))
+                }
             }
         }
 

@@ -26,6 +26,20 @@ public struct ParsedOptions {
     public init() {}
 }
 
+/// Splits the args after the title into an optional list name and an options string.
+/// If the first arg matches a known calendar title, it is consumed as the list name and
+/// the remainder is joined as the options string. Otherwise all args form the options string.
+public func splitListAndOptions(
+    from args: [String],
+    calendarTitles: [String]
+) -> (list: String?, optionsString: String) {
+    guard !args.isEmpty else { return (nil, "") }
+    if calendarTitles.contains(args[0]) {
+        return (args[0], args.dropFirst().joined(separator: " "))
+    }
+    return (nil, args.joined(separator: " "))
+}
+
 public func parseOptions(_ s: String) -> ParsedOptions {
     var result = ParsedOptions()
     var work = s.trimmingCharacters(in: .whitespaces)

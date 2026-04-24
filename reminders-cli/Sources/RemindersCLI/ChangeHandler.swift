@@ -7,19 +7,12 @@ import RemindersLib
 func handleChange(args: [String], store: EKEventStore) async {
     guard args.count > 1 else { fail("provide a reminder title") }
     let title = args[1]
-    var listName: String? = nil
-    var newDateRepeat: String? = nil
-    if args.count > 2 {
-        let remaining = Array(args.dropFirst(2))
-        if store.calendars(for: .reminder).contains(where: { $0.title == remaining[0] }) {
-            listName = remaining[0]
-            if remaining.count > 1 { newDateRepeat = remaining.dropFirst().joined(separator: " ") }
-        } else {
-            newDateRepeat = remaining.joined(separator: " ")
-        }
-    }
-    let reminder = await resolveReminder(title: title, list: listName, cmd: "change", store: store)
-    let opts = newDateRepeat.map { parseOptions($0) } ?? ParsedOptions()
+    let allCalendars = store.calendars(for: .reminder)
+    let (listName, newDateRepeat) = splitListAndOptions(
+        from: Array(args.dropFirst(2)), calendarTitles: allCalendars.map(\.title))
+    let reminder = await resolveReminder(title: title, list: listName, cmd: "change",
+                                         calendars: allCalendars, store: store)
+    let opts = parseOptions(newDateRepeat)
     let reminderChanges: ReminderChanges
     do {
         reminderChanges = try parseReminderChanges(opts, existingDue: reminder.dueDateComponents)
@@ -31,11 +24,8 @@ func handleChange(args: [String], store: EKEventStore) async {
         fail("Change failed: \(error.localizedDescription)")
     }
     let descriptions = applyChanges(reminderChanges, to: reminder, store: store)
-    do {
-        try store.save(reminder, commit: true)
-        try? ActivityLog.write(tool: "reminders", cmd: "change", desc: title, container: reminder.calendar.title)
-        print("Updated \"\(title)\": \(descriptions.joined(separator: ", "))")
-    } catch {
-        fail("Could not save: \(error.localizedDescription)")
-    }
+    commitAndLog(
+        { try store.save(reminder, commit: true) },
+        cmd: "change", desc: title, container: reminder.calendar.title,
+        confirmation: "Updated \"\(title)\": \(descriptions.joined(separator: ", "))")
 }

@@ -19,6 +19,15 @@
       }
     },
     {
+      "identity" : "get-clear",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/kscott/get-clear.git",
+      "state" : {
+        "branch" : "main",
+        "revision" : "8ee46a30377161c3bea0c2a1a7a06f9763897dc4"
+      }
+    },
+    {
       "identity" : "nimble",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/Quick/Nimble.git",

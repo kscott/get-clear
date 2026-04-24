@@ -103,6 +103,27 @@ public func formatShow(item: ReminderItem, repeatDescription: String?) -> String
     return lines.joined(separator: "\n")
 }
 
+// MARK: - Add confirmation
+
+/// Returns the confirmation line printed after a reminder is successfully added.
+public func formatAddConfirmation(
+    title: String,
+    list: String,
+    date: ParsedDate?,
+    recurrence: RecurrenceSpec?,
+    priority: String,
+    hasNote: Bool,
+    url: String
+) -> String {
+    var parts = ["Added: \(title) (in \(list))"]
+    if let pd = date      { parts.append("due \(formatDate(pd.date, showTime: pd.hasTime))") }
+    if let s = recurrence { parts.append(describeRecurrence(s)) }
+    if !priority.isEmpty  { parts.append("priority \(priority)") }
+    if hasNote            { parts.append("+ note") }
+    if !url.isEmpty       { parts.append("url \(url)") }
+    return parts.joined(separator: " · ")
+}
+
 // MARK: - Lookup messages
 
 public func notFoundMessage(title: String, list: String?) -> String {

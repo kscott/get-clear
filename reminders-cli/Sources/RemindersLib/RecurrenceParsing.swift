@@ -138,6 +138,19 @@ private func ordinalSuffix(_ n: Int) -> String {
     }
 }
 
+/// Produces a display string for a recurrence rule read from EventKit.
+/// `frequency` is the raw value of EKRecurrenceFrequency (0=daily, 1=weekly, 2=monthly, 3=yearly).
+/// Returns "repeating" for any unrecognized frequency value.
+public func describeRecurrenceRule(frequency: Int, interval: Int) -> String {
+    switch frequency {
+    case 0: return "daily"
+    case 1: return interval > 1 ? "every \(interval) weeks" : "weekly"
+    case 2: return interval > 1 ? "every \(interval) months" : "monthly"
+    case 3: return "yearly"
+    default: return "repeating"
+    }
+}
+
 public func describeRecurrence(_ spec: RecurrenceSpec) -> String {
     if let ow = spec.ordinalWeekday {
         let ordName = [1:"first",2:"second",3:"third",4:"fourth",-1:"last"][ow.weekNumber] ?? "\(ow.weekNumber)th"

@@ -9,14 +9,12 @@ func handleRename(args: [String], store: EKEventStore) async {
     let oldTitle = args[1]
     let newTitle = args[2]
     let list     = args.count > 3 ? args[3] : nil
-    let reminder = await resolveReminder(title: oldTitle, list: list, cmd: "rename", store: store)
+    let reminder = await resolveReminder(title: oldTitle, list: list, cmd: "rename",
+                                         calendars: store.calendars(for: .reminder), store: store)
     reminder.title = newTitle
-    do {
-        try store.save(reminder, commit: true)
-        try? ActivityLog.write(tool: "reminders", cmd: "rename",
-                               desc: "\(oldTitle) → \(newTitle)", container: reminder.calendar.title)
-        print("Renamed: \"\(oldTitle)\" → \"\(newTitle)\"")
-    } catch {
-        fail("Could not rename: \(error.localizedDescription)")
-    }
+    commitAndLog(
+        { try store.save(reminder, commit: true) },
+        cmd: "rename", desc: "\(oldTitle) → \(newTitle)", container: reminder.calendar.title,
+        confirmation: "Renamed: \"\(oldTitle)\" → \"\(newTitle)\"",
+        failMessage: "Could not rename")
 }

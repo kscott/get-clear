@@ -220,6 +220,36 @@ final class RecurrenceParsingSpec: QuickSpec {
             }
         }
 
+        describe("describeRecurrenceRule") {
+            context("simple frequencies") {
+                it("describes daily (frequency 0)") {
+                    expect(describeRecurrenceRule(frequency: 0, interval: 1)) == "daily"
+                }
+                it("describes weekly (frequency 1)") {
+                    expect(describeRecurrenceRule(frequency: 1, interval: 1)) == "weekly"
+                }
+                it("describes monthly (frequency 2)") {
+                    expect(describeRecurrenceRule(frequency: 2, interval: 1)) == "monthly"
+                }
+                it("describes yearly (frequency 3)") {
+                    expect(describeRecurrenceRule(frequency: 3, interval: 1)) == "yearly"
+                }
+            }
+            context("intervals greater than one") {
+                it("describes every N weeks") {
+                    expect(describeRecurrenceRule(frequency: 1, interval: 2)) == "every 2 weeks"
+                }
+                it("describes every N months") {
+                    expect(describeRecurrenceRule(frequency: 2, interval: 3)) == "every 3 months"
+                }
+            }
+            context("unknown frequency") {
+                it("returns 'repeating' for unrecognized frequency value") {
+                    expect(describeRecurrenceRule(frequency: 99, interval: 1)) == "repeating"
+                }
+            }
+        }
+
         describe("describeRecurrence") {
             context("simple frequencies") {
                 it("describes daily") {

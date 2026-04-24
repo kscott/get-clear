@@ -26,22 +26,20 @@ func handleList(args: [String], store: EKEventStore) async {
     let predicate = store.predicateForIncompleteReminders(
         withDueDateStarting: nil, ending: nil, calendars: listCalendars)
     let reminders = await fetchReminders(matching: predicate, from: store)
-    let items = reminders.map(ReminderItem.init)
-    let cmp   = comparator(for: order)
-    let pairs = Array(zip(reminders, items))
+    let items     = reminders.map(ReminderItem.init)
+    let calByTitle = Dictionary(listCalendars.map { ($0.title, $0) }, uniquingKeysWith: { first, _ in first })
 
     if filterList != nil {
-        for (reminder, item) in pairs.sorted(by: { cmp($0.1, $1.1) }) {
-            print("\(calendarDot(reminder.calendar))\(formatListRow(item))")
+        for item in sorted(items, by: order) {
+            let dot = calByTitle[item.calendarTitle].map { calendarDot($0) } ?? "  "
+            print("\(dot)\(formatListRow(item))")
         }
     } else {
-        let grouped = Dictionary(grouping: pairs, by: { $1.calendarTitle })
-        for listName in grouped.keys.sorted() {
-            let grpPairs = (grouped[listName] ?? []).sorted(by: { cmp($0.1, $1.1) })
-            let dot = grpPairs.first.map { calendarDot($0.0.calendar) } ?? "  "
-            print("\(dot)\(ANSI.bold(listName))")
-            for (reminder, item) in grpPairs {
-                print("\(calendarDot(reminder.calendar))\(formatListRow(item))")
+        for (header, groupItems) in groupedByList(items, sortedBy: order) {
+            let dot = calByTitle[header].map { calendarDot($0) } ?? "  "
+            print("\(dot)\(ANSI.bold(header))")
+            for item in groupItems {
+                print("\(dot)\(formatListRow(item))")
             }
         }
     }
