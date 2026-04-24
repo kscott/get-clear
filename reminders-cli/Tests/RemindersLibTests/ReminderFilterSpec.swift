@@ -9,7 +9,7 @@ final class ReminderFilterSpec: QuickSpec {
     override class func spec() {
 
         func makeItem(title: String, notes: String? = nil) -> ReminderItem {
-            ReminderItem(title: title, calendarTitle: "Test", notes: notes)
+            ReminderItem(title: title, list: ReminderList(title: "Test"), notes: notes)
         }
 
         describe("filtered") {

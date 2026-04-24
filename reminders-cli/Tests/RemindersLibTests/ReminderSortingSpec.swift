@@ -21,8 +21,9 @@ final class ReminderSortingSpec: QuickSpec {
             }
             return ReminderItem(
                 title: title,
-                calendarTitle: "Test",
+                list: ReminderList(title: "Test"),
                 dueDateComponents: comps,
+                priority: priority,
                 creationDate: creationOffset.map { now.addingTimeInterval($0) }
             )
         }
@@ -106,7 +107,7 @@ final class ReminderSortingSpec: QuickSpec {
                 expect(cmp(earlier, later)) == true
                 expect(cmp(later, earlier)) == false
             }
-            it("returns a comparator usable to sort (EKReminder, ReminderItem) pairs") {
+            it("returns a comparator usable to sort paired arrays") {
                 let cmp = comparator(for: .title)
                 let a = makeItem(title: "Apple")
                 let b = makeItem(title: "Banana")

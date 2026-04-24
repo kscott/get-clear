@@ -11,12 +11,12 @@ func handleList(args: [String], store: EKEventStore) async {
         order = ReminderSortOrder(rawValue: listArgs[byIdx + 1].lowercased()) ?? .due
         listArgs.removeSubrange(byIdx...(byIdx + 1))
     }
-    let filterList = listArgs.first
+    let filterName = listArgs.first
 
     let listCalendars: [EKCalendar]
-    if let filterList {
-        guard let cal = store.calendars(for: .reminder).first(where: { $0.title == filterList }) else {
-            fail("List not found: \(filterList)")
+    if let filterName {
+        guard let cal = store.calendars(for: .reminder).first(where: { $0.title == filterName }) else {
+            fail("List not found: \(filterName)")
         }
         listCalendars = [cal]
     } else {
@@ -27,17 +27,15 @@ func handleList(args: [String], store: EKEventStore) async {
         withDueDateStarting: nil, ending: nil, calendars: listCalendars)
     let reminders = await fetchReminders(matching: predicate, from: store)
     let items     = reminders.map(ReminderItem.init)
-    let calByTitle = Dictionary(listCalendars.map { ($0.title, $0) }, uniquingKeysWith: { first, _ in first })
 
-    if filterList != nil {
+    if filterName != nil {
         for item in sorted(items, by: order) {
-            let dot = calByTitle[item.calendarTitle].map { calendarDot($0) } ?? "  "
-            print("\(dot)\(formatListRow(item))")
+            print("\(calendarDot(hex: item.list.color))\(formatListRow(item))")
         }
     } else {
-        for (header, groupItems) in groupedByList(items, sortedBy: order) {
-            let dot = calByTitle[header].map { calendarDot($0) } ?? "  "
-            print("\(dot)\(ANSI.bold(header))")
+        for (list, groupItems) in groupedByList(items, sortedBy: order) {
+            let dot = calendarDot(hex: list.color)
+            print("\(dot)\(ANSI.bold(list.title))")
             for item in groupItems {
                 print("\(dot)\(formatListRow(item))")
             }

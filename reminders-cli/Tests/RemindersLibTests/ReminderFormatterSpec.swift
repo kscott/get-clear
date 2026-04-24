@@ -10,6 +10,10 @@ import RemindersLib
 
 final class ReminderFormatterSpec: QuickSpec {
     override class func spec() {
+
+        let personal = ReminderList(title: "Personal")
+        let work     = ReminderList(title: "Work")
+
         describe("metaLine") {
 
             context("no metadata") {
@@ -119,16 +123,16 @@ final class ReminderFormatterSpec: QuickSpec {
         describe("disambiguationMessage") {
             it("opens with the title") {
                 let matches = [
-                    ReminderItem(title: "Pay rent", calendarTitle: "Personal"),
-                    ReminderItem(title: "Pay rent", calendarTitle: "Work"),
+                    ReminderItem(title: "Pay rent", list: personal),
+                    ReminderItem(title: "Pay rent", list: work),
                 ]
                 expect(disambiguationMessage(title: "Pay rent", matches: matches, cmd: "done"))
                     .to(beginWith("Multiple reminders named 'Pay rent':"))
             }
-            it("lists each matching calendar title") {
+            it("lists each matching list title") {
                 let matches = [
-                    ReminderItem(title: "Pay rent", calendarTitle: "Personal"),
-                    ReminderItem(title: "Pay rent", calendarTitle: "Work"),
+                    ReminderItem(title: "Pay rent", list: personal),
+                    ReminderItem(title: "Pay rent", list: work),
                 ]
                 let msg = disambiguationMessage(title: "Pay rent", matches: matches, cmd: "done")
                 expect(msg).to(contain("[Personal]"))
@@ -136,8 +140,8 @@ final class ReminderFormatterSpec: QuickSpec {
             }
             it("ends with a narrowing hint including the command name") {
                 let matches = [
-                    ReminderItem(title: "Pay rent", calendarTitle: "Personal"),
-                    ReminderItem(title: "Pay rent", calendarTitle: "Work"),
+                    ReminderItem(title: "Pay rent", list: personal),
+                    ReminderItem(title: "Pay rent", list: work),
                 ]
                 let msg = disambiguationMessage(title: "Pay rent", matches: matches, cmd: "done")
                 expect(msg).to(contain("reminders done"))
@@ -241,55 +245,55 @@ final class ReminderFormatterSpec: QuickSpec {
 
         describe("formatFindRow") {
             it("includes the bold title") {
-                let item = ReminderItem(title: "Pay rent", calendarTitle: "Personal")
+                let item = ReminderItem(title: "Pay rent", list: personal)
                 expect(formatFindRow(item)).to(contain("Pay rent"))
             }
-            it("includes the calendar title in brackets") {
-                let item = ReminderItem(title: "Pay rent", calendarTitle: "Personal")
+            it("includes the list title in brackets") {
+                let item = ReminderItem(title: "Pay rent", list: personal)
                 expect(formatFindRow(item)).to(contain("[Personal]"))
             }
             it("does not include a due prefix when no due date is set") {
-                let item = ReminderItem(title: "Pay rent", calendarTitle: "Personal")
+                let item = ReminderItem(title: "Pay rent", list: personal)
                 expect(formatFindRow(item)).notTo(contain("due"))
             }
         }
 
         describe("formatShow") {
             it("includes the title") {
-                let item = ReminderItem(title: "Pay rent", calendarTitle: "Personal")
-                expect(formatShow(item: item, repeatDescription: nil)).to(contain("Pay rent"))
+                let item = ReminderItem(title: "Pay rent", list: personal)
+                expect(formatShow(item: item)).to(contain("Pay rent"))
             }
             it("includes the list name") {
-                let item = ReminderItem(title: "Pay rent", calendarTitle: "Personal")
-                expect(formatShow(item: item, repeatDescription: nil)).to(contain("Personal"))
+                let item = ReminderItem(title: "Pay rent", list: personal)
+                expect(formatShow(item: item)).to(contain("Personal"))
             }
             it("does not include a Due line when no due date is set") {
-                let item = ReminderItem(title: "Pay rent", calendarTitle: "Personal")
-                expect(formatShow(item: item, repeatDescription: nil)).notTo(contain("Due:"))
+                let item = ReminderItem(title: "Pay rent", list: personal)
+                expect(formatShow(item: item)).notTo(contain("Due:"))
             }
-            it("includes the Repeat line when repeatDescription is provided") {
-                let item = ReminderItem(title: "Pay rent", calendarTitle: "Personal")
-                expect(formatShow(item: item, repeatDescription: "monthly")).to(contain("Repeat:   monthly"))
+            it("includes the Repeat line when recurrenceDescription is set") {
+                let item = ReminderItem(title: "Pay rent", list: personal, recurrenceDescription: "monthly")
+                expect(formatShow(item: item)).to(contain("Repeat:   monthly"))
             }
-            it("does not include a Repeat line when repeatDescription is nil") {
-                let item = ReminderItem(title: "Pay rent", calendarTitle: "Personal")
-                expect(formatShow(item: item, repeatDescription: nil)).notTo(contain("Repeat:"))
+            it("does not include a Repeat line when recurrenceDescription is nil") {
+                let item = ReminderItem(title: "Pay rent", list: personal)
+                expect(formatShow(item: item)).notTo(contain("Repeat:"))
             }
             it("includes the Priority line for high priority") {
-                let item = ReminderItem(title: "Pay rent", calendarTitle: "Personal", priority: 1)
-                expect(formatShow(item: item, repeatDescription: nil)).to(contain("Priority: high"))
+                let item = ReminderItem(title: "Pay rent", list: personal, priority: 1)
+                expect(formatShow(item: item)).to(contain("Priority: high"))
             }
             it("includes the Note line when notes is non-empty") {
-                let item = ReminderItem(title: "Pay rent", calendarTitle: "Personal", notes: "First of month")
-                expect(formatShow(item: item, repeatDescription: nil)).to(contain("Note:     First of month"))
+                let item = ReminderItem(title: "Pay rent", list: personal, notes: "First of month")
+                expect(formatShow(item: item)).to(contain("Note:     First of month"))
             }
             it("does not include a Note line when notes is nil") {
-                let item = ReminderItem(title: "Pay rent", calendarTitle: "Personal")
-                expect(formatShow(item: item, repeatDescription: nil)).notTo(contain("Note:"))
+                let item = ReminderItem(title: "Pay rent", list: personal)
+                expect(formatShow(item: item)).notTo(contain("Note:"))
             }
             it("includes the URL line when url is set") {
-                let item = ReminderItem(title: "Pay rent", calendarTitle: "Personal", url: URL(string: "https://example.com")!)
-                expect(formatShow(item: item, repeatDescription: nil)).to(contain("URL:      https://example.com"))
+                let item = ReminderItem(title: "Pay rent", list: personal, url: URL(string: "https://example.com")!)
+                expect(formatShow(item: item)).to(contain("URL:      https://example.com"))
             }
         }
     }

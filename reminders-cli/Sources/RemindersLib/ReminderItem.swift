@@ -4,32 +4,42 @@
 import Foundation
 
 public struct ReminderItem: Equatable {
+    public let identifier: String
     public let title: String
-    public let calendarTitle: String
+    public let list: ReminderList
     public let dueDateComponents: DateComponents?
-    public let hasRecurrenceRules: Bool
+    /// Human-readable recurrence string (e.g. "weekly") — populated by the store when fetching.
+    public let recurrenceDescription: String?
+    /// Recurrence spec for creation — set by handlers, consumed by the store's add() method.
+    public let recurrenceSpec: RecurrenceSpec?
     public let priority: Int
     public let notes: String?
     public let url: URL?
     public let creationDate: Date?
 
+    public var hasRecurrenceRules: Bool { recurrenceDescription != nil }
+
     public init(
+        identifier: String = "",
         title: String,
-        calendarTitle: String,
+        list: ReminderList,
         dueDateComponents: DateComponents? = nil,
-        hasRecurrenceRules: Bool = false,
+        recurrenceDescription: String? = nil,
+        recurrenceSpec: RecurrenceSpec? = nil,
         priority: Int = 0,
         notes: String? = nil,
         url: URL? = nil,
         creationDate: Date? = nil
     ) {
-        self.title              = title
-        self.calendarTitle      = calendarTitle
-        self.dueDateComponents  = dueDateComponents
-        self.hasRecurrenceRules = hasRecurrenceRules
-        self.priority           = priority
-        self.notes              = notes
-        self.url                = url
-        self.creationDate       = creationDate
+        self.identifier            = identifier
+        self.title                 = title
+        self.list                  = list
+        self.dueDateComponents     = dueDateComponents
+        self.recurrenceDescription = recurrenceDescription
+        self.recurrenceSpec        = recurrenceSpec
+        self.priority              = priority
+        self.notes                 = notes
+        self.url                   = url
+        self.creationDate          = creationDate
     }
 }

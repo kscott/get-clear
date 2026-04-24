@@ -53,9 +53,9 @@ public func metaLine(for meta: ReminderMeta) -> String {
 // MARK: - Row formatters (prepend calendarDot in CLI)
 
 /// Returns the formatted row for a find result — bold title + dim list + optional due.
-/// The caller prepends calendarDot(reminder.calendar).
+/// The caller prepends calendarDot(hex: item.list.color).
 public func formatFindRow(_ item: ReminderItem) -> String {
-    var meta = "  [\(item.calendarTitle)]"
+    var meta = "  [\(item.list.title)]"
     if let comps = item.dueDateComponents, let date = Calendar.current.date(from: comps) {
         meta = "  ·  due \(formatDate(date, showTime: comps.hour != nil))" + meta
     }
@@ -81,15 +81,14 @@ public func formatListRow(_ item: ReminderItem) -> String {
 // MARK: - Show formatter
 
 /// Returns the full detail block for the `show` command.
-/// `repeatDescription` is produced by the CLI from EKRecurrenceRule (which requires EventKit).
-public func formatShow(item: ReminderItem, repeatDescription: String?) -> String {
+public func formatShow(item: ReminderItem) -> String {
     var lines: [String] = []
     lines.append("Title:    \(item.title)")
-    lines.append("List:     \(item.calendarTitle)")
+    lines.append("List:     \(item.list.title)")
     if let comps = item.dueDateComponents, let date = Calendar.current.date(from: comps) {
         lines.append("Due:      \(formatDate(date, showTime: comps.hour != nil))")
     }
-    if let desc = repeatDescription {
+    if let desc = item.recurrenceDescription {
         lines.append("Repeat:   \(desc)")
     }
     switch item.priority {
@@ -132,7 +131,7 @@ public func notFoundMessage(title: String, list: String?) -> String {
 
 public func disambiguationMessage(title: String, matches: [ReminderItem], cmd: String) -> String {
     var lines = ["Multiple reminders named '\(title)':"]
-    for m in matches { lines.append("  [\(m.calendarTitle)]") }
-    lines.append("Add the list name to narrow: reminders \(cmd) \"\(title)\" \(matches[0].calendarTitle)")
+    for m in matches { lines.append("  [\(m.list.title)]") }
+    lines.append("Add the list name to narrow: reminders \(cmd) \"\(title)\" \(matches[0].list.title)")
     return lines.joined(separator: "\n")
 }

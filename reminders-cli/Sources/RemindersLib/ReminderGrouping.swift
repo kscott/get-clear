@@ -1,12 +1,13 @@
 // ReminderGrouping.swift
-// Groups a flat ReminderItem array by list name for the all-lists display.
+// Groups a flat ReminderItem array by list for the all-lists display.
 
 public func groupedByList(
     _ items: [ReminderItem],
     sortedBy order: ReminderSortOrder
-) -> [(header: String, items: [ReminderItem])] {
-    let grouped = Dictionary(grouping: items, by: { $0.calendarTitle })
-    return grouped.keys.sorted().map { header in
-        (header: header, items: sorted(grouped[header]!, by: order))
+) -> [(list: ReminderList, items: [ReminderItem])] {
+    let grouped = Dictionary(grouping: items, by: { $0.list.title })
+    return grouped.keys.sorted().map { title in
+        let groupItems = grouped[title]!
+        return (list: groupItems[0].list, items: sorted(groupItems, by: order))
     }
 }
