@@ -65,8 +65,8 @@ All five extractions complete (#35–39). Each tool's `main.swift` is ≤60 line
 
 **reminders-cli** — three-tier complete (#147):
 - `RemindersLib`: nine handler functions, `ReminderStore` protocol + `resolve` extension, `ReminderChangeParsing`, `OptionsParsing`, `RecurrenceParsing`, `ReminderFilter`, `ReminderFormatter`, `ReminderGrouping`, `ReminderItem`, `ReminderList`, `ReminderLookup`, `ReminderSorting`, `ReminderHandlerError`, `ReminderHandlerHelpers`, `CalendarDot`
-- `RemindersEventKit` (framework boundary): `AppleReminderStore`, `ChangeApplier`, `ReminderConversion`, `RecurrenceConversion`, `ReminderFetcher`
-- `RemindersCLI`: `main.swift`, `OpenCommand`, `Usage`, `Version`
+- `RemindersEventKit` (framework boundary): `AppleReminderStore` (single file; absorbs type conversion, recurrence conversion, change application)
+- `RemindersCLI`: `main.swift`, `StoreFactory`, `Usage`, `Version`
 
 **Other tools** — two-tier (Lib + CLI); three-tier pending (#140–143):
 | Tool | Lib contains |
@@ -118,7 +118,7 @@ contacts-cli is the reference implementation (adopted 2026-04-10, commit 37e9a75
 - Handler functions return `String`, throw `ReminderHandlerError` — fully testable via `SpyStore`.
 - `ReminderStore` protocol with `resolve` default extension for not-found/ambiguous lookup.
 
-**Test coverage:** RemindersLib reached 94% line coverage. Remaining gaps: `WhatHandler` (deferred to #40), `CalendarDot` ANSI path (terminal-dependent, acceptable skip).
+**Test coverage:** RemindersLib reached 91.4% line coverage including structural zeros (`WhatHandler`, `OpenHandler`, `UsageText`). Testable code coverage is ~97.8%. `hexColor` moved from RemindersLib to RemindersEventKit (framework type conversion belongs at the boundary) — CalendarDot.swift is now 100% covered and has no framework imports.
 
 **Template:** reminders-cli is the reference implementation. #140–143 follow this pattern for the other four tools.
 
