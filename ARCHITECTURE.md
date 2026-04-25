@@ -23,15 +23,23 @@ Single monorepo at `~/dev/get-clear/` (#34 complete 2026-04-16). All standalone 
 
 ### Layer model
 
-Every tool follows the same three-layer model:
+Every tool follows the same three-tier model:
 
 ```
-main.swift          — dispatch only; ~100 lines target; no business logic
-*Lib/               — pure Swift; no framework imports; fully unit-testable
+*CLI/main.swift     — dispatch only; ~40 lines; no business logic
+*EventKit/ (etc.)   — framework boundary; pure assignment; owns type conversion
+*Lib/               — pure Swift; no framework imports; all domain logic; fully unit-testable
 GetClearKit/        — shared suite utilities; no tool-specific knowledge
 ```
 
-The boundary is enforced by the Swift package structure: `*Lib` targets do not import EventKit, Contacts, Security, or AppKit. Framework access lives exclusively in `main.swift`.
+The boundary is enforced by the Swift package structure: `*Lib` targets do not import EventKit, Contacts, Security, or AppKit. Framework access lives exclusively in the framework boundary target.
+
+**What belongs where:**
+- `*Lib`: all domain logic — parsing, validation, lookup decisions, handler functions, formatting. Everything testable.
+- Framework boundary: pure assignment of domain values to framework fields. No conditionals beyond what the framework API forces (e.g. `addRecurrenceRule` requires non-nil). No business logic.
+- `*CLI/main.swift`: request permissions, construct the store, dispatch to handlers, print output, catch errors.
+
+**The pure boundary rule:** if it's a decision (which API to call, whether to set a field, how to look something up), it belongs in Lib. If it's "field = value," it stays at the boundary. Pure assignment is acceptable without tests — the field names say what they do. Conditionals at the boundary are a signal that logic has leaked.
 
 ### GetClearKit (as of 2026-04-10)
 
@@ -51,19 +59,24 @@ The boundary is enforced by the Swift package structure: `*Lib` targets do not i
 | `TimespanFormatter.swift` | Human-readable timespan formatting |
 | `UpdateChecker.swift` | Background version check; hint on stderr at most once per hour |
 
-### Tool Lib targets (as of 2026-04-22)
+### Tool Lib targets (as of 2026-04-24)
 
 All five extractions complete (#35–39). Each tool's `main.swift` is ≤60 lines — dispatch only.
 
+**reminders-cli** — three-tier complete (#147):
+- `RemindersLib`: nine handler functions, `ReminderStore` protocol + `resolve` extension, `ReminderChangeParsing`, `OptionsParsing`, `RecurrenceParsing`, `ReminderFilter`, `ReminderFormatter`, `ReminderGrouping`, `ReminderItem`, `ReminderList`, `ReminderLookup`, `ReminderSorting`, `ReminderHandlerError`, `ReminderHandlerHelpers`, `CalendarDot`
+- `RemindersEventKit` (framework boundary): `AppleReminderStore`, `ChangeApplier`, `ReminderConversion`, `RecurrenceConversion`, `ReminderFetcher`
+- `RemindersCLI`: `main.swift`, `OpenCommand`, `Usage`, `Version`
+
+**Other tools** — two-tier (Lib + CLI); three-tier pending (#140–143):
 | Tool | Lib contains |
 |---|---|
-| reminders | `ChangeCommand`, `OptionsParsing`, `RecurrenceParsing`, `ReminderFilter`, `ReminderFormatter`, `ReminderItem`, `ReminderLookup`, `ReminderSorting` |
 | calendar | `CalendarResolver`, `ConfigParser`, `EventDateTime`, `EventFormatter`, `ChangeCommand` |
 | contacts | `ArgumentParser`, `ChangeCommand`, `ContactFormatter`, `Matching` |
 | mail | `JMAPClient`, `MailConfiguration`, `MailErrors`, `MailFormatter`, `RecipientResolver`, `SendCommand`, `SetupCommand` |
 | text | `MessagesClient`, `PhoneNormalizer`, `TextErrors` |
 
-Protocol abstraction layer (CalendarStore, ContactStore, MailClient, MessageSender, ReminderStore) tracked in #140–143, #147. Required before Google backends (#145, #146).
+Protocol abstraction layer (CalendarStore, ContactStore, MailClient, MessageSender) tracked in #140–143. Use reminders-cli as the template. Required before Google backends (#145, #146).
 
 ### Command dispatch (as of 2026-04-10)
 
@@ -92,6 +105,22 @@ contacts-cli is the reference implementation (adopted 2026-04-10, commit 37e9a75
 **Why:** GetClearKit changes require push + `swift package update` in each tool repo. Cross-cutting refactors span six repos. Issue history is split. The Command enum refactor made the friction tangible — every GetClearKit change is a two-repo operation.
 
 **Plan:** git filter-repo for history import; gh issue transfer for open issues; API recreation with backlinks for closed issues; archive tool repos. Full plan in #34.
+
+### 2026-04-24 — Three-tier model introduced; reminders-cli complete (#147)
+
+**Decision:** Framework boundary code gets its own package target (`*EventKit`) between the Lib and CLI. The boundary target imports system frameworks and owns type conversion, but contains no business logic — pure field assignment only.
+
+**Why:** With only two tiers, the "conversion layer" in `main.swift` accumulated logic that belonged in the Lib but couldn't be tested. The third tier makes the separation structural and enforceable: anything that's a decision goes in Lib, anything that's `field = value` stays at the boundary.
+
+**Key patterns:**
+- Domain types encapsulate lookup decisions: `ReminderList.matches(identifier:title:)` — the boundary passes values, makes no decision.
+- Parsing at Lib boundary: `FieldChange<URL>` not `FieldChange<String>` — URL parsing happens in `RemindersLib`, not `RemindersEventKit`.
+- Handler functions return `String`, throw `ReminderHandlerError` — fully testable via `SpyStore`.
+- `ReminderStore` protocol with `resolve` default extension for not-found/ambiguous lookup.
+
+**Test coverage:** RemindersLib reached 94% line coverage. Remaining gaps: `WhatHandler` (deferred to #40), `CalendarDot` ANSI path (terminal-dependent, acceptable skip).
+
+**Template:** reminders-cli is the reference implementation. #140–143 follow this pattern for the other four tools.
 
 ### 2026-04-10 — Business logic extraction made a pre-launch blocker
 
@@ -143,4 +172,4 @@ The extraction work in #35–39, #139, and #144 couldn't avoid this; the interfa
 
 ### `FieldChange<T>` will be duplicated across reminders and contacts
 
-`FieldChange<T>` (`.unchanged`, `.cleared`, `.set(T)`) is introduced in both `RemindersLib/ChangeCommand.swift` (#35) and `ContactsLib/ChangeCommand.swift` (#37) as the pattern for "was this field specified, and if so, set or clear?" When the monorepo lands (#34), this moves to GetClearKit — one definition, used by all stateful tools. File an issue at that point.
+`FieldChange<T>` (`.unchanged`, `.cleared`, `.set(T)`) is introduced in both `RemindersLib/ReminderChangeParsing.swift` (#147) and `ContactsLib/ChangeCommand.swift` (#37) as the pattern for "was this field specified, and if so, set or clear?" This moves to GetClearKit as part of #40 — one definition, used by all stateful tools.

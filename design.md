@@ -255,26 +255,27 @@ git branch -d issue-36
 
 ---
 
-## Architecture: the Lib/CLI split
+## Architecture: the three-tier model
 
-Every tool has a pure `*Lib` target and a `*CLI` target.
+Every tool has three package targets:
 
-`*Lib` — pure Swift, no framework imports, fully testable without permissions
-`*CLI` — framework access (EventKit, Contacts, Security, URLSession), thin dispatch layer
-
-The rule: if you want to write a test for something in `main.swift`, that's a signal
-it belongs in the Lib. The boundary is enforced by not importing system frameworks
-in the Lib target.
+`*Lib` — pure Swift, no framework imports, all domain logic, fully testable without permissions
+`*EventKit` (or equivalent) — framework boundary; owns type conversion and store protocol implementation; pure assignment only, no business logic
+`*CLI` — `main.swift` only; requests permissions, constructs the store, dispatches to handlers, prints output
 
 Tests use **Quick + Nimble** across all repos. Run via `swift test`. No custom harness.
 
+The rule: if it's a decision — which API to call, whether to set a field, how to interpret input — it belongs in Lib. If it's `field = value`, it stays at the boundary. Pure assignment at the boundary is acceptable without tests; conditionals there are a signal that logic has leaked.
+
 ### The conversion layer
 
-Framework types (`EKReminder`, `EKEvent`, `CNContact`) are converted to pure value types (`ReminderItem`, `EventItem`, `ContactItem`) at the CLI boundary — the moment the framework object is fetched. From that point on, all Lib logic operates on the pure type. The framework is never passed into the Lib.
+Framework types (`EKReminder`, `EKEvent`, `CNContact`) are converted to pure value types (`ReminderItem`, `EventItem`, `ContactItem`) at the framework boundary — the moment the framework object is fetched. From that point on, all Lib logic operates on the pure type. The framework is never passed into the Lib.
 
 This is what makes the Lib testable: a `ReminderItem` can be constructed in a test with no EventKit dependency. The conversion is a one-way door — in at the boundary, pure values everywhere else.
 
-The protocol abstraction layer (#147, #140–143) puts this into practice for all five tools, introducing store protocols (`ReminderStore`, `CalendarStore`, etc.) with Apple-backed implementations that own the conversion. Until that work lands, the conversion happens inline in `main.swift`.
+The store protocol (`ReminderStore`, `CalendarStore`, etc.) lives in Lib with a `resolve` default extension handling not-found/ambiguous lookup. The Apple-backed implementation (`AppleReminderStore`, etc.) lives in the framework boundary target.
+
+reminders-cli is the complete reference implementation (#147). #140–143 apply this pattern to the remaining four tools.
 
 ---
 

@@ -18,21 +18,19 @@ await runCLI(args: args, identity: identity, usage: usage) { command, args in
     let store = AppleReminderStore(ek)
 
     do {
-        let output: String
         switch command {
-        case .what:   output = try await handleWhat(args: args)
-        case .lists:  output = try await handleLists(store: store)
-        case .list:   output = try await handleList(args: args, store: store)
-        case .find:   output = try await handleFind(args: args, store: store)
-        case .show:   output = try await handleShow(args: args, store: store)
-        case .add:    output = try await handleAdd(args: args, store: store)
-        case .change: output = try await handleChange(args: args, store: store)
-        case .done:   output = try await handleDone(args: args, store: store)
-        case .rename: output = try await handleRename(args: args, store: store)
-        case .remove: output = try await handleRemove(args: args, store: store)
+        case .what:   print(try await handleWhat(args: args))
+        case .lists:  print(try await handleLists(store: store))
+        case .list:   print(try await handleList(args: args, store: store))
+        case .find:   print(try await handleFind(args: args, store: store))
+        case .show:   print(try await handleShow(args: args, store: store))
+        case .add:    print(try await handleAdd(args: args, store: store))
+        case .change: print(try await handleChange(args: args, store: store))
+        case .done:   print(try await handleDone(args: args, store: store))
+        case .rename: print(try await handleRename(args: args, store: store))
+        case .remove: print(try await handleRemove(args: args, store: store))
         default:      usage()
         }
-        print(output)
     } catch let e as ReminderHandlerError {
         fail(e.message)
     } catch {
