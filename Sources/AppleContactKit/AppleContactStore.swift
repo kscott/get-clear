@@ -4,7 +4,7 @@
 
 import Foundation
 import Contacts
-import GetClearKit
+import ContactKit
 
 private let keysToFetch: [CNKeyDescriptor] = [
     CNContactGivenNameKey        as CNKeyDescriptor,

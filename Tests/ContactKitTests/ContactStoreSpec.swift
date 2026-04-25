@@ -5,7 +5,7 @@
 import Quick
 import Nimble
 import Foundation
-import GetClearKit
+import ContactKit
 
 final class ContactStoreSpec: QuickSpec {
     override class func spec() {

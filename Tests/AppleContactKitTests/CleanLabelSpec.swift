@@ -5,7 +5,7 @@
 import Quick
 import Nimble
 import Foundation
-@testable import ContactKit
+@testable import AppleContactKit
 
 final class CleanLabelSpec: QuickSpec {
     override class func spec() {

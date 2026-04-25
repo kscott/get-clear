@@ -5,8 +5,8 @@
 import Quick
 import Nimble
 import Contacts
-import GetClearKit
-@testable import ContactKit
+import ContactKit
+@testable import AppleContactKit
 
 final class ToContactSpec: QuickSpec {
     override class func spec() {

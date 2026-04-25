@@ -5,7 +5,7 @@
 import Quick
 import Nimble
 import Foundation
-import GetClearKit
+import ContactKit
 
 private struct SpyContactStore: ContactStore {
     let result: [Contact]
