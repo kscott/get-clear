@@ -1,24 +1,23 @@
 // SendHandlerSpec.swift
+// Tests for TextLib handleSend.
 
 import Quick
 import Nimble
 import Foundation
 import TextLib
 
-final class SpyMessageSender: MessageSender {
-    var sentRecipient: String?
-    var sentMessage: String?
+private final class SpyMessageSender: MessageSender {
+    var lastQuery:   String?
+    var lastMessage: String?
     var shouldThrow: Error?
+    var result = SendResult(displayName: "Alice Smith", address: "+15551234567")
 
-    func send(to recipient: String, message: String) async throws {
+    func send(to query: String, message: String) async throws -> SendResult {
         if let e = shouldThrow { throw e }
-        sentRecipient = recipient
-        sentMessage   = message
+        lastQuery   = query
+        lastMessage = message
+        return result
     }
-}
-
-private func makeContacts() -> [MessageContact] {
-    [MessageContact(name: "Alice Smith", phones: ["+15551234567"], emails: [])]
 }
 
 final class SendHandlerSpec: AsyncSpec {
@@ -27,59 +26,57 @@ final class SendHandlerSpec: AsyncSpec {
         describe("handleSend") {
 
             context("missing arguments") {
-                it("throws when fewer than 3 args are given") {
+                it("throws when no message follows the contact") {
                     let sender = SpyMessageSender()
-                    do {
-                        _ = try await handleSend(args: ["send", "Alice"], contacts: [], sender: sender)
-                        fail("expected TextError")
-                    } catch is TextError { }
+                    await expect {
+                        try await handleSend(args: ["send", "Alice"], sender: sender)
+                    }.to(throwError())
                 }
-            }
-
-            context("contact not found") {
-                it("throws TextError.notFound when query matches no contact") {
+                it("throws when only the command is given") {
                     let sender = SpyMessageSender()
-                    do {
-                        _ = try await handleSend(args: ["send", "Nobody", "hello"], contacts: [], sender: sender)
-                        fail("expected TextError.notFound")
-                    } catch TextError.notFound(let q) {
-                        expect(q) == "Nobody"
-                    }
+                    await expect {
+                        try await handleSend(args: ["send"], sender: sender)
+                    }.to(throwError())
                 }
             }
 
             context("successful send") {
-                it("calls sender with normalized phone number") {
+                it("passes the contact query to the sender") {
                     let sender = SpyMessageSender()
-                    _ = try await handleSend(args: ["send", "Alice", "hey there"],
-                                             contacts: makeContacts(), sender: sender)
-                    expect(sender.sentRecipient) == "+15551234567"
+                    _ = try await handleSend(args: ["send", "Alice", "hey there"], sender: sender)
+                    expect(sender.lastQuery) == "Alice"
                 }
-                it("calls sender with the full message") {
+                it("joins multi-word message before passing to sender") {
                     let sender = SpyMessageSender()
-                    _ = try await handleSend(args: ["send", "Alice", "hey", "there"],
-                                             contacts: makeContacts(), sender: sender)
-                    expect(sender.sentMessage) == "hey there"
+                    _ = try await handleSend(args: ["send", "Alice", "hey", "there"], sender: sender)
+                    expect(sender.lastMessage) == "hey there"
                 }
-                it("returns a confirmation string containing the contact name") {
+                it("returns a confirmation containing the display name") {
                     let sender = SpyMessageSender()
-                    let result = try await handleSend(args: ["send", "Alice", "hey"],
-                                                      contacts: makeContacts(), sender: sender)
+                    let result = try await handleSend(args: ["send", "Alice", "hey"], sender: sender)
                     expect(result).to(contain("Alice Smith"))
+                }
+                it("returns a confirmation containing the address") {
+                    let sender = SpyMessageSender()
+                    let result = try await handleSend(args: ["send", "Alice", "hey"], sender: sender)
+                    expect(result).to(contain("+15551234567"))
                 }
             }
 
-            context("send failure") {
-                it("propagates the error from the sender") {
+            context("sender throws") {
+                it("propagates notFound from the sender") {
+                    let sender = SpyMessageSender()
+                    sender.shouldThrow = TextError.notFound("Nobody")
+                    await expect {
+                        try await handleSend(args: ["send", "Nobody", "hi"], sender: sender)
+                    }.to(throwError(TextError.notFound("Nobody")))
+                }
+                it("propagates sendFailed from the sender") {
                     let sender = SpyMessageSender()
                     sender.shouldThrow = TextError.sendFailed("osascript error")
-                    do {
-                        _ = try await handleSend(args: ["send", "Alice", "hey"],
-                                                 contacts: makeContacts(), sender: sender)
-                        fail("expected TextError.sendFailed")
-                    } catch TextError.sendFailed(let msg) {
-                        expect(msg) == "osascript error"
-                    }
+                    await expect {
+                        try await handleSend(args: ["send", "Alice", "hi"], sender: sender)
+                    }.to(throwError(TextError.sendFailed("osascript error")))
                 }
             }
         }

@@ -1,8 +1,9 @@
 // StoreFactory.swift
 
-import TextMessages
 import TextLib
+import TextMessages
+import ContactStoreFactory
 
-func makeMessageSender() -> any MessageSender {
-    AppleMessageSender()
+func makeMessageSender() async -> any MessageSender {
+    AppleMessageSender(contacts: await makeContactStore())
 }

@@ -21,7 +21,7 @@ Single monorepo at `~/dev/get-clear/` (#34 complete 2026-04-16). All standalone 
 - `calendar-cli/Sources/` — CalendarLib + CalendarCLI
 - `contacts-cli/Sources/` — ContactsLib + ContactsCLI
 - `mail-cli/Sources/` — MailLib + MailCLI (JMAP/Fastmail; Gmail #61)
-- `text-cli/Sources/` — TextLib + TextCLI (osascript → Messages.app)
+- `text-cli/Sources/` — TextLib + TextMessages + TextCLI (osascript → Messages.app)
 - `Tests/GetClearKitTests/` — Quick/Nimble specs including Contact and matchContacts; per-tool coverage open in #41–45
 - `Tests/ContactKitTests/` — cleanLabel and SpyContactStore specs
 
@@ -75,8 +75,8 @@ All five extractions complete (#35–39). Each tool's `main.swift` is ≤60 line
 - `RemindersCLI`: `main.swift`, `StoreFactory`, `Usage`, `Version`
 
 **text-cli** — three-tier complete (#143):
-- `TextLib`: `SendHandler`, `OpenHandler`, `WhatHandler`, `MessagesClient`, `PhoneNormalizer`, `TextErrors`, `TextHandlerError`, `MessageSender` (protocol), `MessageContact`, `UsageText`
-- `TextMessages` (framework boundary): `AppleMessageSender` (osascript execution; no business logic)
+- `TextLib`: `SendHandler`, `OpenHandler`, `WhatHandler`, `MessagesClient`, `PhoneNormalizer`, `TextErrors`, `MessageSender` (protocol + `SendResult`), `UsageText`
+- `TextMessages` (boundary): `AppleMessageSender` — contact resolution via injected `ContactStore`, osascript dispatch
 - `TextCLI`: `main.swift`, `StoreFactory`, `Usage`, `Version`
 
 **Other tools** — two-tier (Lib + CLI); three-tier pending (#140–142):
@@ -115,6 +115,18 @@ contacts-cli is the reference implementation (adopted 2026-04-10, commit 37e9a75
 **Why:** GetClearKit changes require push + `swift package update` in each tool repo. Cross-cutting refactors span six repos. Issue history is split. The Command enum refactor made the friction tangible — every GetClearKit change is a two-repo operation.
 
 **Plan:** git filter-repo for history import; gh issue transfer for open issues; API recreation with backlinks for closed issues; archive tool repos. Full plan in #34.
+
+### 2026-04-25 — text-cli three-tier migration complete (#143)
+
+**Decision:** Three tiers introduced — `TextLib` (pure protocol + handlers), `TextMessages` (boundary: `AppleMessageSender`), `TextCLI` (dispatch only). `MessageSender` protocol with `SendResult` return type makes handlers testable with a spy. `AppleMessageSender` takes an injected `any ContactStore` (from `ContactStoreFactory`); no CNContactStore in the CLI or boundary target.
+
+**Why:** `text` is the lightest migration — two commands, one mutating. The `MessageSender` protocol enables testing `handleSend` without Messages.app or osascript. Contact resolution via `matchContacts` (ContactKit) and `normalizePhone` (TextLib) replaces the old `resolveSendTarget`/`MessageContact` pair, which is now deleted. `makeContactStore()` from ContactStoreFactory owns permission; `StoreFactory` in TextCLI injects it into `AppleMessageSender`.
+
+**Key patterns:**
+- `handleSend(args:sender:)` receives `any MessageSender`; returns `String`; no contacts parameter — resolution is the sender's concern
+- `handleOpen(opener:)` follows reminders pattern exactly — takes a closure, no contacts needed
+- `SendResult` returned by `send(to:message:)` carries resolved display name and address back to the handler for confirmation output
+- `TextMessages` depends on `ContactKit` (not Contacts framework directly); `text-bin` depends on `ContactStoreFactory`
 
 ### 2026-04-25 — Shared contact resolution library added (#150)
 
