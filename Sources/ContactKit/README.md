@@ -16,7 +16,18 @@ import ContactKit
 let store = await makeContactStore()          // requests permission; exits on denial
 let contacts = try await store.contacts()     // load all contacts once
 let matches = matchContacts(query, in: contacts)
+```
 
+The caller decides what to do with the results. Two common patterns:
+
+**Display all matches** (e.g. `contacts find`):
+```swift
+if matches.isEmpty { fail("No contact found matching '\(query)'") }
+for contact in matches { /* render */ }
+```
+
+**Resolve to exactly one** (e.g. mail To:, text send target):
+```swift
 switch matches.count {
 case 0:  fail("No contact found matching '\(query)'")
 case 1:  // use matches[0]
