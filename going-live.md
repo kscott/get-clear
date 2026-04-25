@@ -23,6 +23,7 @@
 | #34 — Monorepo migration: all six repos consolidated, standalone repos archived | 2026-04-16 |
 | #33 — Command enum + runCLI across all five tools | 2026-04-16 |
 | #139 — Async/await migration; UpdateChecker moved into runCLI | 2026-04-22 |
+| #144 — reminders-cli second-pass refactors | 2026-04-25 |
 
 ---
 
@@ -58,14 +59,23 @@ All five tools migrated from DispatchSemaphore to async/await. UpdateChecker mov
 
 ---
 
-### 5. reminders-cli second-pass refactors — #144
+### 5. ✅ reminders-cli second-pass refactors — #144
 
-Output formatting, arg parsing duplication, `describeEKRule`, grouping logic, remove-completed decision. These are structural problems visible in the current code — address them before introducing the protocol layer so the abstraction is built on clean foundations.
+Output formatting, arg parsing duplication, `describeEKRule`, grouping logic, remove-completed decision. Complete — establishes the pattern for #147 and the other protocol abstractions.
 
 ---
 
-### 6. Protocol abstractions — #147, #140, #141, #142, #143
-**Depends on:** #144 (reminders pattern establishes the template)
+### 6. Shared contact resolution library — #150
+**Depends on:** nothing
+
+Mail, text, and contacts each maintain their own contact data type, loading code, and matching logic. This consolidates all three into a single shared library with a backend abstraction — Apple Contacts initially, Google Contacts later. Required before #141, #142, and #143 can adopt the unified Contact type.
+
+Spec: `specs/012-shared-contacts-lib/spec.md`
+
+---
+
+### 7. Protocol abstractions — #147, #140, #141, #142, #143
+**Depends on:** #144 (reminders pattern establishes the template); #141, #142, #143 also depend on #150
 
 Introduce store protocols and Apple-backed implementations for each tool. #147 (reminders) first — it's the reference pattern. Then #140–143 in any order.
 
@@ -73,13 +83,13 @@ Introduce store protocols and Apple-backed implementations for each tool. #147 (
 |---|---|---|
 | #147 | reminders | `ReminderStore` protocol, `AppleReminderStore`, `ListItem`, `StoreFactory` — prerequisite for Google Tasks (#146) |
 | #140 | calendar | `CalendarStore` protocol, `CalendarEventKit` target, `EventItem` conversion layer |
-| #141 | contacts | `ContactStore` protocol, `ContactsApple` target, `ContactItem` conversion layer |
-| #142 | mail | `MailClient` protocol, `MailJMAP` target, uniform async handlers |
-| #143 | text | `MessageSender` protocol, `TextMessages` target, `MessageContact` boundary |
+| #141 | contacts | `ContactStore` protocol, `ContactsApple` target — adopts shared Contact type from #150 |
+| #142 | mail | `MailClient` protocol, `MailJMAP` target — adopts shared Contact type from #150 |
+| #143 | text | `MessageSender` protocol, `TextMessages` target — adopts shared Contact type from #150 |
 
 ---
 
-### 7. Gmail support — #61
+### 8. Gmail support — #61
 **Depends on:** #142 ✅ (MailClient protocol makes adding a second backend straightforward)
 
 The majority of the target audience is on Gmail. Shipping without it means mail doesn't work for most users on day one. This is a hard launch blocker.
@@ -88,7 +98,7 @@ OAuth2 flow, Google Cloud Console app registration, browser consent. `mail setup
 
 ---
 
-### 8. Feature additions — #53, #80, #68
+### 9. Feature additions — #53, #80, #68
 **Depends on:** monorepo ✅ (each touches both Lib and CLI targets)
 
 | Issue | Feature | Notes |
@@ -99,14 +109,14 @@ OAuth2 flow, Google Cloud Console app registration, browser consent. `mail setup
 
 ---
 
-### 9. GetClearKit shared utilities — #40
+### 10. GetClearKit shared utilities — #40
 **Depends on:** monorepo ✅
 
 Four patterns duplicated across all five tools: `what` command (identical in every tool), multi-match disambiguation, field-update parsing, unified error type. Centralizing these collapses repetition and makes the patterns testable.
 
 ---
 
-### 10. Test coverage — #41, #42, #43, #44, #45
+### 11. Test coverage — #41, #42, #43, #44, #45
 **Depends on:** #35–39 ✅ (logic must be in Lib targets before it can be tested)
 
 | Issue | Tool | Priority cases | Status |
@@ -119,14 +129,14 @@ Four patterns duplicated across all five tools: `what` command (identical in eve
 
 ---
 
-### 11. Bundle Claude Code skills — #30
+### 12. Bundle Claude Code skills — #30
 **Depends on:** nothing (independent)
 
 Can be worked in parallel with any of the above. Skills are the Claude integration layer — without them, new users have no Claude-first experience out of the box. One skill file per tool, installed to `~/.claude/skills/` by both PKG and curl installer.
 
 ---
 
-### 12. Install validation — Phase 2
+### 13. Install validation — Phase 2
 **Depends on:** all code changes complete (do last)
 
 Manual testing on a clean macOS account:
@@ -160,13 +170,14 @@ These are good work but wait until real users are using the tools:
 ✅ #33     Command enum + runCLI across all tools
 ✅ #139    Async/await migration
 
-#144  reminders second-pass refactors      ← start here
+✅ #144  reminders second-pass refactors
+#150  shared contact resolution library   ← start here
   └── #147  ReminderStore protocol + AppleReminderStore
   └── #140  CalendarStore protocol + CalendarEventKit
-  └── #141  ContactStore protocol + ContactsApple
-  └── #142  MailClient protocol + MailJMAP
+  └── #141  ContactStore protocol + ContactsApple  (needs #150)
+  └── #142  MailClient protocol + MailJMAP          (needs #150)
         └── #61  Gmail              ← hard user-facing blocker
-  └── #143  MessageSender protocol + TextMessages
+  └── #143  MessageSender protocol + TextMessages   (needs #150)
 
 #53, #80, #68  feature additions (calendar change, move to list, multi-recipient text)
 #40   GetClearKit shared utilities
@@ -178,4 +189,4 @@ These are good work but wait until real users are using the tools:
 Phase 2 install validation ← last, after all code
 ```
 
-**Minimum to ship:** #144 → #147, #140–143 → #61 (Gmail) → #53, #80, #68 → #40 → #41–45 → #30 → #135 → Phase 2
+**Minimum to ship:** #144 + #150 → #147, #140–143 → #61 (Gmail) → #53, #80, #68 → #40 → #41–45 → #30 → #135 → Phase 2

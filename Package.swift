@@ -41,6 +41,50 @@ let package = Package(
             path: "Tests/GetClearKitTests"
         ),
 
+        // MARK: - ContactKit (pure shared contact types and matching)
+
+        .target(
+            name: "ContactKit",
+            path: "Sources/ContactKit"
+        ),
+        .testTarget(
+            name: "ContactKitTests",
+            dependencies: [
+                "ContactKit",
+                .product(name: "Quick", package: "Quick"),
+                .product(name: "Nimble", package: "Nimble"),
+            ],
+            path: "Tests/ContactKitTests"
+        ),
+
+        // MARK: - AppleContactKit (Apple Contacts framework boundary)
+
+        .target(
+            name: "AppleContactKit",
+            dependencies: ["ContactKit"],
+            path: "Sources/AppleContactKit",
+            linkerSettings: [.linkedFramework("Contacts")]
+        ),
+        .testTarget(
+            name: "AppleContactKitTests",
+            dependencies: [
+                "AppleContactKit",
+                "ContactKit",
+                .product(name: "Quick", package: "Quick"),
+                .product(name: "Nimble", package: "Nimble"),
+            ],
+            path: "Tests/AppleContactKitTests"
+        ),
+
+        // MARK: - ContactStoreFactory (backend selection; shared by all contact-using binaries)
+
+        .target(
+            name: "ContactStoreFactory",
+            dependencies: ["ContactKit", "AppleContactKit", "GetClearKit"],
+            path: "Sources/ContactStoreFactory",
+            linkerSettings: [.linkedFramework("Contacts")]
+        ),
+
         // MARK: - reminders
 
         .target(

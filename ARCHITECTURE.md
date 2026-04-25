@@ -12,14 +12,18 @@ This document has three sections: current structure, decision log, and improveme
 
 Single monorepo at `~/dev/get-clear/` (#34 complete 2026-04-16). All standalone repos archived. Tool source lives under `<tool>-cli/Sources/` subdirectories within the monorepo.
 
-- `Sources/GetClearKit/` — shared library: ANSI, Fail, Flags, DateParser, RangeParser, Commands, ArgParsing, ActivityLog, UpdateChecker, ToolIdentity
+- `Sources/GetClearKit/` — shared suite infrastructure: ANSI, Fail, Flags, DateParser, RangeParser, Commands, ArgParsing, ActivityLog, UpdateChecker, ToolIdentity
+- `Sources/ContactKit/` — pure shared contact types: Contact, ContactField, ContactStore protocol, matchContacts()
+- `Sources/AppleContactKit/` — Apple Contacts boundary: AppleContactStore, toContact(), cleanLabel()
+- `Sources/ContactStoreFactory/` — shared backend factory: makeContactStore(); update here when adding new backends
 - `Sources/GetClear/` — umbrella `get-clear` binary (what, recap, check-update)
 - `reminders-cli/Sources/` — RemindersLib + RemindersCLI
 - `calendar-cli/Sources/` — CalendarLib + CalendarCLI
 - `contacts-cli/Sources/` — ContactsLib + ContactsCLI
 - `mail-cli/Sources/` — MailLib + MailCLI (JMAP/Fastmail; Gmail #61)
-- `text-cli/Sources/` — TextLib + TextMessages + TextCLI (osascript → Messages.app)
-- `Tests/GetClearKitTests/` — ~200 Quick/Nimble specs; per-tool test coverage open in #41–45
+- `text-cli/Sources/` — TextLib + TextCLI (osascript → Messages.app)
+- `Tests/GetClearKitTests/` — Quick/Nimble specs including Contact and matchContacts; per-tool coverage open in #41–45
+- `Tests/ContactKitTests/` — cleanLabel and SpyContactStore specs
 
 ### Layer model
 
@@ -58,6 +62,8 @@ The boundary is enforced by the Swift package structure: `*Lib` targets do not i
 | `ActivityLogEntry.swift` | `ActivityLogEntry` value type |
 | `TimespanFormatter.swift` | Human-readable timespan formatting |
 | `UpdateChecker.swift` | Background version check; hint on stderr at most once per hour |
+| `Contact.swift` | `ContactField` struct; `Contact` struct with primaryEmail/primaryPhone |
+| `ContactStore.swift` | `ContactStore` protocol; `matchContacts()` free function |
 
 ### Tool Lib targets (as of 2026-04-24)
 
@@ -109,6 +115,26 @@ contacts-cli is the reference implementation (adopted 2026-04-10, commit 37e9a75
 **Why:** GetClearKit changes require push + `swift package update` in each tool repo. Cross-cutting refactors span six repos. Issue history is split. The Command enum refactor made the friction tangible — every GetClearKit change is a two-repo operation.
 
 **Plan:** git filter-repo for history import; gh issue transfer for open issues; API recreation with backlinks for closed issues; archive tool repos. Full plan in #34.
+
+### 2026-04-25 — Shared contact resolution library added (#150)
+
+**Decision:** Four targets implement the shared contact layer:
+- `ContactKit` — pure: `Contact`, `ContactField`, `ContactStore`, `matchContacts`. No framework imports. All Lib targets depend on this.
+- `AppleContactKit` — Apple boundary: `AppleContactStore`, `toContact()`, `cleanLabel()`. Links Contacts framework.
+- `ContactStoreFactory` — shared factory: `makeContactStore()`. Depends on all backends. All CLI binaries depend on this.
+- (future) `GoogleContactKit` — Google boundary, same pattern as `AppleContactKit`.
+
+**Why:** Three tools (contacts, mail, text) each maintained their own contact type and name-matching logic. The shared library is a pre-requisite for #141–143. The three-target split (types / boundary / factory) satisfies FR-004: adding a new backend requires only a new boundary target and an update to `ContactStoreFactory` — zero changes to any tool.
+
+**Why not GetClearKit:** GetClearKit is suite infrastructure (ANSI, arg parsing, commands, update checker). Contact types are domain-specific; placing them in GetClearKit would make it a monolith and obscure the clean layer boundary.
+
+**Scope note:** The existing tool types (`ContactRecord`, `MessageContact`, `MailContact`) are untouched. Migration deferred to #141–143.
+
+**Key patterns:**
+- `ContactField: Equatable, Hashable, Sendable` — named type instead of tuple so `Contact` can conform to `Equatable`
+- `matchContacts` is a free function, not a protocol requirement — pure, testable, no store dependency
+- `toContact()` and `cleanLabel()` are `internal` in `AppleContactKit` — not part of the tool-implementor contract
+- `makeContactStore()` in `ContactStoreFactory` is the single entry point for all CLI binaries; concrete backend type never exposed
 
 ### 2026-04-24 — Three-tier model introduced; reminders-cli complete (#147)
 

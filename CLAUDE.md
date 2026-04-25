@@ -89,10 +89,10 @@ cp .build/release/<tool>-bin ~/.local/bin/<tool>
 
 All of these must be complete before public release. See `going-live.md` for full detail.
 
-Done: #33 (Command enum), #34 (monorepo), #35–39 (business logic extraction), #139 (async/await)
+Done: #33 (Command enum), #34 (monorepo), #35–39 (business logic extraction), #139 (async/await), #144 (reminders second-pass)
 
 Remaining, in priority order:
-- **#144** — reminders-cli second-pass refactors (start here)
+- **#150** — Shared contact resolution library (start here; blocks #141, #142, #143)
 - **#147, #140–143** — Protocol abstractions: ReminderStore first (template), then CalendarStore, ContactStore, MailClient, MessageSender
 - **#61** — Gmail support (hard launch blocker; depends on MailClient #142)
 - **#53, #80, #68** — Feature additions: `calendar change`, move reminder to list, multi-recipient text
@@ -110,3 +110,10 @@ Two constants in each tool's `Version.swift`:
 Display: `reminders 1.3.1 (Get Clear 1.3.1)` — current suite version is 1.3.1
 
 Use `scripts/bump-version <suite-version> [tool:version ...]` to bump. Never edit version constants by hand.
+
+## Active Technologies
+- Swift 5.9 (swift-tools-version: 5.9) + Quick + Nimble (testing); GetClearKit (shared suite library); Contacts framework (framework boundary only) (012-shared-contacts-lib)
+- N/A — read-only access to Apple CNContactStore; no writes from the shared layer (012-shared-contacts-lib)
+
+## Recent Changes
+- 012-shared-contacts-lib: Added Swift 5.9 (swift-tools-version: 5.9) + Quick + Nimble (testing); GetClearKit (shared suite library); Contacts framework (framework boundary only)
