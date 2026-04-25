@@ -14,7 +14,7 @@ public struct ContactField: Equatable, Hashable, Sendable {
     }
 }
 
-public struct Contact: Sendable {
+public struct Contact: Equatable, Sendable {
     public let name: String
     public let emails: [ContactField]
     public let phones: [ContactField]
