@@ -22,6 +22,12 @@ final class CleanLabelSpec: QuickSpec {
             it("lowercases without stripping when no prefix present") {
                 expect(cleanLabel("iPhone")) == "iphone"
             }
+            it("strips prefix only when suffix is absent") {
+                expect(cleanLabel("_$!<Work")) == "work"
+            }
+            it("strips suffix only when prefix is absent") {
+                expect(cleanLabel("Work>!$_")) == "work"
+            }
         }
     }
 }

@@ -21,7 +21,7 @@ internal func cleanLabel(_ raw: String) -> String {
     return s.lowercased()
 }
 
-public func toContact(_ c: CNContact) -> Contact {
+func toContact(_ c: CNContact) -> Contact {
     Contact(
         name:    [c.givenName, c.familyName].filter { !$0.isEmpty }.joined(separator: " "),
         emails:  c.emailAddresses.map { ContactField(label: cleanLabel($0.label ?? ""), value: $0.value as String) },
@@ -41,10 +41,7 @@ public final class AppleContactStore: ContactStore {
         let request = CNContactFetchRequest(keysToFetch: keysToFetch)
         var results: [Contact] = []
         try cnStore.enumerateContacts(with: request) { c, _ in
-            let contact = toContact(c)
-            if !contact.name.isEmpty || !contact.company.isEmpty {
-                results.append(contact)
-            }
+            results.append(toContact(c))
         }
         return results
     }
