@@ -23,6 +23,7 @@
 | #34 — Monorepo migration: all six repos consolidated, standalone repos archived | 2026-04-16 |
 | #33 — Command enum + runCLI across all five tools | 2026-04-16 |
 | #139 — Async/await migration; UpdateChecker moved into runCLI | 2026-04-22 |
+| #144 — reminders-cli second-pass refactors | 2026-04-25 |
 
 ---
 
@@ -58,14 +59,14 @@ All five tools migrated from DispatchSemaphore to async/await. UpdateChecker mov
 
 ---
 
-### 5. reminders-cli second-pass refactors — #144
+### 5. ✅ reminders-cli second-pass refactors — #144
 
-Output formatting, arg parsing duplication, `describeEKRule`, grouping logic, remove-completed decision. These are structural problems visible in the current code — address them before introducing the protocol layer so the abstraction is built on clean foundations.
+Output formatting, arg parsing duplication, `describeEKRule`, grouping logic, remove-completed decision. Complete — establishes the pattern for #147 and the other protocol abstractions.
 
 ---
 
 ### 6. Shared contact resolution library — #150
-**Depends on:** nothing (can start alongside #144)
+**Depends on:** nothing
 
 Mail, text, and contacts each maintain their own contact data type, loading code, and matching logic. This consolidates all three into a single shared library with a backend abstraction — Apple Contacts initially, Google Contacts later. Required before #141, #142, and #143 can adopt the unified Contact type.
 
@@ -169,8 +170,8 @@ These are good work but wait until real users are using the tools:
 ✅ #33     Command enum + runCLI across all tools
 ✅ #139    Async/await migration
 
-#144  reminders second-pass refactors      ← start here
-#150  shared contact resolution library   ← can run alongside #144
+✅ #144  reminders second-pass refactors
+#150  shared contact resolution library   ← start here
   └── #147  ReminderStore protocol + AppleReminderStore
   └── #140  CalendarStore protocol + CalendarEventKit
   └── #141  ContactStore protocol + ContactsApple  (needs #150)
