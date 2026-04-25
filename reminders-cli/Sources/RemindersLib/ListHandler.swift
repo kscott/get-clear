@@ -18,12 +18,12 @@ public func handleList(args: [String], store: any ReminderStore) async throws ->
 
     if targetList != nil {
         return sorted(items, by: order)
-            .map { "\(calendarDot(hex: $0.list.color))\(formatListRow($0))" }
+            .map { "\(calendarDot(hex: $0.list.color, ansiEnabled: ANSI.enabled))\(formatListRow($0))" }
             .joined(separator: "\n")
     } else {
         var lines: [String] = []
         for (list, groupItems) in groupedByList(items, sortedBy: order) {
-            let dot = calendarDot(hex: list.color)
+            let dot = calendarDot(hex: list.color, ansiEnabled: ANSI.enabled)
             lines.append("\(dot)\(ANSI.bold(list.title))")
             lines.append(contentsOf: groupItems.map { "\(dot)\(formatListRow($0))" })
         }

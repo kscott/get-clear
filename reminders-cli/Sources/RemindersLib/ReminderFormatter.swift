@@ -1,7 +1,6 @@
 // ReminderFormatter.swift
 //
 // Formats ReminderItem data into display strings for all reminder commands.
-// No EventKit dependency — calendarDot (which requires EKCalendar) stays in CLI.
 
 import Foundation
 import GetClearKit
@@ -50,7 +49,7 @@ public func metaLine(for meta: ReminderMeta) -> String {
     return parts.isEmpty ? "" : "  ·  " + parts.joined(separator: " · ")
 }
 
-// MARK: - Row formatters (prepend calendarDot in CLI)
+// MARK: - Row formatters (caller prepends calendarDot)
 
 /// Returns the formatted row for a find result — bold title + dim list + optional due.
 /// The caller prepends calendarDot(hex: item.list.color).
@@ -63,7 +62,7 @@ public func formatFindRow(_ item: ReminderItem) -> String {
 }
 
 /// Returns the formatted row for a list entry — bold title + dim metadata suffix.
-/// The caller prepends calendarDot(reminder.calendar).
+/// The caller prepends calendarDot(hex: item.list.color, ansiEnabled:).
 public func formatListRow(_ item: ReminderItem) -> String {
     let formattedDue: String? = item.dueDateComponents.flatMap { comps in
         Calendar.current.date(from: comps).map { formatDate($0, showTime: comps.hour != nil) }

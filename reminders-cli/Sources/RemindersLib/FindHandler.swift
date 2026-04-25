@@ -1,5 +1,7 @@
 // FindHandler.swift
 
+import GetClearKit
+
 public func handleFind(args: [String], store: any ReminderStore) async throws -> String {
     guard args.count > 1 else { throw ReminderHandlerError("provide a search query") }
     let query   = args.dropFirst().joined(separator: " ")
@@ -9,6 +11,6 @@ public func handleFind(args: [String], store: any ReminderStore) async throws ->
         return "No reminders matching '\(query)'"
     }
     return matched
-        .map { "\(calendarDot(hex: $0.list.color))\(formatFindRow($0))" }
+        .map { "\(calendarDot(hex: $0.list.color, ansiEnabled: ANSI.enabled))\(formatFindRow($0))" }
         .joined(separator: "\n")
 }
