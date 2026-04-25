@@ -12,8 +12,10 @@ This document has three sections: current structure, decision log, and improveme
 
 Single monorepo at `~/dev/get-clear/` (#34 complete 2026-04-16). All standalone repos archived. Tool source lives under `<tool>-cli/Sources/` subdirectories within the monorepo.
 
-- `Sources/GetClearKit/` — shared library: ANSI, Fail, Flags, DateParser, RangeParser, Commands, ArgParsing, ActivityLog, UpdateChecker, ToolIdentity, Contact, ContactStore
-- `Sources/ContactKit/` — shared Apple Contacts boundary: AppleContactStore, toContact(), cleanLabel()
+- `Sources/GetClearKit/` — shared suite infrastructure: ANSI, Fail, Flags, DateParser, RangeParser, Commands, ArgParsing, ActivityLog, UpdateChecker, ToolIdentity
+- `Sources/ContactKit/` — pure shared contact types: Contact, ContactField, ContactStore protocol, matchContacts()
+- `Sources/AppleContactKit/` — Apple Contacts boundary: AppleContactStore, toContact(), cleanLabel()
+- `Sources/ContactStoreFactory/` — shared backend factory: makeContactStore(); update here when adding new backends
 - `Sources/GetClear/` — umbrella `get-clear` binary (what, recap, check-update)
 - `reminders-cli/Sources/` — RemindersLib + RemindersCLI
 - `calendar-cli/Sources/` — CalendarLib + CalendarCLI
@@ -112,17 +114,23 @@ contacts-cli is the reference implementation (adopted 2026-04-10, commit 37e9a75
 
 ### 2026-04-25 — Shared contact resolution library added (#150)
 
-**Decision:** `Contact`, `ContactField`, `ContactStore`, and `matchContacts` live in `GetClearKit`. A new `Sources/ContactKit/` target provides `AppleContactStore` (the Apple Contacts framework boundary) and `toContact()` for converting `CNContact` to `Contact`.
+**Decision:** Four targets implement the shared contact layer:
+- `ContactKit` — pure: `Contact`, `ContactField`, `ContactStore`, `matchContacts`. No framework imports. All Lib targets depend on this.
+- `AppleContactKit` — Apple boundary: `AppleContactStore`, `toContact()`, `cleanLabel()`. Links Contacts framework.
+- `ContactStoreFactory` — shared factory: `makeContactStore()`. Depends on all backends. All CLI binaries depend on this.
+- (future) `GoogleContactKit` — Google boundary, same pattern as `AppleContactKit`.
 
-**Why:** Three tools (contacts, mail, text) each maintained their own contact type and name-matching logic. Any improvement had to be made three times and implementations had already diverged. The shared library is a pre-requisite for #141–143 (per-tool protocol abstractions).
+**Why:** Three tools (contacts, mail, text) each maintained their own contact type and name-matching logic. The shared library is a pre-requisite for #141–143. The three-target split (types / boundary / factory) satisfies FR-004: adding a new backend requires only a new boundary target and an update to `ContactStoreFactory` — zero changes to any tool.
 
-**Scope note:** The existing tool types (`ContactRecord`, `MessageContact`, `MailContact`) are untouched. Migration of each tool to use the shared layer is deferred to #141–143. The library ships ready to consume; tools migrate when their abstraction issues land.
+**Why not GetClearKit:** GetClearKit is suite infrastructure (ANSI, arg parsing, commands, update checker). Contact types are domain-specific; placing them in GetClearKit would make it a monolith and obscure the clean layer boundary.
+
+**Scope note:** The existing tool types (`ContactRecord`, `MessageContact`, `MailContact`) are untouched. Migration deferred to #141–143.
 
 **Key patterns:**
-- `ContactField: Equatable, Hashable, Sendable` — named type instead of tuple so `Contact` can eventually conform to `Equatable`
+- `ContactField: Equatable, Hashable, Sendable` — named type instead of tuple so `Contact` can conform to `Equatable`
 - `matchContacts` is a free function, not a protocol requirement — pure, testable, no store dependency
-- `toContact()` is `public` in ContactKit — ContactsCLI needs it for its write-side CNContact bridge
-- `cleanLabel()` is `internal` in ContactKit, tested via `@testable import`
+- `toContact()` and `cleanLabel()` are `internal` in `AppleContactKit` — not part of the tool-implementor contract
+- `makeContactStore()` in `ContactStoreFactory` is the single entry point for all CLI binaries; concrete backend type never exposed
 
 ### 2026-04-24 — Three-tier model introduced; reminders-cli complete (#147)
 
