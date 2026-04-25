@@ -1,7 +1,5 @@
 // Usage.swift
 
-import Foundation
-import GetClearKit
 
 func usage() -> String {
     """

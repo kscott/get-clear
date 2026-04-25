@@ -1,7 +1,5 @@
 // Usage.swift
 
-import Foundation
-import MailLib
 
 func usage() -> String {
     """

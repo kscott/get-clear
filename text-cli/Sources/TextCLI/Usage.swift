@@ -1,6 +1,5 @@
 // Usage.swift
 
-import Foundation
 
 func usage() -> String {
     """
