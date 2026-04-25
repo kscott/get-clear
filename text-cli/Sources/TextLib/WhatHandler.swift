@@ -1,4 +1,5 @@
 // WhatHandler.swift
+// Handles the `text what` command — activity log display for the text tool.
 
 import Foundation
 import GetClearKit

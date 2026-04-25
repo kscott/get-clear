@@ -14,12 +14,12 @@ await runCLI(args: args, identity: identity, usage: usage) { command, args in
         return
     }
 
-    let sender = await makeMessageSender()
-
     do {
         switch command {
         case .what: print(handleWhat(args: args))
-        case .send: print(try await handleSend(args: args, sender: sender))
+        case .send:
+            let sender = await makeMessageSender()
+            print(try await handleSend(args: args, sender: sender))
         default:    print(usage())
         }
     } catch {

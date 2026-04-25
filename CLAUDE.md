@@ -89,11 +89,10 @@ cp .build/release/<tool>-bin ~/.local/bin/<tool>
 
 All of these must be complete before public release. See `going-live.md` for full detail.
 
-Done: #33 (Command enum), #34 (monorepo), #35–39 (business logic extraction), #139 (async/await), #144 (reminders second-pass)
+Done: #33 (Command enum), #34 (monorepo), #35–39 (business logic extraction), #139 (async/await), #144 (reminders second-pass), #150 (shared contact resolution), #147 (reminders three-tier), #143 (text three-tier)
 
 Remaining, in priority order:
-- **#150** — Shared contact resolution library (start here; blocks #141, #142, #143)
-- **#147, #140–143** — Protocol abstractions: ReminderStore first (template), then CalendarStore, ContactStore, MailClient, MessageSender
+- **#140, #141, #142** — Protocol abstractions: CalendarStore, ContactStore, MailClient (use #147 as template)
 - **#61** — Gmail support (hard launch blocker; depends on MailClient #142)
 - **#53, #80, #68** — Feature additions: `calendar change`, move reminder to list, multi-recipient text
 - **#40** — GetClearKit shared utilities (what command, multi-match, field updates, error type)
@@ -112,8 +111,6 @@ Display: `reminders 1.3.1 (Get Clear 1.3.1)` — current suite version is 1.3.1
 Use `scripts/bump-version <suite-version> [tool:version ...]` to bump. Never edit version constants by hand.
 
 ## Active Technologies
-- Swift 5.9 (swift-tools-version: 5.9) + Quick + Nimble (testing); GetClearKit (shared suite library); Contacts framework (framework boundary only) (012-shared-contacts-lib)
-- N/A — read-only access to Apple CNContactStore; no writes from the shared layer (012-shared-contacts-lib)
-
-## Recent Changes
-- 012-shared-contacts-lib: Added Swift 5.9 (swift-tools-version: 5.9) + Quick + Nimble (testing); GetClearKit (shared suite library); Contacts framework (framework boundary only)
+- Swift 5.9 (swift-tools-version: 5.9) + Quick + Nimble (testing)
+- GetClearKit, ContactKit, AppleContactKit, ContactStoreFactory — shared suite and contact layers
+- Contacts framework access via AppleContactKit boundary only; no writes

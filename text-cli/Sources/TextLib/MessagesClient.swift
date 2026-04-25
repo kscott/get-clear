@@ -3,13 +3,7 @@
 
 import Foundation
 
-/// Escape a string for safe embedding in an AppleScript string literal.
-///
-/// AppleScript does not support escape sequences inside quoted strings.
-/// Double quotes are handled by splitting on `"` and rejoining with the
-/// built-in `quote` constant, which evaluates to a literal double-quote character.
-///
-/// Example: `say "hi"` → `"say " & quote & "hi" & quote & ""`
+// AppleScript has no escape sequences — split on " and rejoin with the built-in quote constant.
 public func appleScriptLiteral(_ s: String) -> String {
     let parts = s.components(separatedBy: "\"")
     if parts.count == 1 { return "\"\(s)\"" }

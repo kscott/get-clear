@@ -22,7 +22,7 @@ Single monorepo at `~/dev/get-clear/` (#34 complete 2026-04-16). All standalone 
 - `contacts-cli/Sources/` — ContactsLib + ContactsCLI
 - `mail-cli/Sources/` — MailLib + MailCLI (JMAP/Fastmail; Gmail #61)
 - `text-cli/Sources/` — TextLib + TextMessages + TextCLI (osascript → Messages.app)
-- `Tests/GetClearKitTests/` — Quick/Nimble specs including Contact and matchContacts; per-tool coverage open in #41–45
+- `Tests/GetClearKitTests/` — Quick/Nimble specs; per-tool coverage open in #41–45
 - `Tests/ContactKitTests/` — cleanLabel and SpyContactStore specs
 
 ### Layer model
@@ -62,8 +62,6 @@ The boundary is enforced by the Swift package structure: `*Lib` targets do not i
 | `ActivityLogEntry.swift` | `ActivityLogEntry` value type |
 | `TimespanFormatter.swift` | Human-readable timespan formatting |
 | `UpdateChecker.swift` | Background version check; hint on stderr at most once per hour |
-| `Contact.swift` | `ContactField` struct; `Contact` struct with primaryEmail/primaryPhone |
-| `ContactStore.swift` | `ContactStore` protocol; `matchContacts()` free function |
 
 ### Tool Lib targets (as of 2026-04-24)
 
@@ -75,8 +73,8 @@ All five extractions complete (#35–39). Each tool's `main.swift` is ≤60 line
 - `RemindersCLI`: `main.swift`, `StoreFactory`, `Usage`, `Version`
 
 **text-cli** — three-tier complete (#143):
-- `TextLib`: `SendHandler`, `OpenHandler`, `WhatHandler`, `MessagesClient`, `PhoneNormalizer`, `TextErrors`, `MessageSender` (protocol + `SendResult`), `UsageText`
-- `TextMessages` (boundary): `AppleMessageSender` — contact resolution via injected `ContactStore`, osascript dispatch
+- `TextLib`: `SendHandler`, `OpenHandler`, `WhatHandler`, `MessagesClient`, `PhoneNormalizer`, `TextErrors`, `MessageSender` (protocol + `SendResult`), `TargetResolver` (`resolveTarget`, `requiresContactLookup`), `UsageText`
+- `TextMessages` (boundary): `AppleMessageSender` — delegates resolution to `TargetResolver`, osascript dispatch
 - `TextCLI`: `main.swift`, `StoreFactory`, `Usage`, `Version`
 
 **Other tools** — two-tier (Lib + CLI); three-tier pending (#140–142):
@@ -118,14 +116,16 @@ contacts-cli is the reference implementation (adopted 2026-04-10, commit 37e9a75
 
 ### 2026-04-25 — text-cli three-tier migration complete (#143)
 
-**Decision:** Three tiers introduced — `TextLib` (pure protocol + handlers), `TextMessages` (boundary: `AppleMessageSender`), `TextCLI` (dispatch only). `MessageSender` protocol with `SendResult` return type makes handlers testable with a spy. `AppleMessageSender` takes an injected `any ContactStore` (from `ContactStoreFactory`); no CNContactStore in the CLI or boundary target.
+**Decision:** Three tiers introduced — `TextLib` (pure handlers + protocols), `TextMessages` (boundary: `AppleMessageSender`), `TextCLI` (dispatch only). `MessageSender` protocol with `SendResult` return type makes handlers testable with a spy. All contact resolution logic lives in `TextLib/TargetResolver.swift` — not at the boundary — so any future backend can call `resolveTarget` and `requiresContactLookup` without duplicating logic. `AppleMessageSender` is three lines: check if lookup needed, resolve, send.
 
 **Why:** `text` is the lightest migration — two commands, one mutating. The `MessageSender` protocol enables testing `handleSend` without Messages.app or osascript. Contact resolution via `matchContacts` (ContactKit) and `normalizePhone` (TextLib) replaces the old `resolveSendTarget`/`MessageContact` pair, which is now deleted. `makeContactStore()` from ContactStoreFactory owns permission; `StoreFactory` in TextCLI injects it into `AppleMessageSender`.
 
 **Key patterns:**
-- `handleSend(args:sender:)` receives `any MessageSender`; returns `String`; no contacts parameter — resolution is the sender's concern
-- `handleOpen(opener:)` follows reminders pattern exactly — takes a closure, no contacts needed
-- `SendResult` returned by `send(to:message:)` carries resolved display name and address back to the handler for confirmation output
+- `resolveTarget(query:contacts:) -> SendResult` in TextLib — handles phone detection, email detection, name matching, ambiguous throw; returns `SendResult` directly
+- `requiresContactLookup(_:) -> Bool` in TextLib — defers contact fetch (and permission prompt) until actually needed
+- `handleSend(args:sender:)` receives `any MessageSender`; returns `String`; no contacts parameter
+- `handleOpen(opener:)` follows reminders pattern — takes a `(URL) -> Void` closure, no contacts needed
+- `SendHandlerSpec` uses `AsyncSpec` (not `QuickSpec`) — required for async `it` closures in Quick/Nimble
 - `TextMessages` depends on `ContactKit` (not Contacts framework directly); `text-bin` depends on `ContactStoreFactory`
 
 ### 2026-04-25 — Shared contact resolution library added (#150)
@@ -140,7 +140,7 @@ contacts-cli is the reference implementation (adopted 2026-04-10, commit 37e9a75
 
 **Why not GetClearKit:** GetClearKit is suite infrastructure (ANSI, arg parsing, commands, update checker). Contact types are domain-specific; placing them in GetClearKit would make it a monolith and obscure the clean layer boundary.
 
-**Scope note:** The existing tool types (`ContactRecord`, `MessageContact`, `MailContact`) are untouched. Migration deferred to #141–143.
+**Scope note:** `MessageContact` deleted in #143 (text-cli migration complete). `ContactRecord` (contacts-cli) and `MailContact` (mail-cli) remain pending — migration deferred to #141–142.
 
 **Key patterns:**
 - `ContactField: Equatable, Hashable, Sendable` — named type instead of tuple so `Contact` can conform to `Equatable`
@@ -164,16 +164,6 @@ contacts-cli is the reference implementation (adopted 2026-04-10, commit 37e9a75
 
 **Template:** reminders-cli is the reference implementation. #140–143 follow this pattern for the other four tools.
 
-### 2026-04-24 — text-cli three-tier complete (#143)
-
-**Decision:** text-cli follows the same three-tier model as reminders-cli. `MessageSender` protocol lives in `TextLib`; `AppleMessageSender` (osascript execution) lives in the new `TextMessages` boundary target; all handler functions (`handleSend`, `handleOpen`, `handleWhat`) are pure and live in `TextLib`.
-
-**Why:** Consistent with #147 and the template established for the suite. Extracts osascript execution to the boundary so `handleSend` is fully unit-testable via `SpyMessageSender`. Removes the last `DispatchSemaphore` from text-cli (already done in #139 for the others, text lagged).
-
-**Key patterns:**
-- `SendHandlerSpec` uses `AsyncSpec` (not `QuickSpec`) — required for async `it` closures in Quick/Nimble.
-- Async error assertions: partial `do-catch` (no catch-all) keeps the closure `() async throws -> Void`, which Quick's overload resolution requires.
-- `handleOpen` takes an `opener: (URL) -> Void` closure — testable without AppKit import.
 
 ### 2026-04-10 — Business logic extraction made a pre-launch blocker
 
@@ -222,6 +212,10 @@ The existing Quick/Nimble specs were written after (or alongside) extractions fr
 The extraction work in #35–39, #139, and #144 couldn't avoid this; the interface was inherited. But new features have no such excuse.
 
 **SpecKit creates the right conditions for genuine TDD:** the plan step defines interface contracts (inputs, outputs) before any implementation code exists. The correct workflow for new features is: plan defines the interface → write failing specs against that interface → `/speckit.implement` makes them pass. A spec that's never been red is not a spec — it's a description of code that already exists.
+
+### ContactKit cleanup — #153
+
+Four items filed during #143 review: (1) wrong module name in `ContactStoreSpec` header (says GetClearKit, should say ContactKit); (2) `SpyContactStoreSpec` uses pre-async-migration `waitUntil` + `Task` pattern — should use `AsyncSpec`; (3) `ContactStore.swift` has two jobs (protocol + `matchContacts`) — split into separate files; (4) `AppleContactStore.contacts()` blocks the cooperative thread pool — should use `withCheckedThrowingContinuation` + `DispatchQueue`.
 
 ### `FieldChange<T>` will be duplicated across reminders and contacts
 

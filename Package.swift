@@ -198,7 +198,7 @@ let package = Package(
 
         .target(
             name: "TextLib",
-            dependencies: ["GetClearKit"],
+            dependencies: ["GetClearKit", "ContactKit"],
             path: "text-cli/Sources/TextLib"
         ),
         .target(
@@ -218,6 +218,7 @@ let package = Package(
             name: "TextLibTests",
             dependencies: [
                 "TextLib",
+                "ContactKit",
                 .product(name: "Quick", package: "Quick"),
                 .product(name: "Nimble", package: "Nimble"),
             ],

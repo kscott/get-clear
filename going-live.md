@@ -24,6 +24,9 @@
 | #33 — Command enum + runCLI across all five tools | 2026-04-16 |
 | #139 — Async/await migration; UpdateChecker moved into runCLI | 2026-04-22 |
 | #144 — reminders-cli second-pass refactors | 2026-04-25 |
+| #150 — Shared contact resolution library (ContactKit, AppleContactKit, ContactStoreFactory) | 2026-04-25 |
+| #147 — reminders-cli three-tier: ReminderStore protocol + AppleReminderStore | 2026-04-24 |
+| #143 — text-cli three-tier: MessageSender protocol + TextMessages + TargetResolver | 2026-04-25 |
 
 ---
 
@@ -65,27 +68,22 @@ Output formatting, arg parsing duplication, `describeEKRule`, grouping logic, re
 
 ---
 
-### 6. Shared contact resolution library — #150
-**Depends on:** nothing
+### 6. ✅ Shared contact resolution library — #150
 
-Mail, text, and contacts each maintain their own contact data type, loading code, and matching logic. This consolidates all three into a single shared library with a backend abstraction — Apple Contacts initially, Google Contacts later. Required before #141, #142, and #143 can adopt the unified Contact type.
-
-Spec: `specs/012-shared-contacts-lib/spec.md`
+`ContactKit` (pure types + `matchContacts`), `AppleContactKit` (boundary), `ContactStoreFactory` (factory). Text-cli migration (#143) fully adopted the shared layer; contacts and mail pending (#141, #142).
 
 ---
 
-### 7. Protocol abstractions — #147, #140, #141, #142, #143
-**Depends on:** #144 (reminders pattern establishes the template); #141, #142, #143 also depend on #150
-
-Introduce store protocols and Apple-backed implementations for each tool. #147 (reminders) first — it's the reference pattern. Then #140–143 in any order.
+### 7. Protocol abstractions — #140, #141, #142 (✅ #147, ✅ #143)
+**Depends on:** ✅ #144, ✅ #150
 
 | Issue | Tool | What ships |
 |---|---|---|
-| #147 | reminders | `ReminderStore` protocol, `AppleReminderStore`, `ListItem`, `StoreFactory` — prerequisite for Google Tasks (#146) |
+| #147 ✅ | reminders | `ReminderStore` protocol, `AppleReminderStore`, `ListItem`, `StoreFactory` |
 | #140 | calendar | `CalendarStore` protocol, `CalendarEventKit` target, `EventItem` conversion layer |
-| #141 | contacts | `ContactStore` protocol, `ContactsApple` target — adopts shared Contact type from #150 |
-| #142 | mail | `MailClient` protocol, `MailJMAP` target — adopts shared Contact type from #150 |
-| #143 | text | `MessageSender` protocol, `TextMessages` target — adopts shared Contact type from #150 |
+| #141 | contacts | `ContactStore` protocol, `ContactsApple` target — adopts shared Contact type |
+| #142 | mail | `MailClient` protocol, `MailJMAP` target — adopts shared Contact type |
+| #143 ✅ | text | `MessageSender` protocol, `TextMessages` target, `TargetResolver` in TextLib |
 
 ---
 
@@ -169,15 +167,15 @@ These are good work but wait until real users are using the tools:
 ✅ #34     Monorepo migration
 ✅ #33     Command enum + runCLI across all tools
 ✅ #139    Async/await migration
+✅ #144    reminders second-pass refactors
+✅ #150    shared contact resolution library
+✅ #147    ReminderStore protocol + AppleReminderStore
+✅ #143    MessageSender protocol + TextMessages + TargetResolver
 
-✅ #144  reminders second-pass refactors
-#150  shared contact resolution library   ← start here
-  └── #147  ReminderStore protocol + AppleReminderStore
-  └── #140  CalendarStore protocol + CalendarEventKit
-  └── #141  ContactStore protocol + ContactsApple  (needs #150)
-  └── #142  MailClient protocol + MailJMAP          (needs #150)
-        └── #61  Gmail              ← hard user-facing blocker
-  └── #143  MessageSender protocol + TextMessages   (needs #150)
+#140  CalendarStore protocol + CalendarEventKit
+#141  ContactStore protocol + ContactsApple
+#142  MailClient protocol + MailJMAP
+  └── #61  Gmail              ← hard user-facing blocker
 
 #53, #80, #68  feature additions (calendar change, move to list, multi-recipient text)
 #40   GetClearKit shared utilities
@@ -189,4 +187,4 @@ These are good work but wait until real users are using the tools:
 Phase 2 install validation ← last, after all code
 ```
 
-**Minimum to ship:** #144 + #150 → #147, #140–143 → #61 (Gmail) → #53, #80, #68 → #40 → #41–45 → #30 → #135 → Phase 2
+**Minimum to ship:** #140–142 → #61 (Gmail) → #53, #80, #68 → #40 → #41–45 → #30 → #135 → Phase 2

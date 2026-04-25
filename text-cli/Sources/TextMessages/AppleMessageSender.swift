@@ -13,38 +13,10 @@ public struct AppleMessageSender: MessageSender {
     }
 
     public func send(to query: String, message: String) async throws -> SendResult {
-        let q = query.trimmingCharacters(in: .whitespaces)
-
-        // Direct phone number — skip contact lookup
-        let digits = q.filter { $0.isNumber }
-        if (digits.count == 10 || digits.count == 11) && !q.contains("@") {
-            let address = normalizePhone(q)
-            try sendViaMessages(to: address, message: message)
-            return SendResult(displayName: formatPhone(address), address: address)
-        }
-
-        // Direct email — skip contact lookup
-        if q.contains("@") && !q.contains(" ") {
-            try sendViaMessages(to: q, message: message)
-            return SendResult(displayName: q, address: q)
-        }
-
-        // Name/partial match via ContactStore
-        let all     = try await contactStore.contacts()
-        let matches = matchContacts(q, in: all)
-        guard let contact = matches.first else { throw TextError.notFound(q) }
-
-        let address: String
-        if let phone = contact.phones.first?.value {
-            address = normalizePhone(phone)
-        } else if let email = contact.emails.first?.value {
-            address = email
-        } else {
-            throw TextError.notFound(q)
-        }
-
-        try sendViaMessages(to: address, message: message)
-        return SendResult(displayName: contact.name, address: address)
+        let contacts = requiresContactLookup(query) ? try await contactStore.contacts() : []
+        let target   = try resolveTarget(query: query, contacts: contacts)
+        try sendViaMessages(to: target.address, message: message)
+        return target
     }
 }
 

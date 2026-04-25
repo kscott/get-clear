@@ -78,6 +78,13 @@ final class SendHandlerSpec: AsyncSpec {
                         try await handleSend(args: ["send", "Alice", "hi"], sender: sender)
                     }.to(throwError(TextError.sendFailed("osascript error")))
                 }
+                it("propagates ambiguous from the sender") {
+                    let sender = SpyMessageSender()
+                    sender.shouldThrow = TextError.ambiguous("\"Alice\" matches multiple contacts — be more specific:\n  Alice Smith (+15551234567)\n  Alice Jones (alice@example.com)")
+                    await expect {
+                        try await handleSend(args: ["send", "Alice", "hi"], sender: sender)
+                    }.to(throwError(TextError.ambiguous("\"Alice\" matches multiple contacts — be more specific:\n  Alice Smith (+15551234567)\n  Alice Jones (alice@example.com)")))
+                }
             }
         }
     }
