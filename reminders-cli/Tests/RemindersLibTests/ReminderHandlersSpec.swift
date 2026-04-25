@@ -70,6 +70,12 @@ final class ReminderHandlersSpec: AsyncSpec {
                 expect(out).to(contain("Pay rent"))
                 expect(out).notTo(contain("\nPersonal"))
             }
+            it("applies the sort order when 'by' is specified") {
+                store.lists = [personalList]
+                store.items = [makeItem()]
+                let out = try await handleList(args: ["list", "by", "title"], store: store)
+                expect(out).to(contain("Pay rent"))
+            }
             it("throws when the named list does not exist") {
                 store.lists = [personalList]
                 await expect {
@@ -174,6 +180,22 @@ final class ReminderHandlersSpec: AsyncSpec {
                     try await handleRename(args: ["rename", "Pay rent"], store: store)
                 }.to(throwError(errorType: ReminderHandlerError.self))
             }
+            it("throws with the not-found message when the title is absent from the store") {
+                store.items = []
+                await expect {
+                    try await handleRename(args: ["rename", "Pay rent", "Pay mortgage"], store: store)
+                }.to(throwError { (e: ReminderHandlerError) in
+                    expect(e.message).to(contain("Pay rent"))
+                })
+            }
+            it("throws with the disambiguation message when the title is ambiguous") {
+                store.items = ambiguousItems()
+                await expect {
+                    try await handleRename(args: ["rename", "Pay rent", "Pay mortgage"], store: store)
+                }.to(throwError { (e: ReminderHandlerError) in
+                    expect(e.message).to(contain("rename"))
+                })
+            }
         }
 
         // MARK: handleRemove
@@ -188,6 +210,37 @@ final class ReminderHandlersSpec: AsyncSpec {
                 store.items = [makeItem(identifier: "id-1")]
                 _ = try await handleRemove(args: ["remove", "Pay rent"], store: store)
                 expect(store.deletedIds) == ["id-1"]
+            }
+            it("throws with the not-found message when the title is absent from the store") {
+                store.items = []
+                await expect {
+                    try await handleRemove(args: ["remove", "Pay rent"], store: store)
+                }.to(throwError { (e: ReminderHandlerError) in
+                    expect(e.message).to(contain("Pay rent"))
+                })
+            }
+            it("throws with the disambiguation message when the title is ambiguous") {
+                store.items = ambiguousItems()
+                await expect {
+                    try await handleRemove(args: ["remove", "Pay rent"], store: store)
+                }.to(throwError { (e: ReminderHandlerError) in
+                    expect(e.message).to(contain("remove"))
+                })
+            }
+            it("filters by the named list") {
+                store.lists = [personalList, workList]
+                store.items = [makeItem(identifier: "id-1")]
+                _ = try await handleRemove(args: ["remove", "Pay rent", "Personal"], store: store)
+                expect(store.deletedIds) == ["id-1"]
+            }
+            it("throws when the named list does not exist") {
+                store.lists = [personalList]
+                store.items = [makeItem(identifier: "id-1")]
+                await expect {
+                    try await handleRemove(args: ["remove", "Pay rent", "Nonexistent"], store: store)
+                }.to(throwError { (e: ReminderHandlerError) in
+                    expect(e.message).to(contain("Nonexistent"))
+                })
             }
         }
 
@@ -210,6 +263,24 @@ final class ReminderHandlersSpec: AsyncSpec {
                 store.lists = [personalList]
                 _ = try await handleAdd(args: ["add", "Pay rent"], store: store)
                 expect(store.addedItems[0].list.title) == "Personal"
+            }
+            it("sets the due date when a date option is provided") {
+                store.lists = [personalList]
+                _ = try await handleAdd(args: ["add", "Pay rent", "Personal", "due", "friday"], store: store)
+                expect(store.addedItems[0].dueDateComponents).notTo(beNil())
+            }
+            it("sets the recurrence when a repeat option is provided") {
+                store.lists = [personalList]
+                _ = try await handleAdd(args: ["add", "Pay rent", "Personal", "repeat", "monthly"], store: store)
+                expect(store.addedItems[0].recurrenceSpec).notTo(beNil())
+            }
+            it("throws with an unrecognized repeat message when the recurrence string is invalid") {
+                store.lists = [personalList]
+                await expect {
+                    try await handleAdd(args: ["add", "Pay rent", "Personal", "repeat", "fortnightly"], store: store)
+                }.to(throwError { (e: ReminderHandlerError) in
+                    expect(e.message).to(contain("fortnightly"))
+                })
             }
             it("throws when no title argument is provided") {
                 await expect {
@@ -243,6 +314,30 @@ final class ReminderHandlersSpec: AsyncSpec {
                 await expect {
                     try await handleChange(args: ["change", "Pay rent"], store: store)
                 }.to(throwError(errorType: ReminderHandlerError.self))
+            }
+            it("throws with the not-found message when the title is absent from the store") {
+                store.items = []
+                await expect {
+                    try await handleChange(args: ["change", "Pay rent", "priority", "high"], store: store)
+                }.to(throwError { (e: ReminderHandlerError) in
+                    expect(e.message).to(contain("Pay rent"))
+                })
+            }
+            it("throws with the disambiguation message when the title is ambiguous") {
+                store.items = ambiguousItems()
+                await expect {
+                    try await handleChange(args: ["change", "Pay rent", "priority", "high"], store: store)
+                }.to(throwError { (e: ReminderHandlerError) in
+                    expect(e.message).to(contain("change"))
+                })
+            }
+            it("throws with unrecognized recurrence message") {
+                store.items = [makeItem(identifier: "id-1")]
+                await expect {
+                    try await handleChange(args: ["change", "Pay rent", "repeat", "fortnightly"], store: store)
+                }.to(throwError { (e: ReminderHandlerError) in
+                    expect(e.message).to(contain("fortnightly"))
+                })
             }
         }
     }

@@ -39,9 +39,7 @@ public final class AppleReminderStore: ReminderStore {
         let scope: [EKCalendar]
         if let list {
             scope = ek.calendars(for: .reminder).filter {
-                list.identifier.isEmpty
-                    ? $0.title == list.title
-                    : $0.calendarIdentifier == list.identifier
+                list.matches(identifier: $0.calendarIdentifier, title: $0.title)
             }
         } else {
             scope = ek.calendars(for: .reminder)
@@ -59,16 +57,22 @@ public final class AppleReminderStore: ReminderStore {
         reminder.calendar  = cal
         reminder.dueDateComponents = item.dueDateComponents
         if let spec = item.recurrenceSpec { reminder.addRecurrenceRule(toEKRule(spec)) }
-        if item.priority != 0            { reminder.priority = item.priority }
-        reminder.notes = item.notes
-        if let url = item.url            { reminder.url = url }
+        reminder.priority = item.priority
+        reminder.notes    = item.notes
+        reminder.url      = item.url
         try ek.save(reminder, commit: true)
         return ReminderItem(reminder)
     }
 
     public func update(identifier: String, changes: ReminderChanges) async throws {
         let reminder = try ekReminder(identifier: identifier)
-        try applyChanges(changes, to: reminder, store: ek)
+        if case .set(let targetName) = changes.list {
+            guard let cal = calendar(for: ReminderList(title: targetName)) else {
+                throw AppleStoreError.listNotFound(targetName)
+            }
+            reminder.calendar = cal
+        }
+        applyChanges(changes, to: reminder)
         try ek.save(reminder, commit: true)
     }
 
@@ -99,10 +103,8 @@ public final class AppleReminderStore: ReminderStore {
     }
 
     private func calendar(for list: ReminderList) -> EKCalendar? {
-        let all = ek.calendars(for: .reminder)
-        if !list.identifier.isEmpty {
-            return all.first { $0.calendarIdentifier == list.identifier }
+        ek.calendars(for: .reminder).first {
+            list.matches(identifier: $0.calendarIdentifier, title: $0.title)
         }
-        return all.first { $0.title == list.title }
     }
 }

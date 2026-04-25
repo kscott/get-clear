@@ -23,7 +23,7 @@ public struct ReminderChanges {
     /// Priority integer (0 = none, 1 = high, 5 = medium, 9 = low), or unchanged.
     public let priority: FieldChange<Int>
     public let note: FieldChange<String>
-    public let url: FieldChange<String>
+    public let url: FieldChange<URL>
     /// Target list name. Caller is responsible for resolving to EKCalendar and generating the description.
     public let list: FieldChange<String>
     /// Human-readable summary of changes made (excludes list — caller appends that).
@@ -63,7 +63,7 @@ public func parseReminderChanges(
     var recurrence: FieldChange<RecurrenceSpec> = .unchanged
     var priority: FieldChange<Int>             = .unchanged
     var note: FieldChange<String>              = .unchanged
-    var url: FieldChange<String>               = .unchanged
+    var url: FieldChange<URL>                  = .unchanged
     var list: FieldChange<String>              = .unchanged
     var descriptions: [String]                 = []
 
@@ -122,8 +122,8 @@ public func parseReminderChanges(
         if opts.url.lowercased() == "none" {
             url = .cleared
             descriptions.append("url cleared")
-        } else {
-            url = .set(opts.url)
+        } else if let parsed = URL(string: opts.url) {
+            url = .set(parsed)
             descriptions.append("url → \(opts.url)")
         }
     }

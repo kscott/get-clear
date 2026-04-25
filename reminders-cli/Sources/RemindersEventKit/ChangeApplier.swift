@@ -1,11 +1,12 @@
 // ChangeApplier.swift
 // Applies a ReminderChanges value to an EKReminder in place.
+// Pure assignment — no business logic. List resolution and URL parsing happen upstream.
 
 import Foundation
 import EventKit
 import RemindersLib
 
-func applyChanges(_ changes: ReminderChanges, to reminder: EKReminder, store: EKEventStore) throws {
+func applyChanges(_ changes: ReminderChanges, to reminder: EKReminder) {
     if case .cleared = changes.due { reminder.dueDateComponents = nil }
     if case .set(let comps) = changes.due { reminder.dueDateComponents = comps }
 
@@ -23,12 +24,5 @@ func applyChanges(_ changes: ReminderChanges, to reminder: EKReminder, store: EK
     if case .set(let n) = changes.note { reminder.notes = n }
 
     if case .cleared = changes.url { reminder.url = nil }
-    if case .set(let u) = changes.url, let url = URL(string: u) { reminder.url = url }
-
-    if case .set(let targetName) = changes.list {
-        guard let targetCal = store.calendars(for: .reminder).first(where: {
-            $0.title.caseInsensitiveCompare(targetName) == .orderedSame
-        }) else { throw AppleStoreError.listNotFound(targetName) }
-        reminder.calendar = targetCal
-    }
+    if case .set(let url) = changes.url { reminder.url = url }
 }

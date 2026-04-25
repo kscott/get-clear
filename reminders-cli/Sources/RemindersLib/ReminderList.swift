@@ -24,4 +24,8 @@ public struct ReminderList: Equatable {
         self.source       = source
         self.isModifiable = isModifiable
     }
+
+    public func matches(identifier: String, title: String) -> Bool {
+        self.identifier.isEmpty ? self.title == title : self.identifier == identifier
+    }
 }

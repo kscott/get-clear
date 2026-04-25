@@ -191,7 +191,7 @@ final class ChangeCommandSpec: QuickSpec {
                 it("sets url for non-empty value") {
                     var opts = ParsedOptions(); opts.url = "https://example.com"
                     let changes = try! parseReminderChanges(opts, existingDue: nil)
-                    expect(changes.url) == .set("https://example.com")
+                    expect(changes.url) == .set(URL(string: "https://example.com")!)
                 }
                 it("adds 'url cleared' to descriptions") {
                     var opts = ParsedOptions(); opts.url = "none"

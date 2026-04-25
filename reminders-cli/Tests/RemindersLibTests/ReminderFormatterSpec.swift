@@ -241,6 +241,17 @@ final class ReminderFormatterSpec: QuickSpec {
             it("does not include a due prefix when no due date is set") {
                 expect(formatFindRow(makeItem())).notTo(contain("due"))
             }
+            it("includes a due prefix when a due date is set") {
+                let comps = DateComponents(calendar: .current, year: 2026, month: 6, day: 15)
+                expect(formatFindRow(makeItem(dueDateComponents: comps))).to(contain("due"))
+            }
+        }
+
+        describe("formatListRow") {
+            it("includes a due date in the meta when a due date is set") {
+                let comps = DateComponents(calendar: .current, year: 2026, month: 6, day: 15)
+                expect(formatListRow(makeItem(dueDateComponents: comps))).to(contain("Jun"))
+            }
         }
 
         describe("formatShow") {
@@ -252,6 +263,10 @@ final class ReminderFormatterSpec: QuickSpec {
             }
             it("does not include a Due line when no due date is set") {
                 expect(formatShow(item: makeItem())).notTo(contain("Due:"))
+            }
+            it("includes the Due line when a due date is set") {
+                let comps = DateComponents(calendar: .current, year: 2026, month: 6, day: 15)
+                expect(formatShow(item: makeItem(dueDateComponents: comps))).to(contain("Due:"))
             }
             it("includes the Repeat line when recurrenceDescription is set") {
                 expect(formatShow(item: makeItem(recurrenceDescription: "monthly"))).to(contain("Repeat:   monthly"))

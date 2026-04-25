@@ -10,10 +10,7 @@ public func handleAdd(args: [String], store: any ReminderStore) async throws -> 
     let (listName, rawOptions) = splitListAndOptions(
         from: Array(args.dropFirst(2)), calendarTitles: allLists.map(\.title))
     let targetList: ReminderList
-    if let name = listName {
-        guard let match = allLists.first(where: { $0.title == name }) else {
-            throw ReminderHandlerError("List not found: \(name)")
-        }
+    if let name = listName, let match = allLists.first(where: { $0.title == name }) {
         targetList = match
     } else {
         targetList = try await store.defaultList()

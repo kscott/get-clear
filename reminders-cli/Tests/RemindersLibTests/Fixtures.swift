@@ -12,6 +12,13 @@ let workList     = ReminderList(title: "Work")
 
 // MARK: - Item factory
 
+func ambiguousItems(title: String = "Pay rent", list: ReminderList = personalList) -> [ReminderItem] {
+    [makeItem(identifier: "id-1", title: title, list: list),
+     makeItem(identifier: "id-2", title: title, list: list)]
+}
+
+
+
 func makeItem(
     identifier: String = "",
     title: String = "Pay rent",
