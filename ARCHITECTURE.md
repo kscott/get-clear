@@ -18,7 +18,7 @@ Single monorepo at `~/dev/get-clear/` (#34 complete 2026-04-16). All standalone 
 - `calendar-cli/Sources/` — CalendarLib + CalendarCLI
 - `contacts-cli/Sources/` — ContactsLib + ContactsCLI
 - `mail-cli/Sources/` — MailLib + MailCLI (JMAP/Fastmail; Gmail #61)
-- `text-cli/Sources/` — TextLib + TextCLI (osascript → Messages.app)
+- `text-cli/Sources/` — TextLib + TextMessages + TextCLI (osascript → Messages.app)
 - `Tests/GetClearKitTests/` — ~200 Quick/Nimble specs; per-tool test coverage open in #41–45
 
 ### Layer model
@@ -68,15 +68,19 @@ All five extractions complete (#35–39). Each tool's `main.swift` is ≤60 line
 - `RemindersEventKit` (framework boundary): `AppleReminderStore` (single file; absorbs type conversion, recurrence conversion, change application)
 - `RemindersCLI`: `main.swift`, `StoreFactory`, `Usage`, `Version`
 
-**Other tools** — two-tier (Lib + CLI); three-tier pending (#140–143):
+**text-cli** — three-tier complete (#143):
+- `TextLib`: `SendHandler`, `OpenHandler`, `WhatHandler`, `MessagesClient`, `PhoneNormalizer`, `TextErrors`, `TextHandlerError`, `MessageSender` (protocol), `MessageContact`, `UsageText`
+- `TextMessages` (framework boundary): `AppleMessageSender` (osascript execution; no business logic)
+- `TextCLI`: `main.swift`, `StoreFactory`, `Usage`, `Version`
+
+**Other tools** — two-tier (Lib + CLI); three-tier pending (#140–142):
 | Tool | Lib contains |
 |---|---|
 | calendar | `CalendarResolver`, `ConfigParser`, `EventDateTime`, `EventFormatter`, `ChangeCommand` |
 | contacts | `ArgumentParser`, `ChangeCommand`, `ContactFormatter`, `Matching` |
 | mail | `JMAPClient`, `MailConfiguration`, `MailErrors`, `MailFormatter`, `RecipientResolver`, `SendCommand`, `SetupCommand` |
-| text | `MessagesClient`, `PhoneNormalizer`, `TextErrors` |
 
-Protocol abstraction layer (CalendarStore, ContactStore, MailClient, MessageSender) tracked in #140–143. Use reminders-cli as the template. Required before Google backends (#145, #146).
+Protocol abstraction layer (CalendarStore, ContactStore, MailClient) tracked in #140–142. Use reminders-cli as the template. Required before Google backends (#145, #146).
 
 ### Command dispatch (as of 2026-04-10)
 
@@ -121,6 +125,17 @@ contacts-cli is the reference implementation (adopted 2026-04-10, commit 37e9a75
 **Test coverage:** RemindersLib reached 91.4% line coverage including structural zeros (`WhatHandler`, `OpenHandler`, `UsageText`). Testable code coverage is ~97.8%. `hexColor` moved from RemindersLib to RemindersEventKit (framework type conversion belongs at the boundary) — CalendarDot.swift is now 100% covered and has no framework imports.
 
 **Template:** reminders-cli is the reference implementation. #140–143 follow this pattern for the other four tools.
+
+### 2026-04-24 — text-cli three-tier complete (#143)
+
+**Decision:** text-cli follows the same three-tier model as reminders-cli. `MessageSender` protocol lives in `TextLib`; `AppleMessageSender` (osascript execution) lives in the new `TextMessages` boundary target; all handler functions (`handleSend`, `handleOpen`, `handleWhat`) are pure and live in `TextLib`.
+
+**Why:** Consistent with #147 and the template established for the suite. Extracts osascript execution to the boundary so `handleSend` is fully unit-testable via `SpyMessageSender`. Removes the last `DispatchSemaphore` from text-cli (already done in #139 for the others, text lagged).
+
+**Key patterns:**
+- `SendHandlerSpec` uses `AsyncSpec` (not `QuickSpec`) — required for async `it` closures in Quick/Nimble.
+- Async error assertions: partial `do-catch` (no catch-all) keeps the closure `() async throws -> Void`, which Quick's overload resolution requires.
+- `handleOpen` takes an `opener: (URL) -> Void` closure — testable without AppKit import.
 
 ### 2026-04-10 — Business logic extraction made a pre-launch blocker
 

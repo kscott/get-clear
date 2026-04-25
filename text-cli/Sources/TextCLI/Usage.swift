@@ -1,14 +1,7 @@
 // Usage.swift
 
+import TextLib
 
 func usage() -> String {
-    """
-    \(identity)
-
-    Usage:
-      text send <contact> <message...>     # Send a message
-      text open [contact]                  # Open Messages.app
-
-    Feedback: https://github.com/kscott/get-clear/issues
-    """
+    "\(identity)\n\n\(usageText())"
 }

@@ -1,39 +1,37 @@
 // main.swift
 //
-// Entry point for text-bin executable. Argument parsing and dispatch only.
+// Entry point for text-bin. Argument parsing and dispatch only.
 
 import Foundation
+import AppKit
 import Contacts
 import TextLib
 import GetClearKit
 
-let store     = CNContactStore()
-let semaphore = DispatchSemaphore(value: 0)
-let args      = Array(CommandLine.arguments.dropFirst())
+let args = Array(CommandLine.arguments.dropFirst())
 
-Task { await runCLI(args: args, identity: identity, usage: usage) { command, args in
-    store.requestAccess(for: .contacts) { granted, _ in
-        let contacts = granted ? loadMessageContacts(from: store) : []
-
-        do {
-            switch command {
-            case .what: handleWhat(args: args)
-            case .open: try handleOpen(args: args, contacts: contacts)
-            case .send:
-                guard granted else { fail("Contacts access required") }
-                try handleSend(args: args, contacts: contacts)
-            default: usage()
-            }
-        } catch {
-            fputs("Error: \(error.localizedDescription)\n", stderr)
-            exit(1)
+await runCLI(args: args, identity: identity, usage: usage) { command, args in
+    switch command {
+    case .what:
+        print(handleWhat(args: args))
+    default:
+        let store   = CNContactStore()
+        let granted = await withCheckedContinuation { cont in
+            store.requestAccess(for: .contacts) { ok, _ in cont.resume(returning: ok) }
         }
-
-        semaphore.signal()
+        let contacts = granted ? loadMessageContacts(from: store) : []
+        switch command {
+        case .open:
+            handleOpen(args: args, contacts: contacts) { NSWorkspace.shared.open($0) }
+        case .send:
+            guard granted else { fail("Contacts access required") }
+            do {
+                print(try await handleSend(args: args, contacts: contacts, sender: makeMessageSender()))
+            } catch {
+                fail(error.localizedDescription)
+            }
+        default:
+            break
+        }
     }
-} }
-
-semaphore.wait()
-
-UpdateChecker.spawnBackgroundCheckIfNeeded()
-if let hint = UpdateChecker.hint() { fputs(hint + "\n", stderr) }
+}

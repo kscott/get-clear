@@ -154,20 +154,28 @@ let package = Package(
 
         .target(
             name: "TextLib",
+            dependencies: ["GetClearKit"],
             path: "text-cli/Sources/TextLib"
+        ),
+        .target(
+            name: "TextMessages",
+            dependencies: ["TextLib"],
+            path: "text-cli/Sources/TextMessages"
         ),
         .executableTarget(
             name: "text-bin",
-            dependencies: ["TextLib", "GetClearKit"],
+            dependencies: ["TextMessages", "TextLib", "GetClearKit"],
             path: "text-cli/Sources/TextCLI",
             linkerSettings: [
                 .linkedFramework("Contacts"),
+                .linkedFramework("AppKit"),
             ]
         ),
         .testTarget(
             name: "TextLibTests",
             dependencies: [
                 "TextLib",
+                "GetClearKit",
                 .product(name: "Quick", package: "Quick"),
                 .product(name: "Nimble", package: "Nimble"),
             ],
