@@ -20,7 +20,7 @@ public protocol ReminderStore {
 }
 
 public extension ReminderStore {
-    func resolve(title: String, in list: ReminderList?, cmd: String) async throws -> ReminderItem {
+    func resolve(title: String, in list: ReminderList?) async throws -> ReminderItem {
         let items = try await fetchIncomplete(in: list)
         switch lookup(title: title, in: items) {
         case .found(let i):

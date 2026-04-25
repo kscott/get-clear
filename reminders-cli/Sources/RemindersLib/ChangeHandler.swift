@@ -11,7 +11,7 @@ public func handleChange(args: [String], store: any ReminderStore) async throws 
     let list = try resolvedList(named: listName, from: allLists)
     let item: ReminderItem
     do {
-        item = try await store.resolve(title: title, in: list, cmd: "change")
+        item = try await store.resolve(title: title, in: list)
     } catch let err as ReminderStoreError {
         throw storeError(title: title, list: list, cmd: "change", err)
     }

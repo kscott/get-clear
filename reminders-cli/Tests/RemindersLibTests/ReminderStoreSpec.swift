@@ -36,17 +36,17 @@ final class ReminderStoreSpec: AsyncSpec {
             context("single match") {
                 it("returns the matched item") {
                     store.items = [makeItem()]
-                    let result = try await store.resolve(title: "Pay rent", in: nil, cmd: "done")
+                    let result = try await store.resolve(title: "Pay rent", in: nil)
                     expect(result.title) == "Pay rent"
                 }
                 it("is case-insensitive") {
                     store.items = [makeItem(title: "Pay Rent")]
-                    let result = try await store.resolve(title: "pay rent", in: nil, cmd: "done")
+                    let result = try await store.resolve(title: "pay rent", in: nil)
                     expect(result.title) == "Pay Rent"
                 }
                 it("passes the list filter through to fetchIncomplete") {
                     store.items = [makeItem()]
-                    let result = try await store.resolve(title: "Pay rent", in: personalList, cmd: "done")
+                    let result = try await store.resolve(title: "Pay rent", in: personalList)
                     expect(result.title) == "Pay rent"
                 }
             }
@@ -55,7 +55,7 @@ final class ReminderStoreSpec: AsyncSpec {
                 it("throws ReminderStoreError.notFound") {
                     store.items = []
                     await expect {
-                        try await store.resolve(title: "Pay rent", in: nil, cmd: "done")
+                        try await store.resolve(title: "Pay rent", in: nil)
                     }.to(throwError(ReminderStoreError.notFound("Pay rent")))
                 }
             }
@@ -64,7 +64,7 @@ final class ReminderStoreSpec: AsyncSpec {
                 it("throws ReminderStoreError.ambiguous with all matches") {
                     store.items = [makeItem(), makeItem(list: workList)]
                     await expect {
-                        try await store.resolve(title: "Pay rent", in: nil, cmd: "done")
+                        try await store.resolve(title: "Pay rent", in: nil)
                     }.to(throwError { (err: ReminderStoreError) in
                         if case .ambiguous(let matches) = err {
                             expect(matches).to(haveCount(2))

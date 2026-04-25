@@ -8,7 +8,7 @@ public func handleRemove(args: [String], store: any ReminderStore) async throws 
     let listName = args.count > 2 ? args[2] : nil
     let list     = try await resolvedList(named: listName, from: store)
     do {
-        let item = try await store.resolve(title: title, in: list, cmd: "remove")
+        let item = try await store.resolve(title: title, in: list)
         try await store.delete(identifier: item.identifier)
         try? ActivityLog.write(tool: "reminders", cmd: "remove", desc: title, container: item.list.title)
         return "Removed: \(title)"

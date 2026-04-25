@@ -18,7 +18,7 @@ public func handleDone(args: [String], store: any ReminderStore) async throws ->
 
 private extension ReminderStore {
     func complete(title: String, in list: ReminderList?) async throws -> ReminderItem {
-        let item = try await resolve(title: title, in: list, cmd: "done")
+        let item = try await resolve(title: title, in: list)
         try await complete(identifier: item.identifier)
         return item
     }
