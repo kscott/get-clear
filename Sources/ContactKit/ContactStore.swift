@@ -9,10 +9,10 @@ public protocol ContactStore: Sendable {
 }
 
 /// Match contacts against a query string. Searches name, email, company, and phone.
-/// Returns results ranked by match quality; empty query returns all contacts unchanged.
+/// Returns results ranked by match quality; empty query returns an empty list.
 public func matchContacts(_ query: String, in contacts: [Contact]) -> [Contact] {
     let q       = query.lowercased().trimmingCharacters(in: .whitespaces)
-    guard !q.isEmpty else { return contacts }
+    guard !q.isEmpty else { return [] }
     let qDigits = String(q.filter(\.isNumber))
 
     func score(_ c: Contact) -> Int? {

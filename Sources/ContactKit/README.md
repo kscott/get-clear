@@ -1,62 +1,74 @@
 # ContactKit
 
-Framework boundary for Apple Contacts. Provides the production `ContactStore` backend and the factory that requests permission and constructs it.
+Pure shared contact types and matching logic. No framework imports. Every tool and Lib target that works with contacts depends on this target.
 
-The shared `Contact` type, `ContactStore` protocol, and `matchContacts()` function live in **GetClearKit** — import that for all matching and display logic. Import **ContactKit** only for the production store.
+For the Apple Contacts backend and the factory that constructs it, see `Sources/AppleContactKit/` and `Sources/ContactStoreFactory/`.
 
 ---
 
-## Wiring a tool
+## Types
+
+### Contact
+
+A record representing a person, business, or organization.
 
 ```swift
-import GetClearKit
-import ContactKit
-
-// In your async command handler:
-let store = await makeContactStore()          // requests permission; exits on denial
-let contacts = try await store.contacts()     // load all contacts once
-let matches = matchContacts(query, in: contacts)
-```
-
-The caller decides what to do with the results. Two common patterns:
-
-**Display all matches** (e.g. `contacts find`):
-```swift
-if matches.isEmpty { fail("No contact found matching '\(query)'") }
-for contact in matches { /* render */ }
-```
-
-**Resolve to exactly one** (e.g. mail To:, text send target):
-```swift
-switch matches.count {
-case 0:  fail("No contact found matching '\(query)'")
-case 1:  // use matches[0]
-default: fail("'\(query)' matches \(matches.count) contacts")
+public struct Contact: Equatable, Sendable {
+    public let name: String
+    public let emails: [ContactField]
+    public let phones: [ContactField]
+    public let company: String
 }
 ```
 
-`makeContactStore()` calls `fail()` if Contacts access is denied — same pattern as `makeReminderStore()` in reminders-cli. No error handling needed at the call site.
+`name` and `company` may both be empty on a record that has only email or phone data. The tool decides how to handle display.
 
-Load contacts once per command invocation, then call `matchContacts` as many times as needed against the same slice (e.g., To: and Cc: in a single mail send).
+### ContactField
+
+A labeled value — one email address or phone number.
+
+```swift
+public struct ContactField: Equatable, Hashable, Sendable {
+    public let label: String   // e.g. "work", "mobile" — may be empty
+    public let value: String   // plain string; no platform types
+}
+```
+
+### ContactStore
+
+Protocol for any contact backend.
+
+```swift
+public protocol ContactStore: Sendable {
+    func contacts() async throws -> [Contact]
+}
+```
+
+The backend returns all contacts unfiltered. Filtering and matching is the caller's responsibility via `matchContacts`.
 
 ---
 
-## Package.swift additions
+## matchContacts
 
 ```swift
-.target(
-    name: "MyToolLib",
-    dependencies: ["GetClearKit"],   // Contact type + matchContacts; no framework import
-    ...
-),
-.executableTarget(
-    name: "mytool-bin",
-    dependencies: ["MyToolLib", "GetClearKit", "ContactKit"],
-    linkerSettings: [.linkedFramework("Contacts")]
-),
+public func matchContacts(_ query: String, in contacts: [Contact]) -> [Contact]
 ```
 
-`ContactKit` links the Contacts framework. `MyToolLib` must not import ContactKit — keep the framework boundary out of Lib targets.
+Searches name, email, company, and phone. Returns results ranked by match quality. Empty query returns an empty list — callers that want all contacts call `store.contacts()` directly.
+
+**Rank order** (lower = better match):
+
+| Score | Condition |
+|---|---|
+| 0 | Exact name match |
+| 1 | Name starts with query |
+| 2 | Name contains query |
+| 3 | Any email contains query |
+| 4 | Exact company match |
+| 5 | Company contains query |
+| 6 | Phone digits contain query digits |
+
+Matching is case-insensitive. Phone matching strips non-digit characters from both query and stored value before comparing.
 
 ---
 
@@ -65,7 +77,7 @@ Load contacts once per command invocation, then call `matchContacts` as many tim
 Define `SpyContactStore` locally in your test target — it does not need to be shared:
 
 ```swift
-import GetClearKit
+import ContactKit
 
 struct SpyContactStore: ContactStore {
     let result: [Contact]
@@ -75,24 +87,28 @@ struct SpyContactStore: ContactStore {
 
 Use it anywhere a `ContactStore` is required. No permission prompts, no framework dependency.
 
-```swift
-let spy = SpyContactStore(result: [
-    Contact(name: "Alice Smith",
-            emails: [ContactField(label: "work", value: "alice@example.com")],
-            phones: [ContactField(label: "mobile", value: "+15551234567")],
-            company: "Acme")
-])
-let contacts = try await spy.contacts()
-let matches = matchContacts("alice", in: contacts)
-```
-
 ---
 
-## What lives where
+## Package.swift
 
-| Symbol | Target | Import |
-|---|---|---|
-| `Contact`, `ContactField` | GetClearKit | `import GetClearKit` |
-| `ContactStore` protocol | GetClearKit | `import GetClearKit` |
-| `matchContacts()` | GetClearKit | `import GetClearKit` |
-| `makeContactStore()` | ContactKit | `import ContactKit` |
+Lib targets that work with contacts depend on ContactKit only:
+
+```swift
+.target(
+    name: "MyToolLib",
+    dependencies: ["ContactKit"],
+    ...
+)
+```
+
+CLI binaries that need a live store depend on `ContactStoreFactory`:
+
+```swift
+.executableTarget(
+    name: "mytool-bin",
+    dependencies: ["MyToolLib", "ContactStoreFactory"],
+    ...
+)
+```
+
+Add `GetClearKit` to either target only if you need suite infrastructure (fail, arg parsing, ANSI output, etc.) — it is not required by ContactKit itself.

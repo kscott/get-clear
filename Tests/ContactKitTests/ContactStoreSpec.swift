@@ -90,8 +90,8 @@ final class ContactStoreSpec: QuickSpec {
             }
 
             context("edge cases") {
-                it("empty query returns all contacts") {
-                    expect(matchContacts("", in: all).count) == all.count
+                it("empty query returns an empty list") {
+                    expect(matchContacts("", in: all)).to(beEmpty())
                 }
                 it("unmatched query returns empty") {
                     expect(matchContacts("xyzzy", in: all)).to(beEmpty())
