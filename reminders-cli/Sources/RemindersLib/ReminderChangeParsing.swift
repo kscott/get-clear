@@ -1,5 +1,4 @@
-// ChangeCommand.swift
-//
+// ReminderChangeParsing.swift
 // Parses a combined options string into a value describing what fields should change.
 // No EventKit dependency — lives in RemindersLib so it can be unit tested.
 
