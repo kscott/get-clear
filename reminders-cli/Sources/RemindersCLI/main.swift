@@ -1,21 +1,19 @@
 // main.swift
-// Entry point for reminders-bin. Requests EventKit access, creates AppleReminderStore,
-// dispatches to handlers in RemindersLib.
+// Entry point for reminders-bin. Dispatches to handlers in RemindersLib.
 
-import EventKit
+import AppKit
 import GetClearKit
 import RemindersLib
-import RemindersEventKit
 
-let ek   = EKEventStore()
 let args = Array(CommandLine.arguments.dropFirst())
 
 await runCLI(args: args, identity: identity, usage: usage) { command, args in
-    if command == .open { await handleOpen(); return }
+    if command == .open {
+        handleOpen(opener: { NSWorkspace.shared.open($0) })
+        return
+    }
 
-    let granted = try await ek.requestFullAccessToReminders()
-    guard granted else { fail("Reminders access denied") }
-    let store = AppleReminderStore(ek)
+    let store = await makeReminderStore()
 
     do {
         switch command {

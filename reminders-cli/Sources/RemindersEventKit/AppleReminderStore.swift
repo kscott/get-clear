@@ -2,6 +2,7 @@
 // EventKit implementation of ReminderStore.
 
 import EventKit
+import Foundation
 import RemindersLib
 
 enum AppleStoreError: LocalizedError {
@@ -11,9 +12,9 @@ enum AppleStoreError: LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .noDefaultList:           return "No default reminders list found"
-        case .listNotFound(let name):  return "List not found: \(name)"
-        case .reminderNotFound(let id): return "Reminder not found: \(id)"
+        case .noDefaultList:             return "No default reminders list found"
+        case .listNotFound(let name):    return "List not found: \(name)"
+        case .reminderNotFound(let id):  return "Reminder not found: \(id)"
         }
     }
 }
@@ -45,7 +46,11 @@ public final class AppleReminderStore: ReminderStore {
             scope = ek.calendars(for: .reminder)
         }
         let predicate = ek.predicateForIncompleteReminders(withDueDateStarting: nil, ending: nil, calendars: scope)
-        return await fetchReminders(matching: predicate, from: ek).map(ReminderItem.init)
+        return await withCheckedContinuation { continuation in
+            ek.fetchReminders(matching: predicate) {
+                continuation.resume(returning: ($0 ?? []).map(ReminderItem.init))
+            }
+        }
     }
 
     public func add(_ item: ReminderItem) async throws -> ReminderItem {
@@ -107,4 +112,99 @@ public final class AppleReminderStore: ReminderStore {
             list.matches(identifier: $0.calendarIdentifier, title: $0.title)
         }
     }
+}
+
+// MARK: - EKReminder ↔ ReminderItem
+
+extension ReminderItem {
+    init(_ r: EKReminder) {
+        self.init(
+            identifier:            r.calendarItemIdentifier,
+            title:                 r.title ?? "",
+            list:                  ReminderList(ekCalendar: r.calendar),
+            dueDateComponents:     r.dueDateComponents,
+            recurrenceDescription: r.recurrenceRules?.first.map { describeEKRule($0) },
+            priority:              r.priority,
+            notes:                 r.notes,
+            url:                   r.url,
+            creationDate:          r.creationDate
+        )
+    }
+}
+
+extension ReminderList {
+    init(ekCalendar cal: EKCalendar) {
+        self.init(
+            identifier:   cal.calendarIdentifier,
+            title:        cal.title,
+            color:        hexColor(from: cal.cgColor),
+            source:       cal.source.title,
+            isModifiable: cal.allowsContentModifications
+        )
+    }
+}
+
+// MARK: - Recurrence conversion
+
+private func toEKRule(_ spec: RecurrenceSpec) -> EKRecurrenceRule {
+    let ekFreqs: [RecurrenceFrequency: EKRecurrenceFrequency] =
+        [.daily: .daily, .weekly: .weekly, .monthly: .monthly, .yearly: .yearly]
+    if let ow = spec.ordinalWeekday {
+        let dow = EKRecurrenceDayOfWeek(
+            dayOfTheWeek: EKWeekday(rawValue: ow.weekday)!,
+            weekNumber: ow.weekNumber)
+        return EKRecurrenceRule(recurrenceWith: .monthly, interval: 1,
+                                daysOfTheWeek: [dow], daysOfTheMonth: nil,
+                                monthsOfTheYear: nil, weeksOfTheYear: nil,
+                                daysOfTheYear: nil, setPositions: nil, end: nil)
+    }
+    if let day = spec.dayOfMonth {
+        return EKRecurrenceRule(recurrenceWith: .monthly, interval: 1,
+                                daysOfTheWeek: nil, daysOfTheMonth: [NSNumber(value: day)],
+                                monthsOfTheYear: nil, weeksOfTheYear: nil,
+                                daysOfTheYear: nil, setPositions: nil, end: nil)
+    }
+    return EKRecurrenceRule(recurrenceWith: ekFreqs[spec.frequency]!, interval: spec.interval, end: nil)
+}
+
+private func describeEKRule(_ rule: EKRecurrenceRule) -> String {
+    describeRecurrenceRule(frequency: rule.frequency.rawValue, interval: rule.interval)
+}
+
+// MARK: - Field assignment
+
+private func applyChanges(_ changes: ReminderChanges, to reminder: EKReminder) {
+    if case .cleared = changes.due { reminder.dueDateComponents = nil }
+    if case .set(let comps) = changes.due { reminder.dueDateComponents = comps }
+
+    if case .cleared = changes.recurrence {
+        reminder.recurrenceRules?.forEach { reminder.removeRecurrenceRule($0) }
+    }
+    if case .set(let spec) = changes.recurrence {
+        reminder.recurrenceRules?.forEach { reminder.removeRecurrenceRule($0) }
+        reminder.addRecurrenceRule(toEKRule(spec))
+    }
+
+    if case .set(let p) = changes.priority { reminder.priority = p }
+
+    if case .cleared = changes.note { reminder.notes = nil }
+    if case .set(let n) = changes.note { reminder.notes = n }
+
+    if case .cleared = changes.url { reminder.url = nil }
+    if case .set(let url) = changes.url { reminder.url = url }
+}
+
+// MARK: - CGColor to hex
+
+private func hexColor(from cgColor: CGColor?) -> String? {
+    guard let cg = cgColor, let components = cg.components, !components.isEmpty else { return nil }
+    let r, g, b: Int
+    switch cg.colorSpace?.model {
+    case .rgb where components.count >= 3:
+        r = Int(components[0] * 255); g = Int(components[1] * 255); b = Int(components[2] * 255)
+    case .monochrome where components.count >= 1:
+        let w = Int(components[0] * 255); r = w; g = w; b = w
+    default: return nil
+    }
+    return String(format: "%02X%02X%02X", r, g, b)
 }
