@@ -29,7 +29,7 @@ await runCLI(args: args, identity: identity, usage: usage) { command, args in
         case .done:   print(try await handleDone(args: args, store: store))
         case .rename: print(try await handleRename(args: args, store: store))
         case .remove: print(try await handleRemove(args: args, store: store))
-        default:      usage()
+        default:      print(usage())
         }
     } catch let e as ReminderHandlerError {
         fail(e.message)

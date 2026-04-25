@@ -45,7 +45,7 @@ public enum Command: String {
 public func runCLI(
     args: [String],
     identity: ToolIdentity,
-    usage: () -> Never,
+    usage: () -> String,
     handler: (Command, [String]) async throws -> Void
 ) async {
     switch parseArgs(args) {
@@ -53,9 +53,9 @@ public func runCLI(
         print(identity)
         exit(0)
     case .help, .empty:
-        usage()
+        print(usage()); exit(0)
     case .command(let raw, let cmdArgs):
-        guard let command = Command(rawValue: raw) else { usage() }
+        guard let command = Command(rawValue: raw) else { print(usage()); exit(0) }
         do {
             try await handler(command, cmdArgs)
         } catch {

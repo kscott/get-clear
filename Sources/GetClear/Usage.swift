@@ -1,10 +1,9 @@
 // Usage.swift
-// Prints the usage string for get-clear and exits.
 
 import Foundation
 
-func usage() -> Never {
-    print("""
+func usage() -> String {
+    """
     \(identity)
 
     Usage:
@@ -14,6 +13,5 @@ func usage() -> Never {
       get-clear update                # Install the latest version
 
     Feedback: https://github.com/kscott/get-clear/issues
-    """)
-    exit(0)
+    """
 }

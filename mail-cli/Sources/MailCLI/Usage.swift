@@ -1,12 +1,10 @@
 // Usage.swift
-//
-// Print usage and exit.
 
 import Foundation
 import MailLib
 
-func usage() -> Never {
-    print("""
+func usage() -> String {
+    """
     \(identity)
 
     Usage:
@@ -16,6 +14,5 @@ func usage() -> Never {
       mail open                            # Open Fastmail in browser
 
     Feedback: https://github.com/kscott/get-clear/issues
-    """)
-    exit(0)
+    """
 }

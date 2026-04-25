@@ -1,11 +1,9 @@
 // Usage.swift
-//
-// Usage string and exit for text-cli.
 
 import Foundation
 
-func usage() -> Never {
-    print("""
+func usage() -> String {
+    """
     \(identity)
 
     Usage:
@@ -13,6 +11,5 @@ func usage() -> Never {
       text open [contact]                  # Open Messages.app
 
     Feedback: https://github.com/kscott/get-clear/issues
-    """)
-    exit(0)
+    """
 }

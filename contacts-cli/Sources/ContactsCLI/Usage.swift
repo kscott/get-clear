@@ -1,12 +1,10 @@
 // Usage.swift
-//
-// Prints usage information and exits.
 
 import Foundation
 import GetClearKit
 
-func usage() -> Never {
-    print("""
+func usage() -> String {
+    """
     \(identity)
 
     Usage:
@@ -24,6 +22,5 @@ func usage() -> Never {
       contacts remove <name> from <group>       # Remove contact from a group
 
     Feedback: https://github.com/kscott/get-clear/issues
-    """)
-    exit(0)
+    """
 }

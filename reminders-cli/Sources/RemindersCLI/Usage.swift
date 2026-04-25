@@ -3,8 +3,8 @@
 import Foundation
 import GetClearKit
 
-func usage() -> Never {
-    print("""
+func usage() -> String {
+    """
     \(identity)
 
     Usage:
@@ -32,6 +32,5 @@ func usage() -> Never {
       due none / repeat none / note none / url none / priority none
 
     Feedback: https://github.com/kscott/get-clear/issues
-    """)
-    exit(0)
+    """
 }

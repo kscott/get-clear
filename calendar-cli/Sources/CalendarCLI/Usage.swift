@@ -3,8 +3,8 @@
 import Foundation
 import GetClearKit
 
-func usage() -> Never {
-    print("""
+func usage() -> String {
+    """
     \(identity)
 
     Usage:
@@ -27,6 +27,5 @@ func usage() -> Never {
     Range: today, tomorrow, week, month, monday, "march 15", "march 15 to march 20", 7d
     Config: ~/.config/calendar-cli/config.toml
     Feedback: https://github.com/kscott/get-clear/issues
-    """)
-    exit(0)
+    """
 }
