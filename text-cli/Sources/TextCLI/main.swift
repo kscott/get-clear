@@ -6,14 +6,23 @@ import AppKit
 import GetClearKit
 import TextLib
 
-let sender = await makeMessageSender()
-let args   = Array(CommandLine.arguments.dropFirst())
+let args = Array(CommandLine.arguments.dropFirst())
 
 await runCLI(args: args, identity: identity, usage: usage) { command, args in
-    switch command {
-    case .what: print(handleWhat(args: args))
-    case .open: handleOpen { NSWorkspace.shared.open($0) }
-    case .send: print(try await handleSend(args: args, sender: sender))
-    default:    print(usage())
+    if command == .open {
+        handleOpen(opener: { NSWorkspace.shared.open($0) })
+        return
+    }
+
+    let sender = await makeMessageSender()
+
+    do {
+        switch command {
+        case .what: print(handleWhat(args: args))
+        case .send: print(try await handleSend(args: args, sender: sender))
+        default:    print(usage())
+        }
+    } catch {
+        fail(error.localizedDescription)
     }
 }
