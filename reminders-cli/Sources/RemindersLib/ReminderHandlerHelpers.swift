@@ -1,6 +1,9 @@
 // ReminderHandlerHelpers.swift
 // Internal helpers shared across handler files.
 
+import Foundation
+import GetClearKit
+
 func storeError(title: String, list: ReminderList?, cmd: String, _ err: ReminderStoreError) -> ReminderHandlerError {
     switch err {
     case .notFound:
@@ -20,4 +23,10 @@ func resolvedList(named name: String?, from lists: [ReminderList]) throws -> Rem
 
 func resolvedList(named name: String?, from store: any ReminderStore) async throws -> ReminderList? {
     try resolvedList(named: name, from: try await store.fetchLists())
+}
+
+func dateComponents(from pd: ParsedDate) -> DateComponents {
+    let fields: Set<Calendar.Component> = pd.hasTime
+        ? [.year, .month, .day, .hour, .minute] : [.year, .month, .day]
+    return Calendar.current.dateComponents(fields, from: pd.date)
 }

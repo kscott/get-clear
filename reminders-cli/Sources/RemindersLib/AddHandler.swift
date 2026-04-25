@@ -24,11 +24,7 @@ public func handleAdd(args: [String], store: any ReminderStore) async throws -> 
         }
         return spec
     }()
-    let dueDateComponents = parsedDate.map { pd -> DateComponents in
-        let fields: Set<Calendar.Component> = pd.hasTime
-            ? [.year, .month, .day, .hour, .minute] : [.year, .month, .day]
-        return Calendar.current.dateComponents(fields, from: pd.date)
-    }
+    let dueDateComponents = parsedDate.map(dateComponents(from:))
     let item = ReminderItem(
         title: title, list: targetList,
         dueDateComponents: dueDateComponents,

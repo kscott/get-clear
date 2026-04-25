@@ -17,8 +17,6 @@ func ambiguousItems(title: String = "Pay rent", list: ReminderList = personalLis
      makeItem(identifier: "id-2", title: title, list: list)]
 }
 
-
-
 func makeItem(
     identifier: String = "",
     title: String = "Pay rent",

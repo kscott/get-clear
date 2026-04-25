@@ -25,7 +25,7 @@ public func handleList(args: [String], store: any ReminderStore) async throws ->
         for (list, groupItems) in groupedByList(items, sortedBy: order) {
             let dot = calendarDot(hex: list.color)
             lines.append("\(dot)\(ANSI.bold(list.title))")
-            for item in groupItems { lines.append("\(dot)\(formatListRow(item))") }
+            lines.append(contentsOf: groupItems.map { "\(dot)\(formatListRow($0))" })
         }
         return lines.joined(separator: "\n")
     }

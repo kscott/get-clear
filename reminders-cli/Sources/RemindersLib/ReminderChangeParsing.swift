@@ -82,9 +82,7 @@ public func parseReminderChanges(
                 due = .set(comps)
                 descriptions.append("due → \(formatDate(display, showTime: true))")
             } else {
-                let fields: Set<Calendar.Component> = pd.hasTime
-                    ? [.year, .month, .day, .hour, .minute] : [.year, .month, .day]
-                due = .set(cal.dateComponents(fields, from: pd.date))
+                    due = .set(dateComponents(from: pd))
                 descriptions.append("due → \(formatDate(pd.date, showTime: pd.hasTime))")
             }
         }

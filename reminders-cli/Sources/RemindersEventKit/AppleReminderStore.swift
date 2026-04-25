@@ -153,18 +153,22 @@ private func toEKRule(_ spec: RecurrenceSpec) -> EKRecurrenceRule {
         let dow = EKRecurrenceDayOfWeek(
             dayOfTheWeek: EKWeekday(rawValue: ow.weekday)!,
             weekNumber: ow.weekNumber)
-        return EKRecurrenceRule(recurrenceWith: .monthly, interval: 1,
-                                daysOfTheWeek: [dow], daysOfTheMonth: nil,
-                                monthsOfTheYear: nil, weeksOfTheYear: nil,
-                                daysOfTheYear: nil, setPositions: nil, end: nil)
+        return monthlyEKRule(daysOfTheWeek: [dow])
     }
     if let day = spec.dayOfMonth {
-        return EKRecurrenceRule(recurrenceWith: .monthly, interval: 1,
-                                daysOfTheWeek: nil, daysOfTheMonth: [NSNumber(value: day)],
-                                monthsOfTheYear: nil, weeksOfTheYear: nil,
-                                daysOfTheYear: nil, setPositions: nil, end: nil)
+        return monthlyEKRule(daysOfTheMonth: [NSNumber(value: day)])
     }
     return EKRecurrenceRule(recurrenceWith: ekFreqs[spec.frequency]!, interval: spec.interval, end: nil)
+}
+
+private func monthlyEKRule(
+    daysOfTheWeek: [EKRecurrenceDayOfWeek]? = nil,
+    daysOfTheMonth: [NSNumber]? = nil
+) -> EKRecurrenceRule {
+    EKRecurrenceRule(recurrenceWith: .monthly, interval: 1,
+                     daysOfTheWeek: daysOfTheWeek, daysOfTheMonth: daysOfTheMonth,
+                     monthsOfTheYear: nil, weeksOfTheYear: nil,
+                     daysOfTheYear: nil, setPositions: nil, end: nil)
 }
 
 private func describeEKRule(_ rule: EKRecurrenceRule) -> String {
