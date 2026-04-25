@@ -8,7 +8,7 @@ public func handleChange(args: [String], store: any ReminderStore) async throws 
     let allLists = try await store.fetchLists()
     let (listName, rawOptions) = splitListAndOptions(
         from: Array(args.dropFirst(2)), calendarTitles: allLists.map(\.title))
-    let list = try await resolvedList(named: listName, from: store)
+    let list = try resolvedList(named: listName, from: allLists)
     let item: ReminderItem
     do {
         item = try await store.resolve(title: title, in: list, cmd: "change")

@@ -11,16 +11,8 @@ public func handleList(args: [String], store: any ReminderStore) async throws ->
     }
     let filterName = listArgs.first
 
-    let allLists = try await store.fetchLists()
-    let targetList: ReminderList?
-    if let name = filterName {
-        guard let match = allLists.first(where: { $0.title == name }) else {
-            throw ReminderHandlerError("List not found: \(name)")
-        }
-        targetList = match
-    } else {
-        targetList = nil
-    }
+    let allLists  = try await store.fetchLists()
+    let targetList = try resolvedList(named: filterName, from: allLists)
 
     let items = try await store.fetchIncomplete(in: targetList)
 

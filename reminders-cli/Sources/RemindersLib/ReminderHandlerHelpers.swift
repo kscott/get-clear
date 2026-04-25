@@ -10,11 +10,14 @@ func storeError(title: String, list: ReminderList?, cmd: String, _ err: Reminder
     }
 }
 
-func resolvedList(named name: String?, from store: any ReminderStore) async throws -> ReminderList? {
+func resolvedList(named name: String?, from lists: [ReminderList]) throws -> ReminderList? {
     guard let name else { return nil }
-    let allLists = try await store.fetchLists()
-    guard let match = allLists.first(where: { $0.title == name }) else {
+    guard let match = lists.first(where: { $0.title == name }) else {
         throw ReminderHandlerError("List not found: \(name)")
     }
     return match
+}
+
+func resolvedList(named name: String?, from store: any ReminderStore) async throws -> ReminderList? {
+    try resolvedList(named: name, from: try await store.fetchLists())
 }

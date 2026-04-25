@@ -16,11 +16,20 @@ let package = Package(
             dependencies: [.product(name: "GetClearKit", package: "get-clear")],
             path: "Sources/RemindersLib"
         ),
-        // Main binary — depends on RemindersLib plus EventKit/AppKit
+        // EventKit implementation of ReminderStore — Apple-specific boundary
+        .target(
+            name: "RemindersEventKit",
+            dependencies: [
+                "RemindersLib",
+                .product(name: "GetClearKit", package: "get-clear"),
+            ],
+            path: "Sources/RemindersEventKit"
+        ),
+        // Main binary — app layer: StoreFactory, dispatch, process exit
         .executableTarget(
             name: "reminders-bin",
             dependencies: [
-                "RemindersLib",
+                "RemindersEventKit",
                 .product(name: "GetClearKit", package: "get-clear"),
             ],
             path: "Sources/RemindersCLI",

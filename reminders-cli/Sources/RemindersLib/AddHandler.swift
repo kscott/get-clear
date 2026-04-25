@@ -5,34 +5,29 @@ import GetClearKit
 
 public func handleAdd(args: [String], store: any ReminderStore) async throws -> String {
     guard args.count > 1 else { throw ReminderHandlerError("provide a reminder title") }
-    let title    = args[1]
-    let allLists = try await store.fetchLists()
+    let title     = args[1]
+    let allLists  = try await store.fetchLists()
     let (listName, rawOptions) = splitListAndOptions(
         from: Array(args.dropFirst(2)), calendarTitles: allLists.map(\.title))
     let targetList: ReminderList
-    if let name = listName, let match = allLists.first(where: { $0.title == name }) {
+    if let match = try resolvedList(named: listName, from: allLists) {
         targetList = match
     } else {
         targetList = try await store.defaultList()
     }
-    let opts = parseOptions(rawOptions)
+    let opts       = parseOptions(rawOptions)
     let parsedDate = opts.date.isEmpty ? nil : parseDate(opts.date)
-    let recurrenceSpec: RecurrenceSpec?
-    if opts.recurrence.isEmpty {
-        recurrenceSpec = nil
-    } else {
+    let recurrenceSpec: RecurrenceSpec? = try {
+        guard !opts.recurrence.isEmpty else { return nil }
         guard let spec = parseRecurrence(opts.recurrence) else {
             throw ReminderHandlerError("Unrecognised repeat: \"\(opts.recurrence)\"")
         }
-        recurrenceSpec = spec
-    }
-    let dueDateComponents: DateComponents?
-    if let pd = parsedDate {
+        return spec
+    }()
+    let dueDateComponents = parsedDate.map { pd -> DateComponents in
         let fields: Set<Calendar.Component> = pd.hasTime
             ? [.year, .month, .day, .hour, .minute] : [.year, .month, .day]
-        dueDateComponents = Calendar.current.dateComponents(fields, from: pd.date)
-    } else {
-        dueDateComponents = nil
+        return Calendar.current.dateComponents(fields, from: pd.date)
     }
     let item = ReminderItem(
         title: title, list: targetList,
