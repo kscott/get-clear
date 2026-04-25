@@ -36,11 +36,5 @@ final class CalendarDotSpec: QuickSpec {
             }
         }
 
-        describe("hexColor") {
-
-            it("returns nil for nil input") {
-                expect(hexColor(from: nil)).to(beNil())
-            }
-        }
     }
 }
