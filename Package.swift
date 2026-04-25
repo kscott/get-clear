@@ -41,6 +41,25 @@ let package = Package(
             path: "Tests/GetClearKitTests"
         ),
 
+        // MARK: - ContactKit (shared Apple Contacts boundary)
+
+        .target(
+            name: "ContactKit",
+            dependencies: ["GetClearKit"],
+            path: "Sources/ContactKit",
+            linkerSettings: [.linkedFramework("Contacts")]
+        ),
+        .testTarget(
+            name: "ContactKitTests",
+            dependencies: [
+                "ContactKit",
+                "GetClearKit",
+                .product(name: "Quick", package: "Quick"),
+                .product(name: "Nimble", package: "Nimble"),
+            ],
+            path: "Tests/ContactKitTests"
+        ),
+
         // MARK: - reminders
 
         .target(

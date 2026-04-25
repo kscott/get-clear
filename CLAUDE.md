@@ -110,3 +110,10 @@ Two constants in each tool's `Version.swift`:
 Display: `reminders 1.3.1 (Get Clear 1.3.1)` — current suite version is 1.3.1
 
 Use `scripts/bump-version <suite-version> [tool:version ...]` to bump. Never edit version constants by hand.
+
+## Active Technologies
+- Swift 5.9 (swift-tools-version: 5.9) + Quick + Nimble (testing); GetClearKit (shared suite library); Contacts framework (framework boundary only) (012-shared-contacts-lib)
+- N/A — read-only access to Apple CNContactStore; no writes from the shared layer (012-shared-contacts-lib)
+
+## Recent Changes
+- 012-shared-contacts-lib: Added Swift 5.9 (swift-tools-version: 5.9) + Quick + Nimble (testing); GetClearKit (shared suite library); Contacts framework (framework boundary only)
