@@ -93,6 +93,7 @@ Done: #33 (Command enum), #34 (monorepo), #35–39 (business logic extraction), 
 
 Remaining, in priority order:
 - **#144** — reminders-cli second-pass refactors (start here)
+- **#150** — Shared contact resolution library (can run alongside #144; blocks #141, #142, #143)
 - **#147, #140–143** — Protocol abstractions: ReminderStore first (template), then CalendarStore, ContactStore, MailClient, MessageSender
 - **#61** — Gmail support (hard launch blocker; depends on MailClient #142)
 - **#53, #80, #68** — Feature additions: `calendar change`, move reminder to list, multi-recipient text
