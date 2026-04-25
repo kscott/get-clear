@@ -84,7 +84,4 @@ let matches = matchContacts("alice", in: contacts)
 | `Contact`, `ContactField` | GetClearKit | `import GetClearKit` |
 | `ContactStore` protocol | GetClearKit | `import GetClearKit` |
 | `matchContacts()` | GetClearKit | `import GetClearKit` |
-| `AppleContactStore` | ContactKit | `import ContactKit` |
 | `makeContactStore()` | ContactKit | `import ContactKit` |
-| `toContact()` | ContactKit | `import ContactKit` (contacts-cli write path only) |
-| `cleanLabel()` | ContactKit | internal — not for tool use |
