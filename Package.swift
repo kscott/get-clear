@@ -155,17 +155,14 @@ let package = Package(
 
         .target(
             name: "ContactsLib",
-            dependencies: ["GetClearKit"],
+            dependencies: ["ContactKit", "GetClearKit"],
             path: "contacts-cli/Sources/ContactsLib"
         ),
         .executableTarget(
             name: "contacts-bin",
-            dependencies: ["ContactsLib", "GetClearKit"],
+            dependencies: ["ContactsLib", "ContactStoreFactory", "GetClearKit"],
             path: "contacts-cli/Sources/ContactsCLI",
-            linkerSettings: [
-                .linkedFramework("Contacts"),
-                .linkedFramework("AppKit"),
-            ]
+            linkerSettings: [.linkedFramework("AppKit")]
         ),
         .testTarget(
             name: "ContactsLibTests",

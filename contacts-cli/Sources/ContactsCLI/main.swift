@@ -1,36 +1,30 @@
 // main.swift
 //
-// Entry point for contacts-bin: argument parsing and command dispatch only.
+// Entry point for contacts-bin: permission, store construction, and command dispatch only.
 
 import Foundation
-import Contacts
+import AppKit
 import ContactsLib
+import ContactStoreFactory
 import GetClearKit
 
-let store     = CNContactStore()
-let semaphore = DispatchSemaphore(value: 0)
-let args      = Array(CommandLine.arguments.dropFirst())
+let args = Array(CommandLine.arguments.dropFirst())
 
 Task { await runCLI(args: args, identity: identity, usage: usage) { command, args in
-    store.requestAccess(for: .contacts) { granted, _ in
-        guard granted else { fail("Contacts access denied") }
+    let store = try await makeContactStore()
 
-        switch command {
-        case .open:   handleOpen(semaphore: semaphore)
-        case .what:   handleWhat(args: args, semaphore: semaphore)
-        case .lists:  handleLists(store: store, semaphore: semaphore)
-        case .list:   handleList(args: args, store: store, semaphore: semaphore)
-        case .export: handleExport(args: args, store: store, semaphore: semaphore)
-        case .find:   handleFind(args: args, store: store, semaphore: semaphore)
-        case .show:   handleShow(args: args, store: store, semaphore: semaphore)
-        case .add:    handleAdd(args: args, store: store, semaphore: semaphore)
-        case .change: handleChange(args: args, store: store, semaphore: semaphore)
-        case .rename: handleRename(args: args, store: store, semaphore: semaphore)
-        case .remove: handleRemove(args: args, store: store, semaphore: semaphore)
-        default:      usage()
-        }
+    switch command {
+    case .open:   print(handleOpen(opener: { NSWorkspace.shared.open($0) }))
+    case .what:   print(try handleWhat(args: args))
+    case .lists:  print(try await handleLists(store: store))
+    case .list:   print(try await handleList(args: args, store: store))
+    case .export: print(try await handleExport(args: args, store: store))
+    case .find:   print(try await handleFind(args: args, store: store))
+    case .show:   print(try await handleShow(args: args, store: store))
+    case .add:    print(try await handleAdd(args: args, store: store))
+    case .change: print(try await handleChange(args: args, store: store))
+    case .rename: print(try await handleRename(args: args, store: store))
+    case .remove: print(try await handleRemove(args: args, store: store))
+    default:      print(usage())
     }
 } }
-
-semaphore.wait()
-UpdateChecker.spawnBackgroundCheckIfNeeded()

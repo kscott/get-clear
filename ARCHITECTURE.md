@@ -63,7 +63,7 @@ The boundary is enforced by the Swift package structure: `*Lib` targets do not i
 | `TimespanFormatter.swift` | Human-readable timespan formatting |
 | `UpdateChecker.swift` | Background version check; hint on stderr at most once per hour |
 
-### Tool Lib targets (as of 2026-04-24)
+### Tool Lib targets (as of 2026-04-27)
 
 All five extractions complete (#35–39). Each tool's `main.swift` is ≤60 lines — dispatch only.
 
@@ -77,11 +77,15 @@ All five extractions complete (#35–39). Each tool's `main.swift` is ≤60 line
 - `TextMessages` (boundary): `AppleMessageSender` — delegates resolution to `TargetResolver`, osascript dispatch
 - `TextCLI`: `main.swift`, `StoreFactory`, `Usage`, `Version`
 
-**Other tools** — two-tier (Lib + CLI); three-tier pending (#140–142):
+**contacts-cli** — three-tier complete (#141):
+- `ContactsLib`: `OpenHandler`, `WhatHandler`, `ListHandler` (lists/list/export), `FindHandler`, `ShowHandler`, `AddHandler`, `ChangeHandler`, `RenameHandler`, `RemoveHandler`, `ContactChangeParsing`, `ContactFormatter`, `ContactHandlerError`, `UsageText`
+- `AppleContactKit` (framework boundary): `AppleContactStore` — full `ContactStore` protocol; type conversion, change application, CoreData 134092 retry
+- `ContactsCLI`: `main.swift`, `Usage`, `Version`
+
+**Other tools** — two-tier (Lib + CLI); three-tier pending (#140, #142):
 | Tool | Lib contains |
 |---|---|
 | calendar | `CalendarResolver`, `ConfigParser`, `EventDateTime`, `EventFormatter`, `ChangeCommand` |
-| contacts | `ArgumentParser`, `ChangeCommand`, `ContactFormatter`, `Matching` |
 | mail | `JMAPClient`, `MailConfiguration`, `MailErrors`, `MailFormatter`, `RecipientResolver`, `SendCommand`, `SetupCommand` |
 
 Protocol abstraction layer (CalendarStore, ContactStore, MailClient) tracked in #140–142. Use reminders-cli as the template. Required before Google backends (#145, #146).
@@ -113,6 +117,16 @@ contacts-cli is the reference implementation (adopted 2026-04-10, commit 37e9a75
 **Why:** GetClearKit changes require push + `swift package update` in each tool repo. Cross-cutting refactors span six repos. Issue history is split. The Command enum refactor made the friction tangible — every GetClearKit change is a two-repo operation.
 
 **Plan:** git filter-repo for history import; gh issue transfer for open issues; API recreation with backlinks for closed issues; archive tool repos. Full plan in #34.
+
+### 2026-04-27 — ValueChange<T> adopted as suite-wide change type (#141)
+
+**Decision:** `ValueChange<T>` (cases: `.unchanged`, `.cleared`, `.added(T)`, `.removed(T)`, `.replaced(from: T, to: T)`) lives in `GetClearKit` and is the standard change type for all tool change structs. Parser and handler code enforce cardinality at the boundary — single-value fields only ever produce `.cleared` or `.replaced`; the type permits more than any field uses.
+
+**Why:** Contacts introduced the need to distinguish multi-value fields (email, phone) from single-value fields (company) in the same change struct. Two types with no shared structure drift independently as cases are added. One type with parser-enforced cardinality eliminates that risk. Suite-wide adoption prevents the cross-tool surprise of different tools using different patterns.
+
+**Boundary enforcement for single-value fields:** the handler fetches the current value before constructing `.replaced(from: currentValue, to: newValue)`. The user supplies `from:` for multi-value fields directly in the command. `.added` and `.removed` are unreachable from single-value handler code — not guarded by runtime checks, just never constructed.
+
+**Retrofit:** reminders-cli (#147) predates this decision and uses a local `FieldChange<T>` in `ReminderChangeParsing.swift`. A follow-up issue tracks the retrofit to `ValueChange<T>`.
 
 ### 2026-04-25 — text-cli three-tier migration complete (#143)
 
@@ -185,9 +199,13 @@ contacts-cli is the reference implementation (adopted 2026-04-10, commit 37e9a75
 
 Items noticed during work that aren't worth stopping for now but must not be forgotten. Add an item here rather than letting it evaporate. Remove items when they become GitHub issues or are resolved.
 
-### CoreData 134092 retry loop (contacts-cli/main.swift:347–386)
+### CoreData 134092 retry loop (AppleContactStore.update)
 
-Complex stderr suppression and multi-source retry logic for saving contacts across containers. Deliberately deferred from #37 — warrants its own dedicated review. Risk: this pattern is unique in the suite and fragile. Should eventually move to `ContactsLib/ContactStore.swift` with a clean interface.
+Complex stderr suppression and multi-source retry logic for saving contacts across containers. Moved from `main.swift` into `AppleContactStore.update()` during #141. Risk: the pattern is unique in the suite and fragile (two nested store fetch passes, ad-hoc stderr suppression via pipe). No regression protection — `AppleContactKitTests` cannot exercise the real CNContactStore. Warrants a dedicated review and potentially a cleaner interface.
+
+### Audit log via ValueChange<T>
+
+`ValueChange.replaced(from: T, to: T)` carries both sides of every mutation. This makes a complete, structured audit trail trivially derivable — log `(field, from, to, timestamp)` at the handler layer without any additional data collection. Worth wiring up when telemetry is added (#17 / telemetry section in design.md).
 
 ### `--draft` flag in mail-cli
 
@@ -217,6 +235,6 @@ The extraction work in #35–39, #139, and #144 couldn't avoid this; the interfa
 
 Four items filed during #143 review: (1) wrong module name in `ContactStoreSpec` header (says GetClearKit, should say ContactKit); (2) `SpyContactStoreSpec` uses pre-async-migration `waitUntil` + `Task` pattern — should use `AsyncSpec`; (3) `ContactStore.swift` has two jobs (protocol + `matchContacts`) — split into separate files; (4) `AppleContactStore.contacts()` blocks the cooperative thread pool — should use `withCheckedThrowingContinuation` + `DispatchQueue`.
 
-### `FieldChange<T>` will be duplicated across reminders and contacts
+### reminders-cli FieldChange<T> retrofit to ValueChange<T>
 
-`FieldChange<T>` (`.unchanged`, `.cleared`, `.set(T)`) is introduced in both `RemindersLib/ReminderChangeParsing.swift` (#147) and `ContactsLib/ChangeCommand.swift` (#37) as the pattern for "was this field specified, and if so, set or clear?" This moves to GetClearKit as part of #40 — one definition, used by all stateful tools.
+`ReminderChangeParsing.swift` defines `FieldChange<T>` locally. This predates the #141 decision to adopt `ValueChange<T>` (GetClearKit) as the suite-wide change type. Retrofit: delete the local definition, add GetClearKit dependency to RemindersLib, replace all `FieldChange` usage with `ValueChange`.
