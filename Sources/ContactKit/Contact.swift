@@ -38,6 +38,4 @@ public struct Contact: Equatable, Sendable {
         self.company    = company
     }
 
-    public var primaryEmail: String { emails.first?.value ?? "" }
-    public var primaryPhone: String { phones.first?.value ?? "" }
 }
