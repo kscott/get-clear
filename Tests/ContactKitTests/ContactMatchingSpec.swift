@@ -1,4 +1,4 @@
-// ContactStoreSpec.swift
+// ContactMatchingSpec.swift
 //
 // Tests for matchContacts — contact query matching and result ordering.
 
@@ -8,7 +8,7 @@ import Foundation
 import ContactKit
 import ContactTestSupport
 
-final class ContactStoreSpec: QuickSpec {
+final class ContactMatchingSpec: QuickSpec {
     override class func spec() {
         let all = [aliceContact, bobContact, charlieContact, noEmailContact, orgOnlyContact]
 

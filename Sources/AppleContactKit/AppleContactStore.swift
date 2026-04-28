@@ -100,10 +100,19 @@ public final class AppleContactStore: ContactStore {
             let predicate = CNContact.predicateForContactsInGroup(withIdentifier: group.identifier)
             return try cnStore.unifiedContacts(matching: predicate, keysToFetch: keysToFetch).map(toContact)
         }
-        let request = CNContactFetchRequest(keysToFetch: keysToFetch)
-        var results: [Contact] = []
-        try cnStore.enumerateContacts(with: request) { c, _ in results.append(toContact(c)) }
-        return results
+        let store = cnStore
+        return try await withCheckedThrowingContinuation { continuation in
+            DispatchQueue.global(qos: .userInitiated).async {
+                do {
+                    let request = CNContactFetchRequest(keysToFetch: keysToFetch)
+                    var results: [Contact] = []
+                    try store.enumerateContacts(with: request) { c, _ in results.append(toContact(c)) }
+                    continuation.resume(returning: results)
+                } catch {
+                    continuation.resume(throwing: error)
+                }
+            }
+        }
     }
 
     public func add(_ draft: ContactDraft) async throws -> Contact {
