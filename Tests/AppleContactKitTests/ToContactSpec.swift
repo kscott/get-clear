@@ -24,6 +24,13 @@ final class ToContactSpec: QuickSpec {
         }
 
         describe("toContact") {
+            context("identifier") {
+                it("passes through the CNContact identifier") {
+                    let c = makeContact(given: "Alice")
+                    expect(toContact(c).identifier) == c.identifier
+                }
+            }
+
             context("name assembly") {
                 it("joins given and family name with a space") {
                     let c = makeContact(given: "Alice", family: "Smith")

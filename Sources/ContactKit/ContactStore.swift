@@ -8,6 +8,7 @@ public enum ContactStoreError: Error {
     case notFound(String)
     case ambiguous([Contact])
     case groupNotFound(String)
+    case conflict
 }
 
 public protocol ContactStore: Sendable {

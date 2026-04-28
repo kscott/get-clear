@@ -10,7 +10,7 @@ import TextLib
 private func phone(_ value: String) -> ContactField { ContactField(label: "mobile", value: value) }
 private func email(_ value: String) -> ContactField { ContactField(label: "home", value: value) }
 private func contact(_ name: String, phones: [ContactField] = [], emails: [ContactField] = []) -> Contact {
-    Contact(name: name, emails: emails, phones: phones, company: "")
+    Contact(identifier: "", name: name, emails: emails, phones: phones, company: "")
 }
 
 final class TargetResolverSpec: QuickSpec {
