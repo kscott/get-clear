@@ -154,7 +154,7 @@ contacts-cli is the reference implementation (adopted 2026-04-10, commit 37e9a75
 
 **Why not GetClearKit:** GetClearKit is suite infrastructure (ANSI, arg parsing, commands, update checker). Contact types are domain-specific; placing them in GetClearKit would make it a monolith and obscure the clean layer boundary.
 
-**Scope note:** `MessageContact` deleted in #143 (text-cli migration complete). `ContactRecord` (contacts-cli) and `MailContact` (mail-cli) remain pending — migration deferred to #141–142.
+**Scope note:** `MessageContact` deleted in #143 (text-cli), `ContactRecord` deleted in #141 (contacts-cli) — both migrations complete. `MailContact` (mail-cli) remains pending — migration deferred to #142.
 
 **Key patterns:**
 - `ContactField: Equatable, Hashable, Sendable` — named type instead of tuple so `Contact` can conform to `Equatable`

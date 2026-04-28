@@ -27,6 +27,7 @@
 | #150 — Shared contact resolution library (ContactKit, AppleContactKit, ContactStoreFactory) | 2026-04-25 |
 | #147 — reminders-cli three-tier: ReminderStore protocol + AppleReminderStore | 2026-04-24 |
 | #143 — text-cli three-tier: MessageSender protocol + TextMessages + TargetResolver | 2026-04-25 |
+| #141 — contacts-cli three-tier: ContactStore protocol, ContactsLib handlers, ValueChange<T> | 2026-04-27 |
 
 ---
 
@@ -74,16 +75,23 @@ Output formatting, arg parsing duplication, `describeEKRule`, grouping logic, re
 
 ---
 
-### 7. Protocol abstractions — #140, #141, #142 (✅ #147, ✅ #143)
+### 7. Protocol abstractions — #140, #142 (✅ #147, ✅ #143, ✅ #141)
 **Depends on:** ✅ #144, ✅ #150
 
 | Issue | Tool | What ships |
 |---|---|---|
 | #147 ✅ | reminders | `ReminderStore` protocol, `AppleReminderStore`, `ListItem`, `StoreFactory` |
 | #140 | calendar | `CalendarStore` protocol, `CalendarEventKit` target, `EventItem` conversion layer |
-| #141 | contacts | `ContactStore` protocol, `ContactsApple` target — adopts shared Contact type |
+| #141 ✅ | contacts | `ContactStore` protocol, `ContactsLib` handlers, `ValueChange<T>` in GetClearKit |
 | #142 | mail | `MailClient` protocol, `MailJMAP` target — adopts shared Contact type |
 | #143 ✅ | text | `MessageSender` protocol, `TextMessages` target, `TargetResolver` in TextLib |
+
+---
+
+### 7a. Retrofit RemindersLib to ValueChange<T> — #154
+**Depends on:** ✅ #141 (ValueChange<T> landed in GetClearKit)
+
+Mechanical: delete the local `FieldChange<T>` in `RemindersLib/ReminderChangeParsing.swift`, import `GetClearKit`, replace all `FieldChange` usage with `ValueChange`. No behavior change — reminders fields are single-value so only `.cleared` and `.replaced` are ever produced.
 
 ---
 
@@ -151,6 +159,7 @@ These are good work but wait until real users are using the tools:
 
 | Item | Issue | Notes |
 |---|---|---|
+| ContactKit cleanup (module comment, SpyContactStoreSpec pattern, ContactStore.swift split, thread pool) | #153 | Correctness concern on thread pool is moot for a CLI (one call per invocation); rest is cosmetic |
 | Emoji shortcode expansion | #17 | Polish; high delight but not correctness |
 | Contextual subcommand help | #28 | Companion to --help guard (done) |
 | mail draft command | mail #18 | Stage without sending |
@@ -171,9 +180,10 @@ These are good work but wait until real users are using the tools:
 ✅ #150    shared contact resolution library
 ✅ #147    ReminderStore protocol + AppleReminderStore
 ✅ #143    MessageSender protocol + TextMessages + TargetResolver
+✅ #141    ContactStore protocol + ContactsLib + ValueChange<T>
 
+#154  Retrofit RemindersLib FieldChange → ValueChange
 #140  CalendarStore protocol + CalendarEventKit
-#141  ContactStore protocol + ContactsApple
 #142  MailClient protocol + MailJMAP
   └── #61  Gmail              ← hard user-facing blocker
 
@@ -187,4 +197,4 @@ These are good work but wait until real users are using the tools:
 Phase 2 install validation ← last, after all code
 ```
 
-**Minimum to ship:** #140–142 → #61 (Gmail) → #53, #80, #68 → #40 → #41–45 → #30 → #135 → Phase 2
+**Minimum to ship:** #154 → #140, #142 → #61 (Gmail) → #53, #80, #68 → #40 → #41–45 → #30 → #135 → Phase 2
