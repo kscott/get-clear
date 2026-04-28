@@ -69,21 +69,5 @@ final class ContactFormatterSpec: QuickSpec {
             }
         }
 
-        describe("exportAddresses") {
-            it("formats contacts as Name <email> joined by commas") {
-                let contacts = [
-                    makeContact(identifier: "a", name: "Alice", emails: [ContactField(label: "work", value: "alice@example.com")]),
-                    makeContact(identifier: "b", name: "Bob",   emails: [ContactField(label: "work", value: "bob@example.com")]),
-                ]
-                expect(exportAddresses(contacts)) == "Alice <alice@example.com>, Bob <bob@example.com>"
-            }
-            it("omits contacts with no email") {
-                let contacts = [
-                    makeContact(identifier: "a", name: "Alice", emails: [ContactField(label: "work", value: "alice@example.com")]),
-                    makeContact(identifier: "b", name: "Bob"),
-                ]
-                expect(exportAddresses(contacts)) == "Alice <alice@example.com>"
-            }
-        }
     }
 }

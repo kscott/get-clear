@@ -20,10 +20,3 @@ public func handleList(args: [String], store: any ContactStore) async throws -> 
         .joined(separator: "\n")
 }
 
-public func handleExport(args: [String], store: any ContactStore) async throws -> String {
-    guard args.count > 1 else { throw ContactHandlerError.usage("provide a group name") }
-    let groupName = args.dropFirst().joined(separator: " ")
-    let group = try await store.resolveGroup(named: groupName)
-    let contacts = try await store.fetchContacts(in: group)
-    return exportAddresses(contacts.sorted { $0.displayName < $1.displayName })
-}

@@ -23,8 +23,7 @@ public enum Command: String {
     case setup
     // Tool-specific
     case done        // reminders
-    case export      // contacts
-    case calendars   // calendar — see get-clear#31 for rename discussion
+case calendars   // calendar — see get-clear#31 for rename discussion
     case today       // calendar
     case week        // calendar
     case next        // calendar

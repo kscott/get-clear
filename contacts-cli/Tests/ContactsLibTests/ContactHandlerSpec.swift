@@ -56,21 +56,6 @@ final class ContactHandlerSpec: AsyncSpec {
             }
         }
 
-        // MARK: handleExport
-
-        describe("handleExport") {
-            it("throws usage error when no group name is given") {
-                await expect { try await handleExport(args: ["export"], store: store) }
-                    .to(throwError())
-            }
-            it("returns paste-ready address string for the group") {
-                store.groups = [ContactGroup(identifier: "g1", name: "Work")]
-                store.contacts = [aliceContact]
-                let out = try await handleExport(args: ["export", "Work"], store: store)
-                expect(out).to(contain("alice@example.com"))
-            }
-        }
-
         // MARK: handleFind
 
         describe("handleFind") {

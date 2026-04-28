@@ -17,10 +17,3 @@ public func cardLines(for contact: Contact) -> [String] {
     }
     return lines
 }
-
-public func exportAddresses(_ contacts: [Contact]) -> String {
-    contacts.compactMap { contact -> String? in
-        guard let email = contact.emails.first?.value, !email.isEmpty else { return nil }
-        return "\(contact.displayName) <\(email)>"
-    }.joined(separator: ", ")
-}
