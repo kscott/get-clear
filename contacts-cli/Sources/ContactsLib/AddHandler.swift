@@ -39,6 +39,6 @@ public func handleAdd(args: [String], store: any ContactStore) async throws -> S
     var parts = ["Added: \(saved.name)"]
     if !saved.emails.isEmpty { parts.append("email \(saved.emails.map(\.value).joined(separator: ", "))") }
     if !saved.phones.isEmpty { parts.append("phone \(saved.phones.map(\.value).joined(separator: ", "))") }
-    if let c = saved.company.isEmpty ? nil : saved.company { parts.append("company \(c)") }
+    if !saved.company.isEmpty { parts.append("company \(saved.company)") }
     return parts.joined(separator: " · ")
 }

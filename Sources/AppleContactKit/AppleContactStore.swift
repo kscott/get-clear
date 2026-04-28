@@ -32,6 +32,12 @@ func toContact(_ c: CNContact) -> Contact {
     )
 }
 
+private func setName(_ name: String, on contact: CNMutableContact) {
+    let parts = name.components(separatedBy: " ")
+    contact.givenName  = parts.first ?? ""
+    contact.familyName = parts.count > 1 ? parts.dropFirst().joined(separator: " ") : ""
+}
+
 private func applyChanges(_ changes: ContactChanges, to contact: inout CNMutableContact) {
     switch changes.email {
     case .unchanged: break
@@ -102,9 +108,7 @@ public final class AppleContactStore: ContactStore {
 
     public func add(_ draft: ContactDraft) async throws -> Contact {
         let contact = CNMutableContact()
-        let parts = draft.name.components(separatedBy: " ")
-        contact.givenName  = parts.first ?? ""
-        contact.familyName = parts.count > 1 ? parts.dropFirst().joined(separator: " ") : ""
+        setName(draft.name, on: contact)
         contact.emailAddresses = draft.emails.map {
             CNLabeledValue(label: ContactField.defaultEmailLabel, value: $0 as NSString)
         }
@@ -180,9 +184,7 @@ public final class AppleContactStore: ContactStore {
     public func rename(identifier: String, to newName: String) async throws {
         let unified = try cnStore.unifiedContact(withIdentifier: identifier, keysToFetch: keysToFetch)
         let mutable = unified.mutableCopy() as! CNMutableContact
-        let parts = newName.components(separatedBy: " ")
-        mutable.givenName  = parts.first ?? ""
-        mutable.familyName = parts.count > 1 ? parts.dropFirst().joined(separator: " ") : ""
+        setName(newName, on: mutable)
         let request = CNSaveRequest(); request.update(mutable)
         try cnStore.execute(request)
     }

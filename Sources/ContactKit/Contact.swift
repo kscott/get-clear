@@ -26,6 +26,8 @@ public struct Contact: Equatable, Sendable {
     public let phones: [ContactField]
     public let company: String
 
+    public var displayName: String { name.isEmpty ? company : name }
+
     public init(identifier: String,
                 name: String,
                 emails: [ContactField],
@@ -37,5 +39,4 @@ public struct Contact: Equatable, Sendable {
         self.phones     = phones
         self.company    = company
     }
-
 }

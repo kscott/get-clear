@@ -11,6 +11,17 @@ public enum ContactStoreError: Error {
     case conflict
 }
 
+extension ContactStoreError: LocalizedError {
+    public var errorDescription: String? {
+        switch self {
+        case .notFound(let q):      return "No contact found matching '\(q)'"
+        case .ambiguous(let cs):    return "Multiple contacts match — \(cs.map(\.displayName).joined(separator: ", "))"
+        case .groupNotFound(let n): return "No group named '\(n)'"
+        case .conflict:             return "Could not save — contact may have been modified in another app"
+        }
+    }
+}
+
 public protocol ContactStore: Sendable {
     func fetchGroups() async throws -> [ContactGroup]
     func fetchContacts(in group: ContactGroup?) async throws -> [Contact]

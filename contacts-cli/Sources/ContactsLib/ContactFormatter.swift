@@ -3,8 +3,7 @@ import GetClearKit
 
 public func cardLines(for contact: Contact) -> [String] {
     var lines: [String] = []
-    let displayName = contact.name.isEmpty ? contact.company : contact.name
-    lines.append(ANSI.bold(displayName))
+    lines.append(ANSI.bold(contact.displayName))
     if !contact.company.isEmpty && !contact.name.isEmpty {
         lines.append("  \(ANSI.dim("Company:"))  \(contact.company)")
     }
@@ -22,7 +21,6 @@ public func cardLines(for contact: Contact) -> [String] {
 public func exportAddresses(_ contacts: [Contact]) -> String {
     contacts.compactMap { contact -> String? in
         guard let email = contact.emails.first?.value, !email.isEmpty else { return nil }
-        let name = contact.name.isEmpty ? contact.company : contact.name
-        return "\(name) <\(email)>"
+        return "\(contact.displayName) <\(email)>"
     }.joined(separator: ", ")
 }
