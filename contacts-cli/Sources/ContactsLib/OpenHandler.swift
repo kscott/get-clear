@@ -1,6 +1,5 @@
 import Foundation
 
-public func handleOpen(opener: (URL) -> Void) -> String {
+public func handleOpen(opener: (URL) -> Void) {
     opener(URL(fileURLWithPath: "/System/Applications/Contacts.app"))
-    return ""
 }
