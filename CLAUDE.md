@@ -89,10 +89,10 @@ cp .build/release/<tool>-bin ~/.local/bin/<tool>
 
 All of these must be complete before public release. See `going-live.md` for full detail.
 
-Done: #33 (Command enum), #34 (monorepo), #35–39 (business logic extraction), #139 (async/await), #144 (reminders second-pass), #150 (shared contact resolution), #147 (reminders three-tier), #143 (text three-tier)
+Done: #33 (Command enum), #34 (monorepo), #35–39 (business logic extraction), #139 (async/await), #144 (reminders second-pass), #150 (shared contact resolution), #147 (reminders three-tier), #143 (text three-tier), #141 (contacts three-tier)
 
 Remaining, in priority order:
-- **#140, #141, #142** — Protocol abstractions: CalendarStore, ContactStore, MailClient (use #147 as template)
+- **#140, #142** — Protocol abstractions: CalendarStore, MailClient (use #147 as template)
 - **#61** — Gmail support (hard launch blocker; depends on MailClient #142)
 - **#53, #80, #68** — Feature additions: `calendar change`, move reminder to list, multi-recipient text
 - **#40** — GetClearKit shared utilities (what command, multi-match, field updates, error type)
