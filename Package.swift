@@ -45,12 +45,19 @@ let package = Package(
 
         .target(
             name: "ContactKit",
-            path: "Sources/ContactKit"
+            dependencies: ["GetClearKit"],
+            path: "Sources/ContactKit",
+            exclude: ["README.md"]
+        ),
+        .target(
+            name: "ContactTestSupport",
+            dependencies: ["ContactKit"],
+            path: "Tests/ContactTestSupport"
         ),
         .testTarget(
             name: "ContactKitTests",
             dependencies: [
-                "ContactKit",
+                "ContactKit", "GetClearKit", "ContactTestSupport",
                 .product(name: "Quick", package: "Quick"),
                 .product(name: "Nimble", package: "Nimble"),
             ],
@@ -163,7 +170,7 @@ let package = Package(
         .testTarget(
             name: "ContactsLibTests",
             dependencies: [
-                "ContactsLib",
+                "ContactsLib", "ContactKit", "GetClearKit", "ContactTestSupport",
                 .product(name: "Quick", package: "Quick"),
                 .product(name: "Nimble", package: "Nimble"),
             ],

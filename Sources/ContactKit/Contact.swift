@@ -14,20 +14,30 @@ public struct ContactField: Equatable, Hashable, Sendable {
     }
 }
 
+public extension ContactField {
+    static let defaultEmailLabel = "work"
+    static let defaultPhoneLabel = "mobile"
+}
+
 public struct Contact: Equatable, Sendable {
+    public let identifier: String
     public let name: String
     public let emails: [ContactField]
     public let phones: [ContactField]
     public let company: String
 
-    public init(name: String,
+    public init(identifier: String,
+                name: String,
                 emails: [ContactField],
                 phones: [ContactField],
                 company: String) {
-        self.name    = name
-        self.emails  = emails
-        self.phones  = phones
-        self.company = company
+        self.identifier = identifier
+        self.name       = name
+        self.emails     = emails
+        self.phones     = phones
+        self.company    = company
     }
 
+    public var primaryEmail: String { emails.first?.value ?? "" }
+    public var primaryPhone: String { phones.first?.value ?? "" }
 }

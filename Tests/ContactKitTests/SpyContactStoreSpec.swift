@@ -6,21 +6,14 @@ import Quick
 import Nimble
 import Foundation
 import ContactKit
-
-private struct SpyContactStore: ContactStore {
-    let result: [Contact]
-    func contacts() async throws -> [Contact] { result }
-}
+import ContactTestSupport
 
 final class SpyContactStoreSpec: QuickSpec {
     override class func spec() {
         describe("SpyContactStore") {
-            it("returns the pre-loaded contacts") {
-                let alice = Contact(name: "Alice Smith",
-                                   emails: [ContactField(label: "work", value: "alice@example.com")],
-                                   phones: [],
-                                   company: "")
-                let spy = SpyContactStore(result: [alice])
+            it("returns pre-loaded contacts via contacts()") {
+                let spy = SpyContactStore()
+                spy.contacts = [aliceContact]
                 var fetched: [Contact] = []
                 waitUntil { done in
                     Task {
@@ -32,7 +25,7 @@ final class SpyContactStoreSpec: QuickSpec {
                 expect(fetched.first?.name) == "Alice Smith"
             }
             it("returns an empty list when initialized with no contacts") {
-                let spy = SpyContactStore(result: [])
+                let spy = SpyContactStore()
                 var fetched: [Contact] = []
                 waitUntil { done in
                     Task {
@@ -41,6 +34,27 @@ final class SpyContactStoreSpec: QuickSpec {
                     }
                 }
                 expect(fetched).to(beEmpty())
+            }
+            it("records delete calls") {
+                let spy = SpyContactStore()
+                waitUntil { done in
+                    Task {
+                        try? await spy.delete(identifier: "alice-id")
+                        done()
+                    }
+                }
+                expect(spy.deletedIds) == ["alice-id"]
+            }
+            it("records rename calls") {
+                let spy = SpyContactStore()
+                waitUntil { done in
+                    Task {
+                        try? await spy.rename(identifier: "alice-id", to: "Alice Jones")
+                        done()
+                    }
+                }
+                expect(spy.renamedItems.first?.identifier) == "alice-id"
+                expect(spy.renamedItems.first?.to) == "Alice Jones"
             }
         }
     }

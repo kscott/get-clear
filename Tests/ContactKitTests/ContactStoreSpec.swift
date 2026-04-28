@@ -1,36 +1,16 @@
 // ContactStoreSpec.swift
 //
-// Tests for GetClearKit matchContacts — contact query matching and result ordering.
+// Tests for matchContacts — contact query matching and result ordering.
 
 import Quick
 import Nimble
 import Foundation
 import ContactKit
+import ContactTestSupport
 
 final class ContactStoreSpec: QuickSpec {
     override class func spec() {
-        let alice   = Contact(name: "Alice Smith",
-                              emails: [ContactField(label: "work", value: "alice@example.com")],
-                              phones: [ContactField(label: "main", value: "555-1234")],
-                              company: "Acme")
-        let bob     = Contact(name: "Bob Jones",
-                              emails: [ContactField(label: "work", value: "bob@jones.org")],
-                              phones: [],
-                              company: "BJCO")
-        let charlie = Contact(name: "Charlie Brown",
-                              emails: [ContactField(label: "home", value: "cbrown@peanuts.com")],
-                              phones: [ContactField(label: "main", value: "555-9999")],
-                              company: "")
-        let noEmail = Contact(name: "Dana White",
-                              emails: [],
-                              phones: [ContactField(label: "main", value: "303-555-0000")],
-                              company: "")
-        let orgOnly = Contact(name: "",
-                              emails: [ContactField(label: "work", value: "info@initech.com")],
-                              phones: [],
-                              company: "Initech")
-
-        let all = [alice, bob, charlie, noEmail, orgOnly]
+        let all = [aliceContact, bobContact, charlieContact, noEmailContact, orgOnlyContact]
 
         describe("matchContacts") {
             context("name matching") {
@@ -78,9 +58,9 @@ final class ContactStoreSpec: QuickSpec {
             context("sort order") {
                 it("sorts exact name before prefix before substring") {
                     let contacts = [
-                        Contact(name: "Smith Jr",   emails: [], phones: [], company: ""),
-                        Contact(name: "Smith",      emails: [], phones: [], company: ""),
-                        Contact(name: "John Smith", emails: [], phones: [], company: ""),
+                        makeContact(identifier: "jr-id",   name: "Smith Jr"),
+                        makeContact(identifier: "smith-id", name: "Smith"),
+                        makeContact(identifier: "john-id",  name: "John Smith"),
                     ]
                     let r = matchContacts("smith", in: contacts)
                     expect(r[0].name) == "Smith"
@@ -98,6 +78,12 @@ final class ContactStoreSpec: QuickSpec {
                 }
                 it("matching is case insensitive") {
                     expect(matchContacts("ALICE", in: all)).toNot(beEmpty())
+                }
+            }
+
+            context("identifier preservation") {
+                it("returned contact carries the original identifier") {
+                    expect(matchContacts("alice", in: all).first?.identifier) == "alice-id"
                 }
             }
         }
