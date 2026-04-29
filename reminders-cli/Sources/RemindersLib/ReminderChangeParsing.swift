@@ -109,11 +109,8 @@ public func parseReminderChanges(
         if opts.note.lowercased() == "none" {
             note = .cleared
             descriptions.append("note cleared")
-        } else if let existing = existingItem.notes {
-            note = .replaced(from: existing, to: opts.note)
-            descriptions.append("+ note")
         } else {
-            note = .added(opts.note)
+            note = existingItem.notes.map { .replaced(from: $0, to: opts.note) } ?? .added(opts.note)
             descriptions.append("+ note")
         }
     }
@@ -134,7 +131,6 @@ public func parseReminderChanges(
 
     if !opts.list.isEmpty {
         list = .replaced(from: existingItem.list.title, to: opts.list)
-        // Description requires the resolved list name — caller appends it after resolving EKCalendar.
     }
 
     if descriptions.isEmpty && opts.list.isEmpty {
