@@ -28,6 +28,8 @@
 | #147 — reminders-cli three-tier: ReminderStore protocol + AppleReminderStore | 2026-04-24 |
 | #143 — text-cli three-tier: MessageSender protocol + TextMessages + TargetResolver | 2026-04-25 |
 | #141 — contacts-cli three-tier: ContactStore protocol, ContactsLib handlers, ValueChange<T> | 2026-04-27 |
+| #154 — retrofit RemindersLib FieldChange<T> → ValueChange<T> | 2026-04-27 |
+| #140 — calendar-cli three-tier: CalendarStore protocol, CalendarEventKit, handler extraction (972 tests, 93.9% coverage) | 2026-04-29 |
 
 ---
 
@@ -75,13 +77,13 @@ Output formatting, arg parsing duplication, `describeEKRule`, grouping logic, re
 
 ---
 
-### 7. Protocol abstractions — #140, #142 (✅ #147, ✅ #143, ✅ #141)
+### 7. Protocol abstractions — #142 (✅ #147, ✅ #140, ✅ #143, ✅ #141)
 **Depends on:** ✅ #144, ✅ #150
 
 | Issue | Tool | What ships |
 |---|---|---|
 | #147 ✅ | reminders | `ReminderStore` protocol, `AppleReminderStore`, `ListItem`, `StoreFactory` |
-| #140 | calendar | `CalendarStore` protocol, `CalendarEventKit` target, `EventItem` conversion layer |
+| #140 ✅ | calendar | `CalendarStore` protocol, `CalendarEventKit` target, `EventItem` conversion layer |
 | #141 ✅ | contacts | `ContactStore` protocol, `ContactsLib` handlers, `ValueChange<T>` in GetClearKit |
 | #142 | mail | `MailClient` protocol, `MailJMAP` target — adopts shared Contact type |
 | #143 ✅ | text | `MessageSender` protocol, `TextMessages` target, `TargetResolver` in TextLib |
@@ -182,7 +184,7 @@ These are good work but wait until real users are using the tools:
 ✅ #143    MessageSender protocol + TextMessages + TargetResolver
 ✅ #141    ContactStore protocol + ContactsLib + ValueChange<T>
 ✅ #154    Retrofit RemindersLib FieldChange → ValueChange
-#140  CalendarStore protocol + CalendarEventKit
+✅ #140    CalendarStore protocol + CalendarEventKit
 #142  MailClient protocol + MailJMAP
   └── #61  Gmail              ← hard user-facing blocker
 
@@ -196,4 +198,4 @@ These are good work but wait until real users are using the tools:
 Phase 2 install validation ← last, after all code
 ```
 
-**Minimum to ship:** #154 → #140, #142 → #61 (Gmail) → #53, #80, #68 → #40 → #41–45 → #30 → #135 → Phase 2
+**Minimum to ship:** #142 → #61 (Gmail) → #53, #80, #68 → #40 → #41–45 → #30 → #135 → Phase 2

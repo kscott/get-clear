@@ -275,7 +275,7 @@ This is what makes the Lib testable: a `ReminderItem` can be constructed in a te
 
 The store protocol (`ReminderStore`, `CalendarStore`, etc.) lives in Lib with a `resolve` default extension handling not-found/ambiguous lookup. The Apple-backed implementation (`AppleReminderStore`, etc.) lives in the framework boundary target.
 
-reminders-cli is the complete reference implementation (#147). #140–143 apply this pattern to the remaining four tools.
+reminders-cli is the complete reference implementation (#147). #140 (calendar), #141 (contacts), and #143 (text) are complete. #142 (mail) remains.
 
 ---
 
