@@ -88,10 +88,10 @@ Output formatting, arg parsing duplication, `describeEKRule`, grouping logic, re
 
 ---
 
-### 7a. Retrofit RemindersLib to ValueChange<T> — #154
+### 7a. ✅ Retrofit RemindersLib to ValueChange<T> — #154
 **Depends on:** ✅ #141 (ValueChange<T> landed in GetClearKit)
 
-Mechanical: delete the local `FieldChange<T>` in `RemindersLib/ReminderChangeParsing.swift`, import `GetClearKit`, replace all `FieldChange` usage with `ValueChange`. No behavior change — reminders fields are single-value so only `.cleared` and `.replaced` are ever produced.
+`FieldChange<T>` deleted. `parseReminderChanges` now accepts `existingItem: ReminderItem` and produces proper `from:` values — `.added` for optional fields when nil, `.replaced(from: existing, to: new)` when set.
 
 ---
 
@@ -181,8 +181,7 @@ These are good work but wait until real users are using the tools:
 ✅ #147    ReminderStore protocol + AppleReminderStore
 ✅ #143    MessageSender protocol + TextMessages + TargetResolver
 ✅ #141    ContactStore protocol + ContactsLib + ValueChange<T>
-
-#154  Retrofit RemindersLib FieldChange → ValueChange
+✅ #154    Retrofit RemindersLib FieldChange → ValueChange
 #140  CalendarStore protocol + CalendarEventKit
 #142  MailClient protocol + MailJMAP
   └── #61  Gmail              ← hard user-facing blocker

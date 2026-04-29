@@ -71,7 +71,7 @@ public final class AppleReminderStore: ReminderStore {
 
     public func update(identifier: String, changes: ReminderChanges) async throws {
         let reminder = try ekReminder(identifier: identifier)
-        if case .set(let targetName) = changes.list {
+        if case .replaced(_, let targetName) = changes.list {
             guard let cal = calendar(for: ReminderList(title: targetName)) else {
                 throw AppleStoreError.listNotFound(targetName)
             }
@@ -191,23 +191,33 @@ private func describeEKRule(_ rule: EKRecurrenceRule) -> String {
 // MARK: - Field assignment
 
 private func applyChanges(_ changes: ReminderChanges, to reminder: EKReminder) {
-    if case .cleared = changes.due { reminder.dueDateComponents = nil }
-    if case .set(let comps) = changes.due { reminder.dueDateComponents = comps }
-
-    if case .cleared = changes.recurrence {
-        reminder.recurrenceRules?.forEach { reminder.removeRecurrenceRule($0) }
+    switch changes.due {
+    case .cleared:                                  reminder.dueDateComponents = nil
+    case .added(let c), .replaced(_, let c):        reminder.dueDateComponents = c
+    default: break
     }
-    if case .set(let spec) = changes.recurrence {
+
+    switch changes.recurrence {
+    case .cleared:
+        reminder.recurrenceRules?.forEach { reminder.removeRecurrenceRule($0) }
+    case .added(let spec), .replaced(_, let spec):
         reminder.recurrenceRules?.forEach { reminder.removeRecurrenceRule($0) }
         reminder.addRecurrenceRule(toEKRule(spec))
+    default: break
     }
 
-    if case .set(let p) = changes.priority { reminder.priority = p }
+    if case .replaced(_, let p) = changes.priority { reminder.priority = p }
 
-    if case .cleared = changes.note { reminder.notes = nil }
-    if case .set(let n) = changes.note { reminder.notes = n }
+    switch changes.note {
+    case .cleared:                              reminder.notes = nil
+    case .added(let n), .replaced(_, let n):    reminder.notes = n
+    default: break
+    }
 
-    if case .cleared = changes.url { reminder.url = nil }
-    if case .set(let url) = changes.url { reminder.url = url }
+    switch changes.url {
+    case .cleared:                              reminder.url = nil
+    case .added(let u), .replaced(_, let u):    reminder.url = u
+    default: break
+    }
 }
 

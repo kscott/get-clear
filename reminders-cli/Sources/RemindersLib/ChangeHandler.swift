@@ -18,7 +18,7 @@ public func handleChange(args: [String], store: any ReminderStore) async throws 
     let opts = parseOptions(rawOptions)
     let changes: ReminderChanges
     do {
-        changes = try parseReminderChanges(opts, existingDue: item.dueDateComponents)
+        changes = try parseReminderChanges(opts, existingItem: item)
     } catch ReminderChangeError.nothingToChange {
         throw ReminderHandlerError("nothing to change — specify a date, repeat, priority, note, url, or list")
     } catch ReminderChangeError.unrecognizedRecurrence(let s) {
@@ -26,7 +26,7 @@ public func handleChange(args: [String], store: any ReminderStore) async throws 
     }
     try await store.update(identifier: item.identifier, changes: changes)
     var descs = changes.descriptions
-    if case .set(let name) = changes.list { descs.append("moved to \(name)") }
+    if case .replaced(_, let name) = changes.list { descs.append("moved to \(name)") }
     try? ActivityLog.write(tool: "reminders", cmd: "change", desc: title, container: item.list.title)
     return "Updated \"\(title)\": \(descs.joined(separator: ", "))"
 }

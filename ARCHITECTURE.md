@@ -235,6 +235,6 @@ The extraction work in #35–39, #139, and #144 couldn't avoid this; the interfa
 
 Four items filed during #143 review: (1) wrong module name in `ContactStoreSpec` header (says GetClearKit, should say ContactKit); (2) `SpyContactStoreSpec` uses pre-async-migration `waitUntil` + `Task` pattern — should use `AsyncSpec`; (3) `ContactStore.swift` has two jobs (protocol + `matchContacts`) — split into separate files; (4) `AppleContactStore.contacts()` blocks the cooperative thread pool — should use `withCheckedThrowingContinuation` + `DispatchQueue`.
 
-### reminders-cli FieldChange<T> retrofit to ValueChange<T>
+### ~~reminders-cli FieldChange<T> retrofit to ValueChange<T>~~ — resolved (#154)
 
-`ReminderChangeParsing.swift` defines `FieldChange<T>` locally. This predates the #141 decision to adopt `ValueChange<T>` (GetClearKit) as the suite-wide change type. Retrofit: delete the local definition, add GetClearKit dependency to RemindersLib, replace all `FieldChange` usage with `ValueChange`.
+`FieldChange<T>` deleted from `ReminderChangeParsing.swift`. All fields in `ReminderChanges` now use `ValueChange<T>`. `parseReminderChanges` signature changed from `existingDue: DateComponents?` to `existingItem: ReminderItem` — the full item carries proper `from:` values for `.replaced`. Optional fields produce `.added(T)` when nil, `.replaced(from: existing, to: new)` when set. Priority and list (always present) always produce `.replaced`. Boundary (`applyChanges`) updated to `switch` with `.added`/`.replaced` binding.

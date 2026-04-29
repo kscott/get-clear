@@ -339,6 +339,25 @@ final class ReminderHandlersSpec: AsyncSpec {
                     expect(e.message).to(contain("fortnightly"))
                 })
             }
+            it("carries existing item values as from in ValueChange") {
+                store.items = [makeItem(identifier: "id-1", priority: 5, notes: "old note")]
+                _ = try await handleChange(args: ["change", "Pay rent", "priority", "high"], store: store)
+                let changes = store.updatedItems[0].changes
+                expect(changes.priority) == .replaced(from: 5, to: 1)
+                expect(changes.note) == .unchanged
+            }
+            it("produces added when existing optional field is nil") {
+                store.items = [makeItem(identifier: "id-1")]
+                _ = try await handleChange(args: ["change", "Pay rent", "note", "buy milk"], store: store)
+                let changes = store.updatedItems[0].changes
+                expect(changes.note) == .added("buy milk")
+            }
+            it("produces replaced when existing optional field is present") {
+                store.items = [makeItem(identifier: "id-1", notes: "old note")]
+                _ = try await handleChange(args: ["change", "Pay rent", "note", "new note"], store: store)
+                let changes = store.updatedItems[0].changes
+                expect(changes.note) == .replaced(from: "old note", to: "new note")
+            }
         }
     }
 }

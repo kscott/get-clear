@@ -5,26 +5,17 @@
 import Foundation
 import GetClearKit
 
-/// Describes whether a field should be left alone, cleared, or updated.
-public enum FieldChange<T> {
-    case unchanged
-    case cleared
-    case set(T)
-}
-
-extension FieldChange: Equatable where T: Equatable {}
-
 /// The resolved set of changes to apply to a reminder.
 public struct ReminderChanges {
     /// Due date as DateComponents ready to assign to EKReminder.dueDateComponents, or cleared/unchanged.
-    public let due: FieldChange<DateComponents>
-    public let recurrence: FieldChange<RecurrenceSpec>
+    public let due: ValueChange<DateComponents>
+    public let recurrence: ValueChange<RecurrenceSpec>
     /// Priority integer (0 = none, 1 = high, 5 = medium, 9 = low), or unchanged.
-    public let priority: FieldChange<Int>
-    public let note: FieldChange<String>
-    public let url: FieldChange<URL>
+    public let priority: ValueChange<Int>
+    public let note: ValueChange<String>
+    public let url: ValueChange<URL>
     /// Target list name. Caller is responsible for resolving to EKCalendar and generating the description.
-    public let list: FieldChange<String>
+    public let list: ValueChange<String>
     /// Human-readable summary of changes made (excludes list — caller appends that).
     public var descriptions: [String]
 }
@@ -50,21 +41,21 @@ public func parsePriority(_ s: String) -> Int? {
 /// Parses opts into a ReminderChanges value describing what to apply.
 ///
 /// - Parameter opts: Parsed options from the user's input string.
-/// - Parameter existingDue: The reminder's current due date components, used to merge
-///   time-only input (e.g. "3pm") with an existing date.
+/// - Parameter existingItem: The current reminder, used to populate `from:` in ValueChange.replaced
+///   and to merge time-only input (e.g. "3pm") with an existing due date.
 /// - Throws: `ReminderChangeError.nothingToChange` if no recognized fields were specified.
 /// - Throws: `ReminderChangeError.unrecognizedRecurrence` if a repeat value was given but not parseable.
 public func parseReminderChanges(
     _ opts: ParsedOptions,
-    existingDue: DateComponents?
+    existingItem: ReminderItem
 ) throws -> ReminderChanges {
-    var due: FieldChange<DateComponents>       = .unchanged
-    var recurrence: FieldChange<RecurrenceSpec> = .unchanged
-    var priority: FieldChange<Int>             = .unchanged
-    var note: FieldChange<String>              = .unchanged
-    var url: FieldChange<URL>                  = .unchanged
-    var list: FieldChange<String>              = .unchanged
-    var descriptions: [String]                 = []
+    var due: ValueChange<DateComponents>        = .unchanged
+    var recurrence: ValueChange<RecurrenceSpec> = .unchanged
+    var priority: ValueChange<Int>              = .unchanged
+    var note: ValueChange<String>               = .unchanged
+    var url: ValueChange<URL>                   = .unchanged
+    var list: ValueChange<String>               = .unchanged
+    var descriptions: [String]                  = []
 
     if !opts.date.isEmpty {
         if opts.date.lowercased() == "none" {
@@ -72,17 +63,22 @@ public func parseReminderChanges(
             descriptions.append("due cleared")
         } else if let pd = parseDate(opts.date) {
             let cal = Calendar.current
-            if pd.hasTime && !pd.hasDate, let existing = existingDue {
+            if pd.hasTime && !pd.hasDate, let existing = existingItem.dueDateComponents {
                 // Time-only input — preserve existing date, update time only
                 var comps = existing
                 let t = cal.dateComponents([.hour, .minute], from: pd.date)
                 comps.hour   = t.hour
                 comps.minute = t.minute
                 let display  = cal.date(from: comps) ?? pd.date
-                due = .set(comps)
+                due = .replaced(from: existing, to: comps)
                 descriptions.append("due → \(formatDate(display, showTime: true))")
             } else {
-                    due = .set(dateComponents(from: pd))
+                let comps = dateComponents(from: pd)
+                if let existing = existingItem.dueDateComponents {
+                    due = .replaced(from: existing, to: comps)
+                } else {
+                    due = .added(comps)
+                }
                 descriptions.append("due → \(formatDate(pd.date, showTime: pd.hasTime))")
             }
         }
@@ -93,7 +89,11 @@ public func parseReminderChanges(
             recurrence = .cleared
             descriptions.append("repeat cleared")
         } else if let spec = parseRecurrence(opts.recurrence) {
-            recurrence = .set(spec)
+            if let existing = existingItem.recurrenceSpec {
+                recurrence = .replaced(from: existing, to: spec)
+            } else {
+                recurrence = .added(spec)
+            }
             descriptions.append(describeRecurrence(spec))
         } else {
             throw ReminderChangeError.unrecognizedRecurrence(opts.recurrence)
@@ -101,7 +101,7 @@ public func parseReminderChanges(
     }
 
     if !opts.priority.isEmpty, let p = parsePriority(opts.priority) {
-        priority = .set(p)
+        priority = .replaced(from: existingItem.priority, to: p)
         descriptions.append(p == 0 ? "priority cleared" : "priority → \(opts.priority)")
     }
 
@@ -109,8 +109,11 @@ public func parseReminderChanges(
         if opts.note.lowercased() == "none" {
             note = .cleared
             descriptions.append("note cleared")
+        } else if let existing = existingItem.notes {
+            note = .replaced(from: existing, to: opts.note)
+            descriptions.append("+ note")
         } else {
-            note = .set(opts.note)
+            note = .added(opts.note)
             descriptions.append("+ note")
         }
     }
@@ -120,14 +123,18 @@ public func parseReminderChanges(
             url = .cleared
             descriptions.append("url cleared")
         } else if let parsed = URL(string: opts.url) {
-            url = .set(parsed)
+            if let existing = existingItem.url {
+                url = .replaced(from: existing, to: parsed)
+            } else {
+                url = .added(parsed)
+            }
             descriptions.append("url → \(opts.url)")
         }
     }
 
     if !opts.list.isEmpty {
-        list = .set(opts.list)
-        // Description requires the "from" list name — caller appends it after resolving EKCalendar.
+        list = .replaced(from: existingItem.list.title, to: opts.list)
+        // Description requires the resolved list name — caller appends it after resolving EKCalendar.
     }
 
     if descriptions.isEmpty && opts.list.isEmpty {
