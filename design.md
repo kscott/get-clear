@@ -478,6 +478,18 @@ Together they cover the full loop: *who* you're working with, *what* you've prom
 
 ---
 
+## Colored dot placement
+
+Every item that belongs to a named container — a calendar, a reminder list — can carry a colored dot (the container's color, rendered as an ANSI-colored bullet). Where the dot lives depends on whether the view is interleaved or grouped.
+
+**Interleaved view** — items from multiple containers displayed together without explicit grouping (e.g., `calendar today` showing events from multiple calendars sorted by time, `reminders today` showing reminders from multiple lists sorted by due date): **dot goes on each item**. Without it, the item's origin is invisible.
+
+**Grouped view** — items displayed under their own named header (e.g., `reminders list` grouping reminders under bold list-name headers): **dot goes on the header, not on each item below**. Once the header identifies the container, repeating the dot on every item adds visual noise without adding information.
+
+The test: *does the dot tell the user something the layout doesn't already tell them?* In an interleaved view, yes — origin is invisible without it. Under a named header, no — the header already names the origin.
+
+---
+
 ## Color output
 
 The suite uses ANSI color with automatic suppression — `isatty(STDOUT_FILENO)` and `NO_COLOR` are both checked at process startup. The result is stored once; there is no per-call re-evaluation.
