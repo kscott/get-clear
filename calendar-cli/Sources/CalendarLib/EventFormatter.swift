@@ -1,40 +1,8 @@
 // EventFormatter.swift
-//
-// Formats event data for display output.
+// Formats EventItem data for display output.
 
 import Foundation
 import GetClearKit
-
-/// Plain-data representation of an event for formatting.
-/// Constructed from an EKEvent in CalendarCLI before calling formatter functions.
-/// No EventKit or AppKit import required.
-public struct EventDisplayData {
-    public let title:         String
-    public let start:         Date
-    public let end:           Date?
-    public let isAllDay:      Bool
-    public let calendarName:  String
-    public let calendarColor: (r: Int, g: Int, b: Int)?
-    public let location:      String?
-
-    public init(
-        title:         String,
-        start:         Date,
-        end:           Date?,
-        isAllDay:      Bool,
-        calendarName:  String,
-        calendarColor: (r: Int, g: Int, b: Int)?,
-        location:      String? = nil
-    ) {
-        self.title         = title
-        self.start         = start
-        self.end           = end
-        self.isAllDay      = isAllDay
-        self.calendarName  = calendarName
-        self.calendarColor = calendarColor
-        self.location      = location
-    }
-}
 
 // MARK: - Module-level formatters
 
@@ -76,28 +44,27 @@ public let eventDetailDateFormatter: DateFormatter = {
 
 // MARK: - Public helpers
 
-/// Formats a Date as a display time string, e.g. "2:00 PM".
 public func formatEventTime(_ date: Date) -> String {
     timeFormatter.string(from: date)
 }
 
-/// Returns the ANSI true-color dot for a calendar color, or two spaces when color
-/// is unavailable or ANSI is disabled.
-public func colorDot(_ color: (r: Int, g: Int, b: Int)?) -> String {
-    guard ANSI.enabled, let c = color else { return "  " }
-    return "\u{001B}[38;2;\(c.r);\(c.g);\(c.b)m●\u{001B}[0m "
+public func calendarDot(hex: String?, ansiEnabled: Bool = ANSI.enabled) -> String {
+    guard ansiEnabled, let hex, hex.count == 6 else { return "  " }
+    guard let r = UInt8(hex.prefix(2), radix: 16),
+          let g = UInt8(hex.dropFirst(2).prefix(2), radix: 16),
+          let b = UInt8(hex.dropFirst(4).prefix(2), radix: 16) else { return "  " }
+    return "\u{001B}[38;2;\(r);\(g);\(b)m●\u{001B}[0m "
 }
 
 // MARK: - eventLine
 
-/// Returns a single formatted event line for list/today/week/find output.
-public func eventLine(for event: EventDisplayData) -> String {
+public func eventLine(for event: EventItem) -> String {
     let timeCol: String
     if event.isAllDay {
         timeCol = " All day              "
     } else {
-        let start = formatEventTime(event.start)
-        let end   = event.end.map { formatEventTime($0) } ?? formatEventTime(event.start)
+        let start = formatEventTime(event.startDate)
+        let end   = event.endDate.map { formatEventTime($0) } ?? formatEventTime(event.startDate)
         timeCol = String(format: " %8@ – %-8@  ", start as CVarArg, end as CVarArg)
     }
 
@@ -108,14 +75,11 @@ public func eventLine(for event: EventDisplayData) -> String {
         label += ANSI.dim(" · " + truncated)
     }
 
-    return "\(colorDot(event.calendarColor))\(timeCol)\(label)"
+    return "\(calendarDot(hex: event.calendarColor))\(timeCol)\(label)"
 }
 
 // MARK: - nextRelativeLabel
 
-
-/// Returns a fixed-width (9-char) relative date label for use in `next` output.
-/// Examples: "Today    ", "Tomorrow ", "Tue      ", "Jan 25   "
 public func nextRelativeLabel(for date: Date, relativeTo now: Date) -> String {
     let cal = Calendar.current
     if cal.isDate(date, inSameDayAs: now) { return "Today    " }
@@ -129,23 +93,37 @@ public func nextRelativeLabel(for date: Date, relativeTo now: Date) -> String {
     return raw.padding(toLength: 9, withPad: " ", startingAt: 0)
 }
 
-// MARK: - Grouped and flat printing
+// MARK: - Ambiguous match formatting
 
-/// Prints events grouped by day with bold day headers.
-public func printGrouped(_ events: [EventDisplayData]) {
-    let cal     = Calendar.current
-    let grouped = Dictionary(grouping: events) { cal.startOfDay(for: $0.start) }
-    let days    = grouped.keys.sorted()
-    for (i, day) in days.enumerated() {
-        if i > 0 { print("") }
-        print(ANSI.bold(dayHeaderFormatter.string(from: day)))
-        let sorted = (grouped[day] ?? []).sorted { $0.start < $1.start }
-        for event in sorted { print(eventLine(for: event)) }
+/// Returns the disambiguation message shown when multiple events match a title lookup.
+func formatAmbiguous(_ matches: [EventItem], title: String, command: String) -> String {
+    var lines = ["Multiple events match '\(title)':"]
+    for e in matches {
+        let dateStr = shortDateFormatter.string(from: e.startDate)
+        let timeStr = e.isAllDay ? "all day" : formatEventTime(e.startDate)
+        lines.append("  \(dateStr)  \(timeStr)  \(e.title)")
     }
+    lines.append("Add a date to narrow the search, e.g.: calendar \(command) \"\(title)\" tomorrow")
+    return lines.joined(separator: "\n")
 }
 
-/// Prints events as a flat list, optionally preceded by a header line.
-public func printFlat(_ events: [EventDisplayData], showHeader: Bool, header: String) {
-    if showHeader { print(header) }
-    for event in events { print(eventLine(for: event)) }
+// MARK: - Grouped and flat output
+
+public func formatGrouped(_ events: [EventItem]) -> String {
+    let cal     = Calendar.current
+    let grouped = Dictionary(grouping: events) { cal.startOfDay(for: $0.startDate) }
+    let days    = grouped.keys.sorted()
+    return days.enumerated().map { i, day in
+        let header = ANSI.bold(dayHeaderFormatter.string(from: day))
+        let sorted = (grouped[day] ?? []).sorted { $0.startDate < $1.startDate }
+        let lines  = sorted.map { eventLine(for: $0) }
+        return (i > 0 ? "\n" : "") + header + "\n" + lines.joined(separator: "\n")
+    }.joined()
+}
+
+public func formatFlat(_ events: [EventItem], showHeader: Bool, header: String) -> String {
+    var lines: [String] = []
+    if showHeader { lines.append(header) }
+    lines.append(contentsOf: events.map { eventLine(for: $0) })
+    return lines.joined(separator: "\n")
 }

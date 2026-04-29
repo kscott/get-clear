@@ -28,6 +28,8 @@ public struct ParsedRange {
         self.end         = end
         self.isSingleDay = isSingleDay
     }
+
+    public var interval: DateInterval { DateInterval(start: start, end: end) }
 }
 
 public func parseRange(_ input: String) -> ParsedRange? {
@@ -149,6 +151,19 @@ public func parseSingleDate(_ s: String, cal: Calendar, now: Date) -> Date? {
 }
 
 // MARK: - Formatting
+
+/// Joins args after index 0 as a range string, falling back to `defaultStr`, and parses it.
+/// Throws a descriptive error rather than returning nil — collapses the common two-line extract-then-guard pattern.
+public func parseRange(trailingArgs args: [String], default defaultStr: String) throws -> ParsedRange {
+    let str = args.count > 1 ? Array(args.dropFirst()).joined(separator: " ") : defaultStr
+    guard let r = parseRange(str) else { throw RangeParseError(input: str) }
+    return r
+}
+
+public struct RangeParseError: LocalizedError {
+    public let input: String
+    public var errorDescription: String? { "unrecognised range: \(input)" }
+}
 
 public func formatRangeDescription(_ range: ParsedRange) -> String {
     let cal = Calendar.current

@@ -5,11 +5,9 @@ import Foundation
 import GetClearKit
 
 public func handleWhat(args: [String]) async throws -> String {
+    let range    = try parseRange(trailingArgs: args, default: "today")
     let rangeStr = args.count > 1 ? Array(args.dropFirst()).joined(separator: " ") : "today"
-    guard let range = parseRange(rangeStr) else {
-        throw ReminderHandlerError("Unrecognised range: \(rangeStr)")
-    }
-    let isToday = rangeStr == "today"
+    let isToday  = rangeStr == "today"
     var dateUsed = Date()
     let entries: [ActivityLogEntry]
     if isToday {

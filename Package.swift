@@ -131,9 +131,14 @@ let package = Package(
             dependencies: ["GetClearKit"],
             path: "calendar-cli/Sources/CalendarLib"
         ),
+        .target(
+            name: "CalendarEventKit",
+            dependencies: ["CalendarLib", "GetClearKit"],
+            path: "calendar-cli/Sources/CalendarEventKit"
+        ),
         .executableTarget(
             name: "calendar-bin",
-            dependencies: ["CalendarLib", "GetClearKit"],
+            dependencies: ["CalendarEventKit", "CalendarLib", "GetClearKit"],
             path: "calendar-cli/Sources/CalendarCLI",
             linkerSettings: [
                 .linkedFramework("EventKit"),

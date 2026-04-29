@@ -1,17 +1,12 @@
 // main.swift
-//
-// Entry point for the calendar-bin executable.
-// Argument parsing and dispatch only — all logic lives in CalendarLib or CalendarCLI helpers.
+// Entry point for the calendar-bin executable. Dispatch only — all logic lives in CalendarLib.
 
-import Foundation
-import EventKit
+import AppKit
 import CalendarLib
+import CalendarEventKit
 import GetClearKit
 
-let store     = EKEventStore()
-let semaphore = DispatchSemaphore(value: 0)
-var args      = Array(CommandLine.arguments.dropFirst())
-
+var args = Array(CommandLine.arguments.dropFirst())
 let config = loadConfig()
 
 var calFilter: String? = nil
@@ -22,29 +17,35 @@ if let first = args.first,
     calFilter = args.removeFirst()
 }
 
-Task { await runCLI(args: args, identity: identity, usage: usage) { command, args in
-    store.requestFullAccessToEvents { granted, _ in
-        guard granted else { fail("Calendar access denied") }
-
-        switch command {
-        case .what:      handleWhat(args: args, semaphore: semaphore)
-        case .open:      handleOpen(semaphore: semaphore)
-        case .calendars: handleCalendars(store: store, semaphore: semaphore)
-        case .setup:     handleSetup(store: store, semaphore: semaphore)
-        case .list:      handleList(args: args, store: store, calFilter: calFilter, config: config, semaphore: semaphore)
-        case .today:     handleToday(store: store, calFilter: calFilter, config: config, semaphore: semaphore)
-        case .week:      handleWeek(store: store, calFilter: calFilter, config: config, semaphore: semaphore)
-        case .next:      handleNext(args: args, store: store, calFilter: calFilter, config: config, semaphore: semaphore)
-        case .find:      handleFind(args: args, store: store, calFilter: calFilter, config: config, semaphore: semaphore)
-        case .show:      handleShow(args: args, store: store, calFilter: calFilter, config: config, semaphore: semaphore)
-        case .add:       handleAdd(args: args, store: store, calFilter: calFilter, config: config, semaphore: semaphore)
-        case .remove:    handleRemove(args: args, store: store, calFilter: calFilter, config: config, semaphore: semaphore)
-        default:
-            if !handleDefault(args: args, store: store, calFilter: calFilter, config: config, semaphore: semaphore) { usage() }
-        }
+await runCLI(args: args, identity: identity, usage: usage) { command, args in
+    if command == .open {
+        _ = handleOpen(opener: { NSWorkspace.shared.open($0) })
+        return
     }
-} }
+    if command == .what {
+        print(try handleWhat(args: args))
+        return
+    }
 
-semaphore.wait()
-UpdateChecker.spawnBackgroundCheckIfNeeded()
-if let hint = UpdateChecker.hint() { fputs(hint + "\n", stderr) }
+    let store = try await makeCalendarStore()
+
+    do {
+        switch command {
+        case .calendars: print(try await handleCalendars(store: store))
+        case .setup:     print(try await handleSetup(store: store))
+        case .list:      print(try await handleList(args: args, store: store, calFilter: calFilter, config: config))
+        case .today:     print(try await handleToday(store: store, calFilter: calFilter, config: config))
+        case .week:      print(try await handleWeek(store: store, calFilter: calFilter, config: config))
+        case .next:      print(try await handleNext(args: args, store: store, calFilter: calFilter, config: config))
+        case .find:      print(try await handleFind(args: args, store: store, calFilter: calFilter, config: config))
+        case .show:      print(try await handleShow(args: args, store: store, calFilter: calFilter, config: config))
+        case .add:       print(try await handleAdd(args: args, store: store, calFilter: calFilter, config: config))
+        case .remove:    print(try await handleRemove(args: args, store: store, calFilter: calFilter, config: config))
+        default:         print(usage())
+        }
+    } catch let e as CalendarHandlerError {
+        fail(e.description)
+    } catch {
+        fail(error.localizedDescription)
+    }
+}

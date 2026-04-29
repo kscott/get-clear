@@ -18,7 +18,7 @@ Single monorepo at `~/dev/get-clear/` (#34 complete 2026-04-16). All standalone 
 - `Sources/ContactStoreFactory/` — shared backend factory: makeContactStore(); update here when adding new backends
 - `Sources/GetClear/` — umbrella `get-clear` binary (what, recap, check-update)
 - `reminders-cli/Sources/` — RemindersLib + RemindersCLI
-- `calendar-cli/Sources/` — CalendarLib + CalendarCLI
+- `calendar-cli/Sources/` — CalendarLib + CalendarEventKit + CalendarCLI
 - `contacts-cli/Sources/` — ContactsLib + ContactsCLI
 - `mail-cli/Sources/` — MailLib + MailCLI (JMAP/Fastmail; Gmail #61)
 - `text-cli/Sources/` — TextLib + TextMessages + TextCLI (osascript → Messages.app)
@@ -82,13 +82,17 @@ All five extractions complete (#35–39). Each tool's `main.swift` is ≤60 line
 - `AppleContactKit` (framework boundary): `AppleContactStore` — full `ContactStore` protocol; type conversion, change application, CoreData 134092 retry
 - `ContactsCLI`: `main.swift`, `Usage`, `Version`
 
-**Other tools** — two-tier (Lib + CLI); three-tier pending (#140, #142):
+**calendar-cli** — three-tier complete (#140):
+- `CalendarLib`: fourteen handler functions, `CalendarStore` protocol + `resolve` extension, `CalendarStoreError`, `CalendarHandlerError`, `CalendarResolver`, `EventItem` / `CalendarItem` / `AttendeeItem` pure value types, `EventFormatter` (`calendarDot`, `formatGrouped`, `formatFlat`), `EventDateTime`, `ConfigParser`
+- `CalendarEventKit` (framework boundary): `AppleCalendarStore` — full `CalendarStore` conformance; owns `EKEvent`/`EKCalendar`/`EKParticipant` conversion; `hexColor(_:)` for CGColor → hex
+- `CalendarCLI`: `main.swift` (~40 lines), `Usage`, `Version`
+
+**Other tools** — two-tier (Lib + CLI); three-tier pending (#142):
 | Tool | Lib contains |
 |---|---|
-| calendar | `CalendarResolver`, `ConfigParser`, `EventDateTime`, `EventFormatter`, `ChangeCommand` |
 | mail | `JMAPClient`, `MailConfiguration`, `MailErrors`, `MailFormatter`, `RecipientResolver`, `SendCommand`, `SetupCommand` |
 
-Protocol abstraction layer (CalendarStore, ContactStore, MailClient) tracked in #140–142. Use reminders-cli as the template. Required before Google backends (#145, #146).
+`MailClient` protocol abstraction tracked in #142. Use reminders-cli as the template. Required before Google backends (#145, #146).
 
 ### Command dispatch (as of 2026-04-10)
 
@@ -162,6 +166,23 @@ contacts-cli is the reference implementation (adopted 2026-04-10, commit 37e9a75
 - `toContact()` and `cleanLabel()` are `internal` in `AppleContactKit` — not part of the tool-implementor contract
 - `makeContactStore()` in `ContactStoreFactory` is the single entry point for all CLI binaries; concrete backend type never exposed
 
+### 2026-04-29 — calendar-cli three-tier migration complete (#140)
+
+**Decision:** Three tiers introduced for calendar — `CalendarLib` (pure handlers + protocols), `CalendarEventKit` (framework boundary), `CalendarCLI` (dispatch only). Follows reminders-cli as template.
+
+**Key patterns:**
+- `CalendarStore` protocol with `resolve` default extension for not-found/ambiguous lookup; `CalendarStoreError` mirrors `ReminderStoreError`.
+- `EventItem`, `CalendarItem`, `AttendeeItem` pure value types — no EventKit imports in CalendarLib.
+- `SetupHandler` designed for testability: three public pure functions (`numberCalendars`, `parseCalendarTokens`, `buildSubsetTOML`) extracted from the interactive `handleSetup` entry point. Serves as reference implementation for mail-cli's setup flow.
+- `handleDefault` returns `String?` (nil when args don't parse as a range) — kept in CalendarLib for testability. `main.swift` `default:` case calls `usage()` directly; bare-range shorthands like `calendar monday` are not supported (use `calendar list monday`).
+- `.open` and `.what` dispatched before store construction, matching contacts-cli pattern.
+- `parseRange(trailingArgs:default:) throws -> ParsedRange` added to GetClearKit to eliminate the two-line `dropFirst`+`guard` pattern duplicated across WhatHandlers; RemindersLib `WhatHandler` retrofitted.
+- ObjC class name collision: Quick registers specs via ObjC runtime with no module prefix. All `CalendarLibTests` spec classes are prefixed `Calendar` (e.g. `CalendarRemoveHandlerSpec`) to avoid collision with identically-named classes in `ContactsLibTests`.
+
+**hexColor duplication:** `hexColor(_: EKCalendar) -> String?` (CGColor → 6-char hex) is duplicated between `RemindersEventKit` and `CalendarEventKit`. CGColor requires CoreGraphics, which can't go in pure-Foundation GetClearKit. Accepted as necessary duplication at the framework boundary.
+
+**Test coverage:** CalendarLibTests ships with 14 handler spec files + 4 shared/infrastructure specs (CalendarStoreSpec, CalendarResolverSpec, EventFormatterSpec, CalendarWhatHandlerSpec). 987 total suite tests, 0 failures.
+
 ### 2026-04-24 — Three-tier model introduced; reminders-cli complete (#147)
 
 **Decision:** Framework boundary code gets its own package target (`*EventKit`) between the Lib and CLI. The boundary target imports system frameworks and owns type conversion, but contains no business logic — pure field assignment only.
@@ -230,6 +251,18 @@ The existing Quick/Nimble specs were written after (or alongside) extractions fr
 The extraction work in #35–39, #139, and #144 couldn't avoid this; the interface was inherited. But new features have no such excuse.
 
 **SpecKit creates the right conditions for genuine TDD:** the plan step defines interface contracts (inputs, outputs) before any implementation code exists. The correct workflow for new features is: plan defines the interface → write failing specs against that interface → `/speckit.implement` makes them pass. A spec that's never been red is not a spec — it's a description of code that already exists.
+
+### `hexColor` duplication between RemindersEventKit and CalendarEventKit
+
+`hexColor(_: EKCalendar) -> String?` (CGColor → 6-char uppercase hex) is copied in both boundary targets. Consolidation would require either a shared `*EventKit` utility target (increases package complexity) or moving the helper to a file that imports CoreGraphics. Neither is worth it now; note here so it's not forgotten if a third EK boundary target is added.
+
+### WhatHandler double-computes range string
+
+`WhatHandler.swift` in both calendar-cli and reminders-cli reconstructs the range string from args manually after calling `parseRange(trailingArgs:default:)`, which does the same join internally. `ParsedRange` doesn't carry the original string, so the duplication is unavoidable without adding a `rangeStr: String` field to `ParsedRange`. Worth doing if a third tool's WhatHandler has the same pattern — at that point add the field and retrofit all three.
+
+### `calendar monday` bare-range shorthands not supported
+
+`calendar list monday` works; `calendar monday` falls through to `usage()`. The original `DefaultCommand` was dead code (runCLI exits for unknown command strings before the handler ever ran). Supporting bare-range shorthands would require either a post-unknown-command hook in `runCLI` or a different dispatch strategy. File as a separate issue if the UX gap becomes a complaint.
 
 ### ContactKit cleanup — #153
 
