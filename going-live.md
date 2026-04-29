@@ -147,9 +147,8 @@ Can be worked in parallel with any of the above. Skills are the Claude integrati
 ### 13. Install validation — Phase 2
 **Depends on:** all code changes complete (do last)
 
-Manual testing on a clean macOS account:
-- PKG: Gatekeeper acceptance, postinstall browser open, permission prompts for each tool
-- curl installer: all five binaries, PATH patch, next-steps output
+Manual testing on a clean macOS account (PKG install only):
+- Gatekeeper acceptance, postinstall browser open, permission prompts for each tool
 - First-run flow: `reminders list`, `calendar today`, `contacts lists`, `text open`, `mail setup`
 - calendar without config: acceptable fallback behavior
 
