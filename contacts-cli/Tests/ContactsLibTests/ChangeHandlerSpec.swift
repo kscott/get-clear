@@ -27,6 +27,34 @@ final class ChangeHandlerSpec: AsyncSpec {
                 let out = try await handleChange(args: ["change", "alice", "email", "none"], store: store)
                 expect(out).to(contain("email cleared"))
             }
+
+            // MARK: from/to pair verification
+
+            it("produces removed for remove email") {
+                store.contacts = [aliceContact]
+                _ = try await handleChange(args: ["change", "alice", "remove", "email", "alice@example.com"], store: store)
+                expect(store.updatedItems.first?.changes.email) == .removed("alice@example.com")
+            }
+            it("produces replaced with user-supplied from/to for email") {
+                store.contacts = [aliceContact]
+                _ = try await handleChange(args: ["change", "alice", "email", "alice@example.com", "new@example.com"], store: store)
+                expect(store.updatedItems.first?.changes.email) == .replaced(from: "alice@example.com", to: "new@example.com")
+            }
+            it("produces cleared for email none") {
+                store.contacts = [aliceContact]
+                _ = try await handleChange(args: ["change", "alice", "email", "none"], store: store)
+                expect(store.updatedItems.first?.changes.email) == .cleared
+            }
+            it("produces replaced with empty from for company (no existing value in args)") {
+                store.contacts = [aliceContact]
+                _ = try await handleChange(args: ["change", "alice", "company", "New Corp"], store: store)
+                expect(store.updatedItems.first?.changes.company) == .replaced(from: "", to: "New Corp")
+            }
+            it("produces cleared for company none") {
+                store.contacts = [aliceContact]
+                _ = try await handleChange(args: ["change", "alice", "company", "none"], store: store)
+                expect(store.updatedItems.first?.changes.company) == .cleared
+            }
         }
     }
 }
