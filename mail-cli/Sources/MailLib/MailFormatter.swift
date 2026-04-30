@@ -3,6 +3,7 @@
 // Format email data for display output.
 
 import Foundation
+import GetClearKit
 
 private let isoFractionalFormatter: ISO8601DateFormatter = {
     let f = ISO8601DateFormatter()
@@ -52,6 +53,16 @@ public func formatAddress(_ addr: [String: Any]) -> String {
 
 public func formatAddresses(_ addrs: [[String: Any]]) -> String {
     addrs.map(formatAddress).joined(separator: ", ")
+}
+
+public func formatSendConfirmation(to: String, cc: [AddressEntry], subject: String, isDraft: Bool) -> String {
+    if isDraft {
+        return "Saved draft to \(to)\(subject.isEmpty ? "" : " — \(subject)")"
+    }
+    var out = "Sent to \(ANSI.bold(to))"
+    if !cc.isEmpty { out += "; cc \(ANSI.bold(cc.map { $0.formatted }.joined(separator: ", ")))" }
+    if !subject.isEmpty { out += " \(ANSI.dim("— \(subject)"))" }
+    return out
 }
 
 public extension String {

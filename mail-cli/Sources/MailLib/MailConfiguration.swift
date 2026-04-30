@@ -14,6 +14,8 @@ public struct MailIdentity: Equatable {
         self.email = email
         self.name  = name
     }
+
+    public var displayLabel: String { name.isEmpty ? email : "\(email) (\(name))" }
 }
 
 public struct MailConfig {

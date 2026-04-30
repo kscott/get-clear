@@ -30,8 +30,7 @@ func handleSetup(args: [String], client: any MailClient) async throws {
     } else {
         print("\nAvailable identities:")
         for (i, id) in identities.enumerated() {
-            let label = id.name.isEmpty ? id.email : "\(id.email) (\(id.name))"
-            print("  \(i + 1)  \(label)")
+            print("  \(i + 1)  \(id.displayLabel)")
         }
         print("\nDefault identity [1]: ", terminator: "")
         fflush(stdout)
@@ -46,6 +45,6 @@ func handleSetup(args: [String], client: any MailClient) async throws {
     print("Setup complete. Found \(identities.count) \(identities.count == 1 ? "identity" : "identities"):")
     for id in identities {
         let marker = id.email == defaultFrom ? " ← default" : ""
-        print("  \(id.email)\(id.name.isEmpty ? "" : " (\(id.name))")\(marker)")
+        print("  \(id.displayLabel)\(marker)")
     }
 }

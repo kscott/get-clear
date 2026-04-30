@@ -39,21 +39,14 @@ public func handleSend(
     let toStr = toAddrs.map { $0.formatted }.joined(separator: ", ")
     if msg.isDraft {
         try await client.saveDraft(email)
-        let output = "Saved draft to \(toStr)\(msg.subject.isEmpty ? "" : " — \(msg.subject)")"
         try? ActivityLog.write(tool: "mail", cmd: "send", desc: "draft: \(toStr)", container: nil)
-        return output
+        return formatSendConfirmation(to: toStr, cc: ccAddrs, subject: msg.subject, isDraft: true)
     }
 
     try await client.send(email)
-    var output = "Sent to \(ANSI.bold(toStr))"
-    if !ccAddrs.isEmpty {
-        output += "; cc \(ANSI.bold(ccAddrs.map { $0.formatted }.joined(separator: ", ")))"
-    }
-    if !msg.subject.isEmpty { output += " \(ANSI.dim("— \(msg.subject)"))" }
-
     let logDesc = msg.subject.isEmpty ? toStr : "\(toStr) Re: \(msg.subject)"
     try? ActivityLog.write(tool: "mail", cmd: "send", desc: logDesc, container: nil)
-    return output
+    return formatSendConfirmation(to: toStr, cc: ccAddrs, subject: msg.subject, isDraft: false)
 }
 
 /// Expand group membership from a ContactStore into the map RecipientResolver expects.

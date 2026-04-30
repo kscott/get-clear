@@ -138,6 +138,17 @@ final class MailConfigurationSpec: QuickSpec {
             }
         }
 
+        describe("MailIdentity.displayLabel") {
+            it("returns 'email (name)' when name is present") {
+                let id = MailIdentity(id: "id1", email: "ken@optikos.net", name: "Ken Scott")
+                expect(id.displayLabel) == "ken@optikos.net (Ken Scott)"
+            }
+            it("returns just email when name is empty") {
+                let id = MailIdentity(id: "id1", email: "ken@optikos.net", name: "")
+                expect(id.displayLabel) == "ken@optikos.net"
+            }
+        }
+
         describe("MailConfig.defaultIdentity") {
             it("returns the identity matching defaultFrom") {
                 let config = parseConfig("""

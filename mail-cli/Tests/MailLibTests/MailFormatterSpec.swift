@@ -26,6 +26,45 @@ final class MailFormatterSpec: QuickSpec {
             }
         }
 
+        describe("formatSendConfirmation") {
+            let alice = AddressEntry(name: "Alice", email: "alice@example.com")
+            let bob   = AddressEntry(name: "Bob",   email: "bob@example.com")
+
+            context("sent, no cc, no subject") {
+                it("returns a sent confirmation with bold recipient") {
+                    let result = formatSendConfirmation(to: "alice@example.com", cc: [], subject: "", isDraft: false)
+                    expect(result).to(contain("alice@example.com"))
+                }
+            }
+            context("sent with subject") {
+                it("includes the subject") {
+                    let result = formatSendConfirmation(to: "alice@example.com", cc: [], subject: "Lunch?", isDraft: false)
+                    expect(result).to(contain("Lunch?"))
+                }
+            }
+            context("sent with cc") {
+                it("includes the cc recipient") {
+                    let result = formatSendConfirmation(to: "alice@example.com", cc: [bob], subject: "", isDraft: false)
+                    expect(result).to(contain("bob@example.com"))
+                }
+                it("includes multiple cc recipients") {
+                    let result = formatSendConfirmation(to: "alice@example.com", cc: [alice, bob], subject: "", isDraft: false)
+                    expect(result).to(contain("Alice"))
+                    expect(result).to(contain("Bob"))
+                }
+            }
+            context("draft") {
+                it("says Saved draft") {
+                    let result = formatSendConfirmation(to: "alice@example.com", cc: [], subject: "", isDraft: true)
+                    expect(result).to(contain("draft"))
+                }
+                it("includes the subject in a draft confirmation") {
+                    let result = formatSendConfirmation(to: "alice@example.com", cc: [], subject: "Re: Lunch", isDraft: true)
+                    expect(result).to(contain("Re: Lunch"))
+                }
+            }
+        }
+
         describe("formatAddresses") {
             it("joins multiple addresses with commas") {
                 let addrs: [[String: Any]] = [
