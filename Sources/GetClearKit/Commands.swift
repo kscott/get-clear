@@ -22,14 +22,14 @@ public enum Command: String {
     case send
     case setup
     // Tool-specific
-    case done        // reminders
-case calendars   // calendar — see get-clear#31 for rename discussion
-    case today       // calendar
-    case week        // calendar
-    case next        // calendar
-    case update      // get-clear
-    case recap       // get-clear
-    case checkUpdate = "check-update"  // get-clear
+    case done // reminders
+    case calendars // calendar — see get-clear#31 for rename discussion
+    case today // calendar
+    case week // calendar
+    case next // calendar
+    case update // get-clear
+    case recap // get-clear
+    case checkUpdate = "check-update" // get-clear
 }
 
 /// Parse args, handle version/help/empty, and dispatch to `handler` with a typed `Command`.
@@ -52,9 +52,12 @@ public func runCLI(
         print(identity)
         exit(0)
     case .help, .empty:
-        print(usage()); exit(0)
-    case .command(let raw, let cmdArgs):
-        guard let command = Command(rawValue: raw) else { print(usage()); exit(0) }
+        print(usage())
+        exit(0)
+    case let .command(raw, cmdArgs):
+        guard let command = Command(rawValue: raw) else { print(usage())
+            exit(0)
+        }
         do {
             try await handler(command, cmdArgs)
         } catch {

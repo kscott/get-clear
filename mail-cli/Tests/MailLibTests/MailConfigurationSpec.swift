@@ -2,22 +2,22 @@
 //
 // Tests for MailLib MailConfiguration — config parsing and model types.
 
-import Quick
-import Nimble
 import Foundation
 import MailLib
+import Nimble
+import Quick
 
 final class MailConfigurationSpec: QuickSpec {
     override class func spec() {
         describe("parseConfig") {
             context("a well-formed config") {
                 let toml = """
-                    default_from = "ken@optikos.net"
-
-                    [identities]
-                    id1 = "ken@optikos.net|Ken Scott"
-                    id2 = "k@fastmail.com|Kenneth"
-                    """
+                default_from = "ken@optikos.net"
+                
+                [identities]
+                id1 = "ken@optikos.net|Ken Scott"
+                id2 = "k@fastmail.com|Kenneth"
+                """
 
                 it("parses the default_from field") {
                     expect(parseConfig(toml).defaultFrom) == "ken@optikos.net"
@@ -42,11 +42,11 @@ final class MailConfigurationSpec: QuickSpec {
 
             context("identity with a pipe in the name") {
                 let toml = """
-                    default_from = "a@b.com"
-
-                    [identities]
-                    id1 = "a@b.com|First|Last"
-                    """
+                default_from = "a@b.com"
+                
+                [identities]
+                id1 = "a@b.com|First|Last"
+                """
 
                 it("joins pipe-separated name parts") {
                     expect(parseConfig(toml).identities.first?.name) == "First|Last"
@@ -55,12 +55,12 @@ final class MailConfigurationSpec: QuickSpec {
 
             context("web_app_url field") {
                 let toml = """
-                    default_from = "ken@optikos.net"
-                    web_app_url = "https://mail.google.com"
-
-                    [identities]
-                    id1 = "ken@optikos.net|Ken Scott"
-                    """
+                default_from = "ken@optikos.net"
+                web_app_url = "https://mail.google.com"
+                
+                [identities]
+                id1 = "ken@optikos.net|Ken Scott"
+                """
 
                 it("parses a custom web app URL") {
                     expect(parseConfig(toml).webAppURL) == URL(string: "https://mail.google.com")
@@ -85,13 +85,13 @@ final class MailConfigurationSpec: QuickSpec {
 
             context("lines with comments and blank lines") {
                 let toml = """
-                    # this is a comment
-                    default_from = "x@y.com"
-
-                    [identities]
-                    # another comment
-                    id1 = "x@y.com|X Y"
-                    """
+                # this is a comment
+                default_from = "x@y.com"
+                
+                [identities]
+                # another comment
+                id1 = "x@y.com|X Y"
+                """
 
                 it("ignores comment lines") {
                     expect(parseConfig(toml).defaultFrom) == "x@y.com"
@@ -104,11 +104,11 @@ final class MailConfigurationSpec: QuickSpec {
 
             context("identity line with too few parts") {
                 let toml = """
-                    default_from = "a@b.com"
-
-                    [identities]
-                    id1 = "a@b.com"
-                    """
+                default_from = "a@b.com"
+                
+                [identities]
+                id1 = "a@b.com"
+                """
 
                 it("skips malformed identity entries") {
                     expect(parseConfig(toml).identities).to(beEmpty())
@@ -118,12 +118,12 @@ final class MailConfigurationSpec: QuickSpec {
 
         describe("MailConfig.identity(for:)") {
             let config = parseConfig("""
-                default_from = "ken@optikos.net"
-
-                [identities]
-                id1 = "ken@optikos.net|Ken Scott"
-                id2 = "k@fastmail.com|Kenneth"
-                """)
+            default_from = "ken@optikos.net"
+            
+            [identities]
+            id1 = "ken@optikos.net|Ken Scott"
+            id2 = "k@fastmail.com|Kenneth"
+            """)
 
             it("finds identity by exact email") {
                 expect(config.identity(for: "ken@optikos.net")?.id) == "id1"
@@ -152,21 +152,21 @@ final class MailConfigurationSpec: QuickSpec {
         describe("MailConfig.defaultIdentity") {
             it("returns the identity matching defaultFrom") {
                 let config = parseConfig("""
-                    default_from = "ken@optikos.net"
-
-                    [identities]
-                    id1 = "ken@optikos.net|Ken Scott"
-                    """)
+                default_from = "ken@optikos.net"
+                
+                [identities]
+                id1 = "ken@optikos.net|Ken Scott"
+                """)
                 expect(config.defaultIdentity?.id) == "id1"
             }
 
             it("returns nil when defaultFrom has no matching identity") {
                 let config = parseConfig("""
-                    default_from = "nobody@example.com"
-
-                    [identities]
-                    id1 = "ken@optikos.net|Ken Scott"
-                    """)
+                default_from = "nobody@example.com"
+                
+                [identities]
+                id1 = "ken@optikos.net|Ken Scott"
+                """)
                 expect(config.defaultIdentity).to(beNil())
             }
         }

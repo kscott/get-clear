@@ -1,11 +1,10 @@
-import Quick
-import Nimble
-import Foundation
 import CalendarLib
+import Foundation
+import Nimble
+import Quick
 
 final class CalendarAddHandlerSpec: AsyncSpec {
     override class func spec() {
-
         var store: SpyCalendarStore!
         let config = CalendarConfig.empty
         beforeEach { store = SpyCalendarStore() }
@@ -26,7 +25,12 @@ final class CalendarAddHandlerSpec: AsyncSpec {
                 expect(store.addedItems.first?.title) == "Sprint Planning"
             }
             it("returns a confirmation containing the event title") {
-                let out = try await handleAdd(args: ["add", "Sprint Planning", "tomorrow 10am"], store: store, calFilter: nil, config: config)
+                let out = try await handleAdd(
+                    args: ["add", "Sprint Planning", "tomorrow 10am"],
+                    store: store,
+                    calFilter: nil,
+                    config: config
+                )
                 expect(out).to(contain("Sprint Planning"))
             }
             it("defaults to today when no date is given") {

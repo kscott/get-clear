@@ -1,20 +1,20 @@
 // AppleMessageSender.swift
 // Apple Messages backend: contact resolution via ContactKit, osascript dispatch.
 
-import Foundation
 import ContactKit
+import Foundation
 import TextLib
 
 public struct AppleMessageSender: MessageSender {
     private let contactStore: any ContactStore
 
     public init(contacts: any ContactStore) {
-        self.contactStore = contacts
+        contactStore = contacts
     }
 
     public func send(to query: String, message: String) async throws -> SendResult {
         let contacts = requiresContactLookup(query) ? try await contactStore.contacts() : []
-        let target   = try resolveTarget(query: query, contacts: contacts)
+        let target = try resolveTarget(query: query, contacts: contacts)
         try sendViaMessages(to: target.address, message: message)
         return target
     }
@@ -29,14 +29,14 @@ private func sendViaMessages(to address: String, message: String) throws {
 
     let p = Process()
     p.executableURL = URL(fileURLWithPath: "/usr/bin/osascript")
-    p.arguments     = [tmpURL.path]
-    let errPipe     = Pipe()
+    p.arguments = [tmpURL.path]
+    let errPipe = Pipe()
     p.standardError = errPipe
     try p.run()
     p.waitUntilExit()
 
     guard p.terminationStatus == 0 else {
-        let data   = errPipe.fileHandleForReading.readDataToEndOfFile()
+        let data = errPipe.fileHandleForReading.readDataToEndOfFile()
         let errMsg = String(data: data, encoding: .utf8)?
             .trimmingCharacters(in: .whitespacesAndNewlines) ?? "AppleScript error"
         throw TextError.sendFailed(errMsg)

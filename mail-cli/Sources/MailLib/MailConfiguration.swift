@@ -5,38 +5,43 @@
 import Foundation
 
 public struct MailIdentity: Equatable {
-    public let id:    String
+    public let id: String
     public let email: String
-    public let name:  String
+    public let name: String
 
     public init(id: String, email: String, name: String) {
-        self.id    = id
+        self.id = id
         self.email = email
-        self.name  = name
+        self.name = name
     }
 
-    public var displayLabel: String { name.isEmpty ? email : "\(email) (\(name))" }
+    public var displayLabel: String {
+        name.isEmpty ? email : "\(email) (\(name))"
+    }
 }
 
 public struct MailConfig {
     public var defaultFrom: String
-    public var identities:  [MailIdentity]
-    public var webAppURL:   URL
+    public var identities: [MailIdentity]
+    public var webAppURL: URL
 
     public static let defaultWebAppURL = URL(string: "https://app.fastmail.com")!
 
     public init(defaultFrom: String, identities: [MailIdentity],
-                webAppURL: URL = MailConfig.defaultWebAppURL) {
+                webAppURL: URL = MailConfig.defaultWebAppURL)
+    {
         self.defaultFrom = defaultFrom
-        self.identities  = identities
-        self.webAppURL   = webAppURL
+        self.identities = identities
+        self.webAppURL = webAppURL
     }
 
     public func identity(for email: String) -> MailIdentity? {
         identities.first { $0.email.caseInsensitiveCompare(email) == .orderedSame }
     }
 
-    public var defaultIdentity: MailIdentity? { identity(for: defaultFrom) }
+    public var defaultIdentity: MailIdentity? {
+        identity(for: defaultFrom)
+    }
 }
 
 public let configURL: URL = FileManager.default.homeDirectoryForCurrentUser
@@ -45,17 +50,21 @@ public let configURL: URL = FileManager.default.homeDirectoryForCurrentUser
 public func parseConfig(_ content: String) -> MailConfig {
     var defaultFrom = ""
     var identities: [MailIdentity] = []
-    var webAppURL   = MailConfig.defaultWebAppURL
+    var webAppURL = MailConfig.defaultWebAppURL
     var inIdentities = false
 
     for rawLine in content.components(separatedBy: "\n") {
         let line = rawLine.trimmingCharacters(in: .whitespaces)
         if line.isEmpty || line.hasPrefix("#") { continue }
-        if line == "[identities]" { inIdentities = true; continue }
-        if line.hasPrefix("[")   { inIdentities = false; continue }
+        if line == "[identities]" { inIdentities = true
+            continue
+        }
+        if line.hasPrefix("[") { inIdentities = false
+            continue
+        }
 
         guard let eqRange = line.range(of: "=") else { continue }
-        let key   = line[..<eqRange.lowerBound].trimmingCharacters(in: .whitespaces)
+        let key = line[..<eqRange.lowerBound].trimmingCharacters(in: .whitespaces)
         let value = line[eqRange.upperBound...]
             .trimmingCharacters(in: .whitespaces)
             .trimmingCharacters(in: CharacterSet(charactersIn: "\""))
@@ -89,7 +98,7 @@ public func saveConfig(_ config: MailConfig, to url: URL = configURL) throws {
         "web_app_url = \"\(config.webAppURL.absoluteString)\"",
         "",
         "[identities]",
-        "# id = \"email|display name\"",
+        "# id = \"email|display name\""
     ]
     for id in config.identities {
         lines.append("\(id.id) = \"\(id.email)|\(id.name)\"")

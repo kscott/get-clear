@@ -6,9 +6,9 @@ import RemindersLib
 
 // MARK: - Shared list constants
 
-let testList     = ReminderList(title: "Test")
+let testList = ReminderList(title: "Test")
 let personalList = ReminderList(title: "Personal")
-let workList     = ReminderList(title: "Work")
+let workList = ReminderList(title: "Work")
 
 // MARK: - Item factory
 

@@ -2,10 +2,10 @@
 //
 // Tests for MailLib MailFormatter — email date and address formatting.
 
-import Quick
-import Nimble
 import Foundation
 import MailLib
+import Nimble
+import Quick
 
 final class MailFormatterSpec: QuickSpec {
     override class func spec() {
@@ -28,7 +28,7 @@ final class MailFormatterSpec: QuickSpec {
 
         describe("formatSendConfirmation") {
             let alice = AddressEntry(name: "Alice", email: "alice@example.com")
-            let bob   = AddressEntry(name: "Bob",   email: "bob@example.com")
+            let bob = AddressEntry(name: "Bob", email: "bob@example.com")
 
             context("sent, no cc, no subject") {
                 it("returns a sent confirmation with bold recipient") {
@@ -69,7 +69,7 @@ final class MailFormatterSpec: QuickSpec {
             it("joins multiple addresses with commas") {
                 let addrs: [[String: Any]] = [
                     ["name": "Alice", "email": "alice@example.com"],
-                    ["name": "Bob",   "email": "bob@example.com"],
+                    ["name": "Bob", "email": "bob@example.com"]
                 ]
                 expect(formatAddresses(addrs)) == "Alice <alice@example.com>, Bob <bob@example.com>"
             }

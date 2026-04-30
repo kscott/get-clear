@@ -1,15 +1,13 @@
 // ReminderFilterSpec.swift
 // Tests for filtered(_:matching:) and matchesQuery(_:query:) — find command filtering.
 
-import Quick
 import Nimble
+import Quick
 import RemindersLib
 
 final class ReminderFilterSpec: QuickSpec {
     override class func spec() {
-
         describe("filtered") {
-
             context("title matching") {
                 it("returns items whose title contains the query") {
                     let items = [makeItem(title: "Pay rent"), makeItem(title: "Buy groceries")]

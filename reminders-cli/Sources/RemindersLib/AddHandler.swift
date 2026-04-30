@@ -5,17 +5,17 @@ import GetClearKit
 
 public func handleAdd(args: [String], store: any ReminderStore) async throws -> String {
     guard args.count > 1 else { throw ReminderHandlerError("provide a reminder title") }
-    let title     = args[1]
-    let allLists  = try await store.fetchLists()
+    let title = args[1]
+    let allLists = try await store.fetchLists()
     let (listName, rawOptions) = splitListAndOptions(
-        from: Array(args.dropFirst(2)), calendarTitles: allLists.map(\.title))
-    let targetList: ReminderList
-    if let match = try resolvedList(named: listName, from: allLists) {
-        targetList = match
+        from: Array(args.dropFirst(2)), calendarTitles: allLists.map(\.title)
+    )
+    let targetList: ReminderList = if let match = try resolvedList(named: listName, from: allLists) {
+        match
     } else {
-        targetList = try await store.defaultList()
+        try await store.defaultList()
     }
-    let opts       = parseOptions(rawOptions)
+    let opts = parseOptions(rawOptions)
     let parsedDate = opts.date.isEmpty ? nil : parseDate(opts.date)
     let recurrenceSpec: RecurrenceSpec? = try {
         guard !opts.recurrence.isEmpty else { return nil }
@@ -38,5 +38,6 @@ public func handleAdd(args: [String], store: any ReminderStore) async throws -> 
     return formatAddConfirmation(
         title: title, list: saved.list.title,
         date: parsedDate, recurrence: recurrenceSpec,
-        priority: opts.priority, hasNote: !opts.note.isEmpty, url: opts.url)
+        priority: opts.priority, hasNote: !opts.note.isEmpty, url: opts.url
+    )
 }

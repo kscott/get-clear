@@ -4,10 +4,11 @@ import GetClearKit
 
 public func handleChange(args: [String], store: any ReminderStore) async throws -> String {
     guard args.count > 1 else { throw ReminderHandlerError("provide a reminder title") }
-    let title    = args[1]
+    let title = args[1]
     let allLists = try await store.fetchLists()
     let (listName, rawOptions) = splitListAndOptions(
-        from: Array(args.dropFirst(2)), calendarTitles: allLists.map(\.title))
+        from: Array(args.dropFirst(2)), calendarTitles: allLists.map(\.title)
+    )
     let list = try resolvedList(named: listName, from: allLists)
     let item: ReminderItem
     do {
@@ -21,12 +22,12 @@ public func handleChange(args: [String], store: any ReminderStore) async throws 
         changes = try parseReminderChanges(opts, existingItem: item)
     } catch ReminderChangeError.nothingToChange {
         throw ReminderHandlerError("nothing to change — specify a date, repeat, priority, note, url, or list")
-    } catch ReminderChangeError.unrecognizedRecurrence(let s) {
+    } catch let ReminderChangeError.unrecognizedRecurrence(s) {
         throw ReminderHandlerError("Unrecognised repeat: \"\(s)\"")
     }
     try await store.update(identifier: item.identifier, changes: changes)
     var descs = changes.descriptions
-    if case .replaced(_, let name) = changes.list { descs.append("moved to \(name)") }
+    if case let .replaced(_, name) = changes.list { descs.append("moved to \(name)") }
     try? ActivityLog.write(tool: "reminders", cmd: "change", desc: title, container: item.list.title)
     return "Updated \"\(title)\": \(descs.joined(separator: ", "))"
 }

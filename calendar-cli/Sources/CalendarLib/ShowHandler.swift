@@ -7,17 +7,17 @@ public func handleShow(
     args: [String], store: any CalendarStore, calFilter: String?, config: CalendarConfig
 ) async throws -> String {
     guard args.count > 1 else { throw CalendarHandlerError("provide an event title") }
-    let title    = args[1]
+    let title = args[1]
     let rangeStr = args.count > 2 ? args.dropFirst(2).joined(separator: " ") : nil
-    let range    = rangeStr.flatMap { parseRange($0) } ?? parseRange("30d")!
-    let ids      = try await resolvedIdentifiers(calFilter: calFilter, config: config, store: store)
+    let range = rangeStr.flatMap { parseRange($0) } ?? parseRange("30d")!
+    let ids = try await resolvedIdentifiers(calFilter: calFilter, config: config, store: store)
     if ids?.isEmpty == true { fail("No calendars matched filter '\(calFilter!)'") }
     let event: EventItem
     do {
         event = try await store.resolve(title: title, in: range.interval, calendarIdentifiers: ids)
-    } catch CalendarStoreError.notFound(let t) {
+    } catch let CalendarStoreError.notFound(t) {
         throw CalendarHandlerError("Not found: \(t)")
-    } catch CalendarStoreError.ambiguous(let matches) {
+    } catch let CalendarStoreError.ambiguous(matches) {
         return formatAmbiguous(matches, title: title, command: "show")
     }
 
@@ -29,8 +29,11 @@ public func handleShow(
         let end = event.endDate ?? event.startDate
         let sameDay = cal.isDate(event.startDate, inSameDayAs: end)
         let endPart = sameDay ? formatEventTime(end)
-                              : eventDetailDateFormatter.string(from: end) + " " + formatEventTime(end)
-        lines.append("  Date:       \(eventDetailDateFormatter.string(from: event.startDate)), \(formatEventTime(event.startDate)) – \(endPart)")
+            : eventDetailDateFormatter.string(from: end) + " " + formatEventTime(end)
+        lines
+            .append(
+                "  Date:       \(eventDetailDateFormatter.string(from: event.startDate)), \(formatEventTime(event.startDate)) – \(endPart)"
+            )
     }
     lines.append("  Calendar:   \(event.calendarTitle)")
     if let loc = event.location, !loc.isEmpty { lines.append("  Location:   \(loc)") }

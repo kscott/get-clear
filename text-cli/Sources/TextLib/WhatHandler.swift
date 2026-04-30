@@ -10,11 +10,11 @@ public func handleWhat(args: [String]) -> String {
     let entries: [ActivityLogEntry]
     let dateUsed: Date
     if rangeStr == "today" {
-        let result = ActivityLogReader.entriesForDisplay(in: range.start...range.end)
-        entries  = result.entries
+        let result = ActivityLogReader.entriesForDisplay(in: range.start ... range.end)
+        entries = result.entries
         dateUsed = result.dateUsed
     } else {
-        entries  = ActivityLogReader.entries(in: range.start...range.end, tool: "text")
+        entries = ActivityLogReader.entries(in: range.start ... range.end, tool: "text")
         dateUsed = Date()
     }
     return ActivityLogFormatter.perToolWhat(

@@ -10,22 +10,22 @@ public struct ActivityLogEntry: Codable {
     public let container: String?
 
     public init(ts: Date, tool: String, cmd: String, desc: String, container: String?) {
-        self.ts        = ts
-        self.tool      = tool
-        self.cmd       = cmd
-        self.desc      = desc
+        self.ts = ts
+        self.tool = tool
+        self.cmd = cmd
+        self.desc = desc
         self.container = container
     }
 
-    // Custom encode: always write "container":null rather than omitting the key.
-    // Swift's synthesized Codable uses encodeIfPresent for optionals, which omits nil keys.
+    /// Custom encode: always write "container":null rather than omitting the key.
+    /// Swift's synthesized Codable uses encodeIfPresent for optionals, which omits nil keys.
     public func encode(to encoder: Encoder) throws {
         var c = encoder.container(keyedBy: CodingKeys.self)
-        try c.encode(ts,   forKey: .ts)
+        try c.encode(ts, forKey: .ts)
         try c.encode(tool, forKey: .tool)
-        try c.encode(cmd,  forKey: .cmd)
+        try c.encode(cmd, forKey: .cmd)
         try c.encode(desc, forKey: .desc)
-        if let container = container {
+        if let container {
             try c.encode(container, forKey: .container)
         } else {
             try c.encodeNil(forKey: .container)
@@ -35,9 +35,9 @@ public struct ActivityLogEntry: Codable {
 
 // MARK: - Shared JSON helpers
 
-extension JSONDecoder {
+public extension JSONDecoder {
     /// Returns a decoder configured for activity log entries (ISO 8601 dates).
-    public static func logDecoder() -> JSONDecoder {
+    static func logDecoder() -> JSONDecoder {
         let d = JSONDecoder()
         d.dateDecodingStrategy = .iso8601
         return d
@@ -55,10 +55,10 @@ extension JSONEncoder {
 
 // MARK: - Shared date helpers
 
-extension ISO8601DateFormatter {
+public extension ISO8601DateFormatter {
     /// Returns the "yyyy-MM-dd" string for the local calendar date of the given date.
     /// Used for log file naming: `~/.local/share/get-clear/log/YYYY-MM-DD.log`
-    public static func logFileDateString(_ date: Date) -> String {
+    static func logFileDateString(_ date: Date) -> String {
         let fmt = DateFormatter()
         fmt.dateFormat = "yyyy-MM-dd"
         return fmt.string(from: date)

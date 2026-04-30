@@ -5,10 +5,10 @@ import Foundation
 public func usageText() -> String {
     """
     calendar — manage Calendar events
-
+    
     Usage:
       calendar [subset] <command> [args]
-
+    
     Commands:
       today                        Events today
       week                         Events this week
@@ -22,7 +22,7 @@ public func usageText() -> String {
       setup                        Configure calendar subsets
       what [range]                 Recent calendar activity
       open                         Open the Calendar app
-
+    
     Ranges: today, tomorrow, week, 7d, 30d, "march 15 to march 20", monday, etc.
     """
 }

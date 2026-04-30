@@ -3,25 +3,26 @@
 // Store and load the JMAP token in the system Keychain.
 
 import Foundation
-import Security
 import MailLib
+import Security
 
 private let keychainService = "mail-cli"
 private let keychainAccount = "jmap-token"
 
 public func loadToken() throws -> String {
     let query: [String: Any] = [
-        kSecClass      as String: kSecClassGenericPassword,
+        kSecClass as String: kSecClassGenericPassword,
         kSecAttrService as String: keychainService,
         kSecAttrAccount as String: keychainAccount,
         kSecReturnData as String: true,
-        kSecMatchLimit as String: kSecMatchLimitOne,
+        kSecMatchLimit as String: kSecMatchLimitOne
     ]
     var item: AnyObject?
     let status = SecItemCopyMatching(query as CFDictionary, &item)
     guard status == errSecSuccess,
-          let data  = item as? Data,
-          let token = String(data: data, encoding: .utf8) else {
+          let data = item as? Data,
+          let token = String(data: data, encoding: .utf8)
+    else {
         throw MailError.noToken
     }
     return token
@@ -29,10 +30,10 @@ public func loadToken() throws -> String {
 
 public func storeToken(_ token: String) throws {
     let attrs: [String: Any] = [
-        kSecClass      as String: kSecClassGenericPassword,
+        kSecClass as String: kSecClassGenericPassword,
         kSecAttrService as String: keychainService,
         kSecAttrAccount as String: keychainAccount,
-        kSecValueData  as String: Data(token.utf8),
+        kSecValueData as String: Data(token.utf8)
     ]
     SecItemDelete(attrs as CFDictionary)
     let status = SecItemAdd(attrs as CFDictionary, nil)

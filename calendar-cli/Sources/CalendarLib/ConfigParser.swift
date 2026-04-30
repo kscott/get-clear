@@ -54,11 +54,11 @@ public func parseConfig(_ content: String) -> CalendarConfig {
 
         guard inSubsets, let eqIdx = trimmed.firstIndex(of: "=") else { continue }
 
-        let key   = trimmed[..<eqIdx].trimmingCharacters(in: .whitespaces).lowercased()
+        let key = trimmed[..<eqIdx].trimmingCharacters(in: .whitespaces).lowercased()
         let value = trimmed[trimmed.index(after: eqIdx)...].trimmingCharacters(in: .whitespaces)
         let names = parseStringArray(value)
 
-        if !key.isEmpty && !names.isEmpty {
+        if !key.isEmpty, !names.isEmpty {
             subsets[key] = names
         }
     }

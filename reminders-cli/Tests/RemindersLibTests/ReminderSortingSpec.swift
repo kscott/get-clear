@@ -1,14 +1,13 @@
 // ReminderSortingSpec.swift
 // Tests for sorted(_:by:) and comparator(for:) — sort functions on ReminderItem arrays.
 
-import Quick
-import Nimble
 import Foundation
+import Nimble
+import Quick
 import RemindersLib
 
 final class ReminderSortingSpec: QuickSpec {
     override class func spec() {
-
         func makeItem(
             title: String = "Item",
             priority: Int = 0,
@@ -29,7 +28,6 @@ final class ReminderSortingSpec: QuickSpec {
         }
 
         describe("sorted") {
-
             context("by due") {
                 it("sorts earlier due dates before later ones") {
                     let items = [makeItem(title: "B", dueOffset: 86400), makeItem(title: "A", dueOffset: 0)]
@@ -103,7 +101,7 @@ final class ReminderSortingSpec: QuickSpec {
             it("returns a comparator that sorts by due when order is .due") {
                 let cmp = comparator(for: .due)
                 let earlier = makeItem(title: "A", dueOffset: 0)
-                let later   = makeItem(title: "B", dueOffset: 86400)
+                let later = makeItem(title: "B", dueOffset: 86400)
                 expect(cmp(earlier, later)) == true
                 expect(cmp(later, earlier)) == false
             }

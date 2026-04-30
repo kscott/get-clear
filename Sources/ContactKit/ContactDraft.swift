@@ -7,10 +7,11 @@ public struct ContactDraft: Equatable, Sendable {
     public init(name: String,
                 emails: [String] = [],
                 phones: [String] = [],
-                company: String? = nil) {
-        self.name    = name
-        self.emails  = emails
-        self.phones  = phones
+                company: String? = nil)
+    {
+        self.name = name
+        self.emails = emails
+        self.phones = phones
         self.company = company
     }
 }

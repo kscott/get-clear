@@ -22,10 +22,10 @@ public func handleToday(
     store: any CalendarStore, calFilter: String?, config: CalendarConfig
 ) async throws -> String {
     let range = parseRange("today")!
-    let ids   = try await resolvedIdentifiers(calFilter: calFilter, config: config, store: store)
+    let ids = try await resolvedIdentifiers(calFilter: calFilter, config: config, store: store)
     if ids?.isEmpty == true { fail("No calendars matched filter '\(calFilter!)'") }
-    let evts  = try await store.fetchEvents(in: range.interval, calendarIdentifiers: ids)
-    let hdr   = dayHeaderFormatter.string(from: range.start)
+    let evts = try await store.fetchEvents(in: range.interval, calendarIdentifiers: ids)
+    let hdr = dayHeaderFormatter.string(from: range.start)
     if evts.isEmpty { return "\(hdr)\n  (nothing scheduled)" }
     return formatFlat(evts, showHeader: true, header: hdr)
 }
@@ -36,9 +36,9 @@ public func handleWeek(
     store: any CalendarStore, calFilter: String?, config: CalendarConfig
 ) async throws -> String {
     let range = parseRange("week")!
-    let ids   = try await resolvedIdentifiers(calFilter: calFilter, config: config, store: store)
+    let ids = try await resolvedIdentifiers(calFilter: calFilter, config: config, store: store)
     if ids?.isEmpty == true { fail("No calendars matched filter '\(calFilter!)'") }
-    let evts  = try await store.fetchEvents(in: range.interval, calendarIdentifiers: ids)
+    let evts = try await store.fetchEvents(in: range.interval, calendarIdentifiers: ids)
     if evts.isEmpty { return "No events this week" }
     return formatGrouped(evts)
 }
@@ -59,7 +59,7 @@ public func handleDefault(
 private func fetchAndFormat(
     store: any CalendarStore, calFilter: String?, config: CalendarConfig, range: ParsedRange
 ) async throws -> String {
-    let ids  = try await resolvedIdentifiers(calFilter: calFilter, config: config, store: store)
+    let ids = try await resolvedIdentifiers(calFilter: calFilter, config: config, store: store)
     if ids?.isEmpty == true { fail("No calendars matched filter '\(calFilter!)'") }
     let evts = try await store.fetchEvents(in: range.interval, calendarIdentifiers: ids)
     if evts.isEmpty { return "No events — \(formatRangeDescription(range))" }

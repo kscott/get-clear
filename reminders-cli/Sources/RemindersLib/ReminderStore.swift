@@ -23,11 +23,11 @@ public extension ReminderStore {
     func resolve(title: String, in list: ReminderList?) async throws -> ReminderItem {
         let items = try await fetchIncomplete(in: list)
         switch lookup(title: title, in: items) {
-        case .found(let i):
+        case let .found(i):
             return items[i]
         case .notFound:
             throw ReminderStoreError.notFound(title)
-        case .ambiguous(let indices):
+        case let .ambiguous(indices):
             throw ReminderStoreError.ambiguous(indices.map { items[$0] })
         }
     }

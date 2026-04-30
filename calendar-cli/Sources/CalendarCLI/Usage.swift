@@ -2,4 +2,6 @@
 
 import CalendarLib
 
-func usage() -> String { usageText() }
+func usage() -> String {
+    usageText()
+}

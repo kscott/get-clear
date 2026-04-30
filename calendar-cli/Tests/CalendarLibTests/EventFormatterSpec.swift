@@ -1,10 +1,10 @@
 // EventFormatterSpec.swift
 // Tests for CalendarLib EventFormatter — event line and relative label formatting.
 
-import Quick
-import Nimble
-import Foundation
 import CalendarLib
+import Foundation
+import Nimble
+import Quick
 
 final class EventFormatterSpec: QuickSpec {
     override class func spec() {
@@ -12,15 +12,23 @@ final class EventFormatterSpec: QuickSpec {
         // Fixed reference: Thursday January 15, 2026 at noon
         let now: Date = {
             var c = DateComponents()
-            c.year = 2026; c.month = 1; c.day = 15
-            c.hour = 12; c.minute = 0; c.second = 0
+            c.year = 2026
+            c.month = 1
+            c.day = 15
+            c.hour = 12
+            c.minute = 0
+            c.second = 0
             return cal.date(from: c)!
         }()
 
         func makeDate(hour: Int, minute: Int = 0, dayOffset: Int = 0) -> Date {
             var c = DateComponents()
-            c.year = 2026; c.month = 1; c.day = 15 + dayOffset
-            c.hour = hour; c.minute = minute; c.second = 0
+            c.year = 2026
+            c.month = 1
+            c.day = 15 + dayOffset
+            c.hour = hour
+            c.minute = minute
+            c.second = 0
             return cal.date(from: c)!
         }
 
@@ -51,7 +59,7 @@ final class EventFormatterSpec: QuickSpec {
             calendarTitle: String = "Home"
         ) -> EventItem {
             let start = cal.startOfDay(for: makeDate(hour: 0, dayOffset: dayOffset))
-            let end   = cal.date(byAdding: DateComponents(day: 1, second: -1), to: start)
+            let end = cal.date(byAdding: DateComponents(day: 1, second: -1), to: start)
             return EventItem(
                 identifier: "all-day-id",
                 title: title,
@@ -66,7 +74,6 @@ final class EventFormatterSpec: QuickSpec {
         // MARK: - eventLine
 
         describe("eventLine") {
-
             context("timed events") {
                 it("contains the event title") {
                     let line = eventLine(for: timedEvent(title: "Team Sync"))
@@ -78,12 +85,12 @@ final class EventFormatterSpec: QuickSpec {
                 }
                 it("contains the start time") {
                     let event = timedEvent(startHour: 14, endHour: 15)
-                    let line  = eventLine(for: event)
+                    let line = eventLine(for: event)
                     expect(line).to(contain(formatEventTime(event.startDate)))
                 }
                 it("contains the end time") {
                     let event = timedEvent(startHour: 14, endHour: 15)
-                    let line  = eventLine(for: event)
+                    let line = eventLine(for: event)
                     expect(line).to(contain(formatEventTime(event.endDate!)))
                 }
             }
@@ -99,7 +106,7 @@ final class EventFormatterSpec: QuickSpec {
                 }
                 it("does not contain a time") {
                     let event = allDayEvent()
-                    let line  = eventLine(for: event)
+                    let line = eventLine(for: event)
                     expect(line).toNot(contain(formatEventTime(event.startDate)))
                 }
             }
@@ -125,7 +132,7 @@ final class EventFormatterSpec: QuickSpec {
                 }
                 it("does not truncate a location of exactly 50 characters") {
                     let exact = String(repeating: "B", count: 50)
-                    let line  = eventLine(for: timedEvent(location: exact))
+                    let line = eventLine(for: timedEvent(location: exact))
                     expect(line).toNot(contain("…"))
                 }
                 it("omits ' · ' when location is nil") {
@@ -137,7 +144,6 @@ final class EventFormatterSpec: QuickSpec {
                     expect(line).toNot(contain(" · "))
                 }
             }
-
         }
 
         // MARK: - nextRelativeLabel
@@ -153,7 +159,7 @@ final class EventFormatterSpec: QuickSpec {
             context("tomorrow") {
                 it("returns a label starting with 'Tomorrow' for one day ahead") {
                     let tomorrow = cal.date(byAdding: .day, value: 1, to: now)!
-                    let label    = nextRelativeLabel(for: tomorrow, relativeTo: now)
+                    let label = nextRelativeLabel(for: tomorrow, relativeTo: now)
                     expect(label).to(beginWith("Tomorrow"))
                 }
             }
@@ -162,12 +168,12 @@ final class EventFormatterSpec: QuickSpec {
                 it("returns an abbreviated day name for a date 5 days out") {
                     // Jan 20 2026 is a Tuesday — 5 days after Jan 15
                     let tuesday = cal.date(byAdding: .day, value: 5, to: now)!
-                    let label   = nextRelativeLabel(for: tuesday, relativeTo: now)
+                    let label = nextRelativeLabel(for: tuesday, relativeTo: now)
                     expect(label).to(beginWith("Tue"))
                 }
                 it("does not return 'Today' or 'Tomorrow' for a date within 7 days") {
                     let threeDays = cal.date(byAdding: .day, value: 3, to: now)!
-                    let label     = nextRelativeLabel(for: threeDays, relativeTo: now)
+                    let label = nextRelativeLabel(for: threeDays, relativeTo: now)
                     expect(label).toNot(beginWith("Today"))
                     expect(label).toNot(beginWith("Tomorrow"))
                 }
@@ -177,12 +183,12 @@ final class EventFormatterSpec: QuickSpec {
                 it("returns a month+day label for a date 10 days out") {
                     // Jan 25 2026 — 10 days after Jan 15
                     let tenDays = cal.date(byAdding: .day, value: 10, to: now)!
-                    let label   = nextRelativeLabel(for: tenDays, relativeTo: now)
+                    let label = nextRelativeLabel(for: tenDays, relativeTo: now)
                     expect(label).to(beginWith("Jan 25"))
                 }
                 it("does not use an abbreviated day name for a date 10 days out") {
                     let tenDays = cal.date(byAdding: .day, value: 10, to: now)!
-                    let label   = nextRelativeLabel(for: tenDays, relativeTo: now)
+                    let label = nextRelativeLabel(for: tenDays, relativeTo: now)
                     expect(label).toNot(beginWith("Sun"))
                 }
             }

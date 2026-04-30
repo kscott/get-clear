@@ -2,9 +2,9 @@
 //
 // Tests for TextLib MessagesClient — AppleScript escaping and script generation.
 
-import Quick
-import Nimble
 import Foundation
+import Nimble
+import Quick
 import TextLib
 
 final class MessagesClientSpec: QuickSpec {

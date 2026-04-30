@@ -1,8 +1,7 @@
 import Foundation
 
 /// Formats activity log entries for `what` and `get-clear what` output.
-public struct ActivityLogFormatter {
-
+public enum ActivityLogFormatter {
     // MARK: - Per-tool `what`
 
     /// Format entries for a per-tool `<tool> what [range]` command.
@@ -68,9 +67,9 @@ public struct ActivityLogFormatter {
 
     private static func emptyMessage(tool: String, rangeStr: String) -> String {
         if rangeStr == "today" {
-            return "Nothing recorded in \(tool) today."
+            "Nothing recorded in \(tool) today."
         } else {
-            return "Nothing recorded in \(tool) \(rangeStr)."
+            "Nothing recorded in \(tool) \(rangeStr)."
         }
     }
 
@@ -137,7 +136,7 @@ public struct ActivityLogFormatter {
     private static func formatEntry(_ entry: ActivityLogEntry, includeTool: Bool) -> String {
         let time = timeFormatter().string(from: entry.ts)
         let paddedTime = String(repeating: " ", count: max(0, 7 - time.count)) + time
-        let paddedCmd  = entry.cmd.padding(toLength: 6, withPad: " ", startingAt: 0)
+        let paddedCmd = entry.cmd.padding(toLength: 6, withPad: " ", startingAt: 0)
 
         var parts = " \(paddedTime)  \(paddedCmd)"
         if includeTool {

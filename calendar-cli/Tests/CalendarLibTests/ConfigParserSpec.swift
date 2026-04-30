@@ -2,10 +2,10 @@
 //
 // Tests for CalendarLib ConfigParser — TOML config parsing into CalendarConfig.
 
-import Quick
-import Nimble
-import Foundation
 import CalendarLib
+import Foundation
+import Nimble
+import Quick
 
 final class ConfigParserSpec: QuickSpec {
     override class func spec() {
@@ -61,7 +61,7 @@ final class ConfigParserSpec: QuickSpec {
                 let toml = """
                 [other]
                 foo = ["bar"]
-
+                
                 [subsets]
                 personal = ["Home"]
                 """
@@ -80,7 +80,7 @@ final class ConfigParserSpec: QuickSpec {
             context("comments and blank lines") {
                 let toml = """
                 # This is a comment
-
+                
                 [subsets]
                 # another comment
                 work = ["Work"]

@@ -2,18 +2,19 @@
 // Entry point for the calendar-bin executable. Dispatch only — all logic lives in CalendarLib.
 
 import AppKit
-import CalendarLib
 import CalendarEventKit
+import CalendarLib
 import GetClearKit
 
 var args = Array(CommandLine.arguments.dropFirst())
 let config = loadConfig()
 
-var calFilter: String? = nil
+var calFilter: String?
 if let first = args.first,
    Command(rawValue: first.lowercased()) == nil,
    !isHelpFlag(first), !isVersionFlag(first),
-   config.subsets[first.lowercased()] != nil {
+   config.subsets[first.lowercased()] != nil
+{
     calFilter = args.removeFirst()
 }
 
@@ -23,7 +24,7 @@ await runCLI(args: args, identity: identity, usage: usage) { command, args in
         return
     }
     if command == .what {
-        print(try handleWhat(args: args))
+        try print(handleWhat(args: args))
         return
     }
 
@@ -31,17 +32,17 @@ await runCLI(args: args, identity: identity, usage: usage) { command, args in
 
     do {
         switch command {
-        case .calendars: print(try await handleCalendars(store: store))
-        case .setup:     print(try await handleSetup(store: store))
-        case .list:      print(try await handleList(args: args, store: store, calFilter: calFilter, config: config))
-        case .today:     print(try await handleToday(store: store, calFilter: calFilter, config: config))
-        case .week:      print(try await handleWeek(store: store, calFilter: calFilter, config: config))
-        case .next:      print(try await handleNext(args: args, store: store, calFilter: calFilter, config: config))
-        case .find:      print(try await handleFind(args: args, store: store, calFilter: calFilter, config: config))
-        case .show:      print(try await handleShow(args: args, store: store, calFilter: calFilter, config: config))
-        case .add:       print(try await handleAdd(args: args, store: store, calFilter: calFilter, config: config))
-        case .remove:    print(try await handleRemove(args: args, store: store, calFilter: calFilter, config: config))
-        default:         print(usage())
+        case .calendars: try await print(handleCalendars(store: store))
+        case .setup: try await print(handleSetup(store: store))
+        case .list: try await print(handleList(args: args, store: store, calFilter: calFilter, config: config))
+        case .today: try await print(handleToday(store: store, calFilter: calFilter, config: config))
+        case .week: try await print(handleWeek(store: store, calFilter: calFilter, config: config))
+        case .next: try await print(handleNext(args: args, store: store, calFilter: calFilter, config: config))
+        case .find: try await print(handleFind(args: args, store: store, calFilter: calFilter, config: config))
+        case .show: try await print(handleShow(args: args, store: store, calFilter: calFilter, config: config))
+        case .add: try await print(handleAdd(args: args, store: store, calFilter: calFilter, config: config))
+        case .remove: try await print(handleRemove(args: args, store: store, calFilter: calFilter, config: config))
+        default: print(usage())
         }
     } catch let e as CalendarHandlerError {
         fail(e.description)

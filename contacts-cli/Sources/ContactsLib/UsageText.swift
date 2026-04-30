@@ -1,7 +1,7 @@
 public func usageText(identity: String) -> String {
     """
     \(identity)
-
+    
     Usage:
       contacts open                              # Open the Contacts app
       contacts lists                             # Show all contact groups
@@ -14,7 +14,7 @@ public func usageText(identity: String) -> String {
       contacts rename <name> <new-name>          # Rename a contact
       contacts remove <name>                     # Remove a contact
       contacts remove <name> from <group>        # Remove contact from a group
-
+    
     Feedback: https://github.com/kscott/get-clear/issues
     """
 }

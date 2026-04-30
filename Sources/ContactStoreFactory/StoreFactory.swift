@@ -2,9 +2,9 @@
 //
 // Constructs the active ContactStore backend and requests Contacts permission.
 
-import Contacts
-import ContactKit
 import AppleContactKit
+import ContactKit
+import Contacts
 import GetClearKit
 
 public func makeContactStore() async -> any ContactStore {

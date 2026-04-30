@@ -24,27 +24,29 @@ public struct ParsedRange {
     public let isSingleDay: Bool
 
     public init(start: Date, end: Date, isSingleDay: Bool) {
-        self.start       = start
-        self.end         = end
+        self.start = start
+        self.end = end
         self.isSingleDay = isSingleDay
     }
 
-    public var interval: DateInterval { DateInterval(start: start, end: end) }
+    public var interval: DateInterval {
+        DateInterval(start: start, end: end)
+    }
 }
 
 public func parseRange(_ input: String) -> ParsedRange? {
-    let s   = input.lowercased().trimmingCharacters(in: .whitespaces)
+    let s = input.lowercased().trimmingCharacters(in: .whitespaces)
     let cal = Calendar.current
     let now = Date()
 
     // Explicit range: "X to Y"
     if let toRange = s.range(of: #"\s+to\s+"#, options: .regularExpression) {
-        let left  = String(s[..<toRange.lowerBound]).trimmingCharacters(in: .whitespaces)
+        let left = String(s[..<toRange.lowerBound]).trimmingCharacters(in: .whitespaces)
         let right = String(s[toRange.upperBound...]).trimmingCharacters(in: .whitespaces)
-        guard let startDate = parseSingleDate(left,  cal: cal, now: now),
-              let endDate   = parseSingleDate(right, cal: cal, now: now) else { return nil }
+        guard let startDate = parseSingleDate(left, cal: cal, now: now),
+              let endDate = parseSingleDate(right, cal: cal, now: now) else { return nil }
         return ParsedRange(start: cal.startOfDay(for: startDate),
-                           end:   rangeEndOfDay(endDate, cal: cal),
+                           end: rangeEndOfDay(endDate, cal: cal),
                            isSingleDay: false)
     }
 
@@ -52,7 +54,7 @@ public func parseRange(_ input: String) -> ParsedRange? {
     if s.range(of: #"^\d+d$"#, options: .regularExpression) != nil {
         guard let n = Int(s.dropLast()), n > 0 else { return nil }
         let start = cal.startOfDay(for: now)
-        let end   = cal.date(byAdding: .day, value: n - 1, to: start)!
+        let end = cal.date(byAdding: .day, value: n - 1, to: start)!
         return ParsedRange(start: start, end: rangeEndOfDay(end, cal: cal), isSingleDay: n == 1)
     }
 
@@ -62,27 +64,27 @@ public func parseRange(_ input: String) -> ParsedRange? {
     switch stripped {
     case "week":
         let start = rangeWeekStart(of: now, cal: cal)
-        let end   = cal.date(byAdding: .day, value: 6, to: start)!
+        let end = cal.date(byAdding: .day, value: 6, to: start)!
         return ParsedRange(start: start, end: rangeEndOfDay(end, cal: cal), isSingleDay: false)
     case "next week":
         let start = cal.date(byAdding: .weekOfYear, value: 1, to: rangeWeekStart(of: now, cal: cal))!
-        let end   = cal.date(byAdding: .day, value: 6, to: start)!
+        let end = cal.date(byAdding: .day, value: 6, to: start)!
         return ParsedRange(start: start, end: rangeEndOfDay(end, cal: cal), isSingleDay: false)
     case "last week":
         let start = cal.date(byAdding: .weekOfYear, value: -1, to: rangeWeekStart(of: now, cal: cal))!
-        let end   = cal.date(byAdding: .day, value: 6, to: start)!
+        let end = cal.date(byAdding: .day, value: 6, to: start)!
         return ParsedRange(start: start, end: rangeEndOfDay(end, cal: cal), isSingleDay: false)
     case "month":
         let (start, end) = rangeMonthBounds(of: now, cal: cal)
         return ParsedRange(start: start, end: end, isSingleDay: false)
     case "next month":
         let firstOfNext = cal.date(from: cal.dateComponents([.year, .month],
-                         from: cal.date(byAdding: .month, value: 1, to: now)!))!
+                                                            from: cal.date(byAdding: .month, value: 1, to: now)!))!
         let (_, end) = rangeMonthBounds(of: firstOfNext, cal: cal)
         return ParsedRange(start: firstOfNext, end: end, isSingleDay: false)
     case "last month":
         let firstOfLast = cal.date(from: cal.dateComponents([.year, .month],
-                         from: cal.date(byAdding: .month, value: -1, to: now)!))!
+                                                            from: cal.date(byAdding: .month, value: -1, to: now)!))!
         let (_, end) = rangeMonthBounds(of: firstOfLast, cal: cal)
         return ParsedRange(start: firstOfLast, end: end, isSingleDay: false)
     default:
@@ -92,7 +94,7 @@ public func parseRange(_ input: String) -> ParsedRange? {
     // Single date
     guard let date = parseSingleDate(s, cal: cal, now: now) else { return nil }
     return ParsedRange(start: cal.startOfDay(for: date),
-                       end:   rangeEndOfDay(date, cal: cal),
+                       end: rangeEndOfDay(date, cal: cal),
                        isSingleDay: true)
 }
 
@@ -101,28 +103,30 @@ public func parseSingleDate(_ s: String, cal: Calendar, now: Date) -> Date? {
     let lower = s.lowercased().trimmingCharacters(in: .whitespaces)
 
     switch lower {
-    case "today":     return now
-    case "tomorrow":  return cal.date(byAdding: .day, value:  1, to: now)
+    case "today": return now
+    case "tomorrow": return cal.date(byAdding: .day, value: 1, to: now)
     case "yesterday": return cal.date(byAdding: .day, value: -1, to: now)
     default: break
     }
 
-    let weekdays = ["sunday":1,"monday":2,"tuesday":3,"wednesday":4,
-                    "thursday":5,"friday":6,"saturday":7]
+    let weekdays = ["sunday": 1, "monday": 2, "tuesday": 3, "wednesday": 4,
+                    "thursday": 5, "friday": 6, "saturday": 7]
     let bare = lower.replacingOccurrences(of: #"^(?:next|this)\s+"#, with: "", options: .regularExpression)
     if let num = weekdays[bare] {
         if cal.component(.weekday, from: now) == num { return now }
-        var dc = DateComponents(); dc.weekday = num
+        var dc = DateComponents()
+        dc.weekday = num
         return cal.nextDate(after: now, matching: dc, matchingPolicy: .nextTime)
     }
 
-    let months = ["january":1,"february":2,"march":3,"april":4,"may":5,"june":6,
-                  "july":7,"august":8,"september":9,"october":10,"november":11,"december":12]
+    let months = ["january": 1, "february": 2, "march": 3, "april": 4, "may": 5, "june": 6,
+                  "july": 7, "august": 8, "september": 9, "october": 10, "november": 11, "december": 12]
     let parts = lower.split(separator: " ").map(String.init)
 
     if parts.count == 2, let monthNum = months[parts[0]], let day = Int(parts[1]) {
         var comps = cal.dateComponents([.year, .month, .day], from: now)
-        comps.month = monthNum; comps.day = day
+        comps.month = monthNum
+        comps.day = day
         if let d = cal.date(from: comps), d < cal.startOfDay(for: now) {
             comps.year = (comps.year ?? 0) + 1
         }
@@ -130,16 +134,19 @@ public func parseSingleDate(_ s: String, cal: Calendar, now: Date) -> Date? {
     }
 
     if parts.count == 1 {
-        let sep  = CharacterSet(charactersIn: "/-")
+        let sep = CharacterSet(charactersIn: "/-")
         let nums = lower.components(separatedBy: sep)
         if nums.count == 3, let y = Int(nums[0]), let m = Int(nums[1]), let d = Int(nums[2]) {
             var comps = DateComponents()
-            comps.year = y; comps.month = m; comps.day = d
+            comps.year = y
+            comps.month = m
+            comps.day = d
             return cal.date(from: comps)
         }
         if nums.count == 2, let m = Int(nums[0]), let d = Int(nums[1]) {
             var comps = cal.dateComponents([.year], from: now)
-            comps.month = m; comps.day = d
+            comps.month = m
+            comps.day = d
             if let date = cal.date(from: comps), date < cal.startOfDay(for: now) {
                 comps.year = (comps.year ?? 0) + 1
             }
@@ -162,21 +169,23 @@ public func parseRange(trailingArgs args: [String], default defaultStr: String) 
 
 public struct RangeParseError: LocalizedError {
     public let input: String
-    public var errorDescription: String? { "unrecognised range: \(input)" }
+    public var errorDescription: String? {
+        "unrecognised range: \(input)"
+    }
 }
 
 public func formatRangeDescription(_ range: ParsedRange) -> String {
     let cal = Calendar.current
-    let f   = DateFormatter()
+    let f = DateFormatter()
     if range.isSingleDay {
         f.dateFormat = "EEEE, MMMM d"
         return f.string(from: range.start)
     }
     let startYear = cal.component(.year, from: range.start)
-    let endYear   = cal.component(.year, from: range.end)
-    f.dateFormat  = startYear == endYear ? "MMM d" : "MMM d, yyyy"
-    let startStr  = f.string(from: range.start)
-    let endStr    = f.string(from: range.end)
+    let endYear = cal.component(.year, from: range.end)
+    f.dateFormat = startYear == endYear ? "MMM d" : "MMM d, yyyy"
+    let startStr = f.string(from: range.start)
+    let endStr = f.string(from: range.end)
     return "\(startStr) – \(endStr)"
 }
 
@@ -194,6 +203,6 @@ private func rangeWeekStart(of date: Date, cal: Calendar) -> Date {
 
 private func rangeMonthBounds(of date: Date, cal: Calendar) -> (Date, Date) {
     let start = cal.date(from: cal.dateComponents([.year, .month], from: date))!
-    let end   = cal.date(byAdding: DateComponents(month: 1, second: -1), to: start)!
+    let end = cal.date(byAdding: DateComponents(month: 1, second: -1), to: start)!
     return (start, rangeEndOfDay(end, cal: cal))
 }

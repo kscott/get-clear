@@ -6,23 +6,24 @@
 import Foundation
 
 public struct ComposedMessage {
-    public let to: String          // unresolved recipient string
-    public let cc: [String]        // unresolved cc recipient strings
-    public let from: String?       // nil → use default identity
+    public let to: String // unresolved recipient string
+    public let cc: [String] // unresolved cc recipient strings
+    public let from: String? // nil → use default identity
     public let subject: String
-    public let body: String        // raw text; caller handles file-path expansion
+    public let body: String // raw text; caller handles file-path expansion
     public let attachments: [String]
     public let isDraft: Bool
 
     public init(to: String, cc: [String], from: String?, subject: String,
-                body: String, attachments: [String], isDraft: Bool) {
-        self.to          = to
-        self.cc          = cc
-        self.from        = from
-        self.subject     = subject
-        self.body        = body
+                body: String, attachments: [String], isDraft: Bool)
+    {
+        self.to = to
+        self.cc = cc
+        self.from = from
+        self.subject = subject
+        self.body = body
         self.attachments = attachments
-        self.isDraft     = isDraft
+        self.isDraft = isDraft
     }
 }
 
@@ -48,7 +49,7 @@ public func parseSendArgs(_ args: [String]) -> ComposedMessage? {
     // `to` = all tokens before the first keyword
     var toTokens: [String] = []
     var i = 0
-    while i < tokens.count && !isKeyword(tokens[i]) {
+    while i < tokens.count, !isKeyword(tokens[i]) {
         toTokens.append(tokens[i])
         i += 1
     }
@@ -56,10 +57,10 @@ public func parseSendArgs(_ args: [String]) -> ComposedMessage? {
     let to = toTokens.joined(separator: " ")
 
     // Parse keyword sections
-    var cc:          [String] = []
-    var from:        String?  = nil
-    var subject:     String   = ""
-    var body:        String   = ""
+    var cc: [String] = []
+    var from: String?
+    var subject = ""
+    var body = ""
     var attachments: [String] = []
 
     while i < tokens.count {
@@ -68,12 +69,12 @@ public func parseSendArgs(_ args: [String]) -> ComposedMessage? {
         case "body":
             i += 1
             body = tokens[i...].joined(separator: " ")
-            i = tokens.count  // body captures to end — stop
+            i = tokens.count // body captures to end — stop
 
         case "subject":
             i += 1
             var parts: [String] = []
-            while i < tokens.count && !isKeyword(tokens[i]) {
+            while i < tokens.count, !isKeyword(tokens[i]) {
                 parts.append(tokens[i])
                 i += 1
             }
@@ -81,13 +82,15 @@ public func parseSendArgs(_ args: [String]) -> ComposedMessage? {
 
         case "from":
             i += 1
-            if i < tokens.count { from = tokens[i]; i += 1 }
+            if i < tokens.count { from = tokens[i]
+                i += 1
+            }
 
         case "cc":
             // cc captures tokens until next keyword (supports multi-word contact names)
             i += 1
             var ccTokens: [String] = []
-            while i < tokens.count && !isKeyword(tokens[i]) {
+            while i < tokens.count, !isKeyword(tokens[i]) {
                 ccTokens.append(tokens[i])
                 i += 1
             }
@@ -95,7 +98,9 @@ public func parseSendArgs(_ args: [String]) -> ComposedMessage? {
 
         case "attach":
             i += 1
-            if i < tokens.count { attachments.append(tokens[i]); i += 1 }
+            if i < tokens.count { attachments.append(tokens[i])
+                i += 1
+            }
 
         default:
             i += 1

@@ -7,16 +7,16 @@ import MailLib
 // MARK: - Value types
 
 public struct JMAPSession: Sendable {
-    public let apiUrl:    String
+    public let apiUrl: String
     public let uploadUrl: String
     public let accountId: String
 }
 
 public struct JMAPBlob {
     public let blobId: String
-    public let type:   String
-    public let name:   String
-    public let size:   Int
+    public let type: String
+    public let name: String
+    public let size: Int
 }
 
 // MARK: - URLSession delegate
@@ -24,11 +24,15 @@ public struct JMAPBlob {
 /// Preserves the Authorization header across HTTP redirects.
 private final class AuthRedirectDelegate: NSObject, URLSessionTaskDelegate, @unchecked Sendable {
     let token: String
-    init(token: String) { self.token = token }
+    init(token: String) {
+        self.token = token
+    }
+
     func urlSession(_ session: URLSession, task: URLSessionTask,
                     willPerformHTTPRedirection response: HTTPURLResponse,
                     newRequest request: URLRequest,
-                    completionHandler: @escaping (URLRequest?) -> Void) {
+                    completionHandler: @escaping (URLRequest?) -> Void)
+    {
         var r = request
         r.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         completionHandler(r)
@@ -39,14 +43,14 @@ private final class AuthRedirectDelegate: NSObject, URLSessionTaskDelegate, @unc
 
 private func mimeType(for path: String) -> String {
     switch URL(fileURLWithPath: path).pathExtension.lowercased() {
-    case "pdf":          return "application/pdf"
-    case "png":          return "image/png"
-    case "jpg", "jpeg":  return "image/jpeg"
-    case "gif":          return "image/gif"
-    case "txt":          return "text/plain"
-    case "html":         return "text/html"
-    case "zip":          return "application/zip"
-    default:             return "application/octet-stream"
+    case "pdf": "application/pdf"
+    case "png": "image/png"
+    case "jpg", "jpeg": "image/jpeg"
+    case "gif": "image/gif"
+    case "txt": "text/plain"
+    case "html": "text/html"
+    case "zip": "application/zip"
+    default: "application/octet-stream"
     }
 }
 
@@ -54,30 +58,33 @@ private func mimeType(for path: String) -> String {
 
 private enum MailboxRole {
     static let drafts = "drafts"
-    static let sent   = "sent"
+    static let sent = "sent"
 }
 
 // MARK: - JMAPClient
 
 /// A JMAP client bound to a single authenticated session.
 public struct JMAPClient: MailClient {
-    public let token:   String
+    public let token: String
     public let session: JMAPSession
 
     // MARK: Connection
 
     /// Authenticate with a JMAP server and return a ready-to-use client.
-    public static func connect(token: String, discoveryURL: String = "https://api.fastmail.com/.well-known/jmap") async throws -> JMAPClient {
+    public static func connect(token: String,
+                               discoveryURL: String = "https://api.fastmail.com/.well-known/jmap") async throws -> JMAPClient
+    {
         var req = URLRequest(url: URL(string: discoveryURL)!)
         req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        let delegate   = AuthRedirectDelegate(token: token)
+        let delegate = AuthRedirectDelegate(token: token)
         let urlSession = URLSession(configuration: .default, delegate: delegate, delegateQueue: nil)
-        let (data, _)  = try await urlSession.data(for: req)
-        guard let json         = try JSONSerialization.jsonObject(with: data) as? [String: Any],
-              let apiUrl       = json["apiUrl"]          as? String,
-              let uploadUrl    = json["uploadUrl"]       as? String,
+        let (data, _) = try await urlSession.data(for: req)
+        guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let apiUrl = json["apiUrl"] as? String,
+              let uploadUrl = json["uploadUrl"] as? String,
               let primaryAccts = json["primaryAccounts"] as? [String: String],
-              let accountId    = primaryAccts["urn:ietf:params:jmap:mail"] else {
+              let accountId = primaryAccts["urn:ietf:params:jmap:mail"]
+        else {
             throw MailError.jmapError("Invalid JMAP session response")
         }
         return JMAPClient(token: token,
@@ -89,9 +96,9 @@ public struct JMAPClient: MailClient {
     public func send(_ email: OutboundEmail) async throws {
         let blobs = try await uploadAll(email.attachmentPaths)
         async let draftsTask = findMailboxId(role: MailboxRole.drafts)
-        async let sentTask   = findMailboxId(role: MailboxRole.sent)
+        async let sentTask = findMailboxId(role: MailboxRole.sent)
         guard let draftsId = try await draftsTask else { throw MailError.jmapError("Could not find Drafts mailbox") }
-        guard let sentId   = try await sentTask   else { throw MailError.jmapError("Could not find Sent mailbox") }
+        guard let sentId = try await sentTask else { throw MailError.jmapError("Could not find Sent mailbox") }
         let emailId = try await createEmail(email, blobs: blobs, draftsId: draftsId)
         try await submitEmail(emailId: emailId, identityId: email.from.id,
                               draftsId: draftsId, sentId: sentId)
@@ -111,21 +118,21 @@ public struct JMAPClient: MailClient {
         let responses = try await post(methodCalls: [
             ["Email/query", [
                 "accountId": session.accountId,
-                "filter":    ["text": query],
-                "sort":      [["property": "receivedAt", "isAscending": false]],
-                "limit":     limit,
+                "filter": ["text": query],
+                "sort": [["property": "receivedAt", "isAscending": false]],
+                "limit": limit
             ] as [String: Any], "a"],
             ["Email/get", [
-                "accountId":  session.accountId,
-                "#ids":       ["resultOf": "a", "name": "Email/query", "path": "/ids"],
-                "properties": ["subject", "from", "receivedAt"],
-            ] as [String: Any], "b"],
+                "accountId": session.accountId,
+                "#ids": ["resultOf": "a", "name": "Email/query", "path": "/ids"],
+                "properties": ["subject", "from", "receivedAt"]
+            ] as [String: Any], "b"]
         ])
         let result = try methodResult("Email/get", from: responses)
         let emails = result["list"] as? [[String: Any]] ?? []
         return emails.map { obj in
-            let subject  = obj["subject"] as? String ?? "(no subject)"
-            let from     = (obj["from"] as? [[String: Any]])?.first.map { addr -> String in
+            let subject = obj["subject"] as? String ?? "(no subject)"
+            let from = (obj["from"] as? [[String: Any]])?.first.map { addr -> String in
                 AddressEntry(name: addr["name"] as? String ?? "",
                              email: addr["email"] as? String ?? "").formatted
             } ?? ""
@@ -148,9 +155,9 @@ public struct JMAPClient: MailClient {
             ]
         )
         let result = try methodResult("Identity/get", from: responses)
-        let list   = result["list"] as? [[String: Any]] ?? []
+        let list = result["list"] as? [[String: Any]] ?? []
         let identities: [MailIdentity] = list.compactMap { obj in
-            guard let id    = obj["id"]    as? String,
+            guard let id = obj["id"] as? String,
                   let email = obj["email"] as? String else { return nil }
             let name = obj["name"] as? String ?? ""
             return MailIdentity(id: id, email: email, name: name)
@@ -173,8 +180,9 @@ public struct JMAPClient: MailClient {
         req.setValue("application/json", forHTTPHeaderField: "Content-Type")
         req.httpBody = try JSONSerialization.data(withJSONObject: body)
         let (data, _) = try await URLSession.shared.data(for: req)
-        guard let json      = try JSONSerialization.jsonObject(with: data) as? [String: Any],
-              let responses = json["methodResponses"] as? [[Any]] else {
+        guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let responses = json["methodResponses"] as? [[Any]]
+        else {
             throw MailError.jmapError("Invalid JMAP response")
         }
         return responses
@@ -182,13 +190,15 @@ public struct JMAPClient: MailClient {
 
     /// Extract a named method result from a response batch, or throw on error.
     public func methodResult(_ name: String, from responses: [[Any]]) throws -> [String: Any] {
-        if let errResp   = responses.first(where: { ($0[0] as? String) == "error" }),
-           let errResult = errResp[1] as? [String: Any] {
+        if let errResp = responses.first(where: { ($0[0] as? String) == "error" }),
+           let errResult = errResp[1] as? [String: Any]
+        {
             let desc = errResult["description"] as? String ?? errResult["type"] as? String ?? "unknown"
             throw MailError.jmapError(desc)
         }
-        guard let resp   = responses.first(where: { ($0[0] as? String) == name }),
-              let result = resp[1] as? [String: Any] else {
+        guard let resp = responses.first(where: { ($0[0] as? String) == name }),
+              let result = resp[1] as? [String: Any]
+        else {
             throw MailError.jmapError("\(name) response missing")
         }
         return result
@@ -196,7 +206,7 @@ public struct JMAPClient: MailClient {
 
     /// Upload a file and return its blob descriptor.
     public func uploadAttachment(path: String) async throws -> JMAPBlob {
-        let url  = URL(fileURLWithPath: path)
+        let url = URL(fileURLWithPath: path)
         let data = try Data(contentsOf: url)
         let mime = mimeType(for: path)
         let endpoint = session.uploadUrl
@@ -206,11 +216,12 @@ public struct JMAPClient: MailClient {
         req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         req.setValue(mime, forHTTPHeaderField: "Content-Type")
         req.httpBody = data
-        let delegate      = AuthRedirectDelegate(token: token)
+        let delegate = AuthRedirectDelegate(token: token)
         let uploadSession = URLSession(configuration: .default, delegate: delegate, delegateQueue: nil)
         let (respData, _) = try await uploadSession.data(for: req)
-        guard let json   = try JSONSerialization.jsonObject(with: respData) as? [String: Any],
-              let blobId = json["blobId"] as? String else {
+        guard let json = try JSONSerialization.jsonObject(with: respData) as? [String: Any],
+              let blobId = json["blobId"] as? String
+        else {
             throw MailError.jmapError("Upload failed for \(path)")
         }
         return JMAPBlob(blobId: blobId, type: mime, name: url.lastPathComponent, size: data.count)
@@ -221,7 +232,7 @@ public struct JMAPClient: MailClient {
         let responses = try await post(methodCalls: [
             ["Mailbox/get", ["accountId": session.accountId, "ids": NSNull()] as [String: Any], "a"]
         ])
-        let result    = try methodResult("Mailbox/get", from: responses)
+        let result = try methodResult("Mailbox/get", from: responses)
         let mailboxes = result["list"] as? [[String: Any]] ?? []
         return mailboxes.first(where: {
             ($0["role"] as? String)?.lowercased() == role.lowercased()
@@ -232,9 +243,13 @@ public struct JMAPClient: MailClient {
 
     private func uploadAll(_ paths: [String]) async throws -> [JMAPBlob] {
         try await withThrowingTaskGroup(of: JMAPBlob.self) { group in
-            for path in paths { group.addTask { try await self.uploadAttachment(path: path) } }
+            for path in paths {
+                group.addTask { try await uploadAttachment(path: path) }
+            }
             var blobs: [JMAPBlob] = []
-            for try await blob in group { blobs.append(blob) }
+            for try await blob in group {
+                blobs.append(blob)
+            }
             return blobs
         }
     }
@@ -250,13 +265,13 @@ public struct JMAPClient: MailClient {
             bodyStructure = ["type": "multipart/mixed", "subParts": subParts]
         }
         var emailCreate: [String: Any] = [
-            "mailboxIds":    [draftsId: true],
-            "keywords":      ["$draft": true],
-            "from":          [["name": email.from.name, "email": email.from.email]],
-            "to":            email.to.map { ["name": $0.name, "email": $0.email] },
-            "subject":       email.subject,
+            "mailboxIds": [draftsId: true],
+            "keywords": ["$draft": true],
+            "from": [["name": email.from.name, "email": email.from.email]],
+            "to": email.to.map { ["name": $0.name, "email": $0.email] },
+            "subject": email.subject,
             "bodyStructure": bodyStructure,
-            "bodyValues":    ["1": ["value": email.body]],
+            "bodyValues": ["1": ["value": email.body]]
         ]
         if !email.cc.isEmpty {
             emailCreate["cc"] = email.cc.map { ["name": $0.name, "email": $0.email] }
@@ -274,16 +289,18 @@ public struct JMAPClient: MailClient {
             let desc = (notCreated["e1"] as? [String: Any])?["description"] as? String ?? "unknown"
             throw MailError.sendFailed(desc)
         }
-        guard let created  = result["created"]  as? [String: Any],
-              let emailObj = created["e1"]       as? [String: Any],
-              let emailId  = emailObj["id"]       as? String else {
+        guard let created = result["created"] as? [String: Any],
+              let emailObj = created["e1"] as? [String: Any],
+              let emailId = emailObj["id"] as? String
+        else {
             throw MailError.sendFailed("Email not created")
         }
         return emailId
     }
 
     private func submitEmail(emailId: String, identityId: String,
-                             draftsId: String, sentId: String) async throws {
+                             draftsId: String, sentId: String) async throws
+    {
         let responses = try await post(
             using: ["urn:ietf:params:jmap:core", "urn:ietf:params:jmap:mail",
                     "urn:ietf:params:jmap:submission"],
@@ -293,11 +310,11 @@ public struct JMAPClient: MailClient {
                     "create": ["s1": ["emailId": emailId, "identityId": identityId]],
                     "onSuccessUpdateEmail": [
                         "#s1": [
-                            "keywords/$draft":        NSNull(),
+                            "keywords/$draft": NSNull(),
                             "mailboxIds/\(draftsId)": NSNull(),
-                            "mailboxIds/\(sentId)":   true,
+                            "mailboxIds/\(sentId)": true
                         ]
-                    ],
+                    ]
                 ] as [String: Any], "0"]
             ]
         )
@@ -308,4 +325,3 @@ public struct JMAPClient: MailClient {
         }
     }
 }
-

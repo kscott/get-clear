@@ -1,6 +1,6 @@
-import Quick
-import Nimble
 import ContactsLib
+import Nimble
+import Quick
 
 final class UsageTextSpec: QuickSpec {
     override class func spec() {

@@ -1,14 +1,13 @@
 import Foundation
 
 /// Reads and filters activity log entries from daily log files.
-public struct ActivityLogReader {
-
+public enum ActivityLogReader {
     static let defaultBaseDirectory: URL =
         FileManager.default.homeDirectoryForCurrentUser
             .appendingPathComponent(".local/share/get-clear/log")
 
     private static let validTools: Set<String> = ["reminders", "calendar", "contacts", "mail", "sms", "text"]
-    private static let validCmds:  Set<String> = ["add", "remove", "change", "rename", "done", "send"]
+    private static let validCmds: Set<String> = ["add", "remove", "change", "rename", "done", "send"]
 
     // MARK: - Public API
 
@@ -24,12 +23,12 @@ public struct ActivityLogReader {
         tool: String? = nil,
         baseDirectory: URL? = nil
     ) -> [ActivityLogEntry] {
-        let base    = baseDirectory ?? defaultBaseDirectory
-        let cal     = Calendar.current
+        let base = baseDirectory ?? defaultBaseDirectory
+        let cal = Calendar.current
         let decoder = JSONDecoder.logDecoder()
         var results: [ActivityLogEntry] = []
 
-        var day    = cal.startOfDay(for: range.lowerBound)
+        var day = cal.startOfDay(for: range.lowerBound)
         let endDay = cal.startOfDay(for: range.upperBound)
 
         while day <= endDay {
@@ -39,7 +38,7 @@ public struct ActivityLogReader {
             if let content = try? String(contentsOf: fileURL, encoding: .utf8) {
                 for line in content.split(separator: "\n", omittingEmptySubsequences: true) {
                     guard
-                        let data  = line.data(using: .utf8),
+                        let data = line.data(using: .utf8),
                         let entry = try? decoder.decode(ActivityLogEntry.self, from: data),
                         validTools.contains(entry.tool),
                         validCmds.contains(entry.cmd),
@@ -75,7 +74,7 @@ public struct ActivityLogReader {
         now: Date = Date(),
         baseDirectory: URL? = nil
     ) -> (entries: [ActivityLogEntry], dateUsed: Date) {
-        let base   = baseDirectory ?? defaultBaseDirectory
+        let base = baseDirectory ?? defaultBaseDirectory
         let result = entries(in: range, tool: nil, baseDirectory: base)
 
         if !result.isEmpty {
@@ -92,7 +91,7 @@ public struct ActivityLogReader {
             .filter { $0.pathExtension == "log" }
             .sorted { $0.lastPathComponent > $1.lastPathComponent }
 
-        let decoder       = JSONDecoder.logDecoder()
+        let decoder = JSONDecoder.logDecoder()
         let threeHoursAgo = now.addingTimeInterval(-3 * 3600)
 
         for fileURL in logFiles {
@@ -102,7 +101,7 @@ public struct ActivityLogReader {
             var fileEntries: [ActivityLogEntry] = []
             for line in content.split(separator: "\n", omittingEmptySubsequences: true) {
                 guard
-                    let data  = line.data(using: .utf8),
+                    let data = line.data(using: .utf8),
                     let entry = try? decoder.decode(ActivityLogEntry.self, from: data),
                     validTools.contains(entry.tool),
                     !entry.desc.isEmpty
@@ -117,7 +116,7 @@ public struct ActivityLogReader {
                 // dateUsed is derived from the file name, not the entry timestamp — the file
                 // date is the authority on which calendar day to display in the header.
                 let filename = fileURL.deletingPathExtension().lastPathComponent
-                let fileFmt  = DateFormatter()
+                let fileFmt = DateFormatter()
                 fileFmt.dateFormat = "yyyy-MM-dd"
                 let fileDate = fileFmt.date(from: filename) ?? lastEntry.ts
                 return (fileEntries.sorted { $0.ts < $1.ts }, fileDate)

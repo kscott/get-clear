@@ -6,7 +6,7 @@ public struct SendResult: Equatable {
     public let address: String
     public init(displayName: String, address: String) {
         self.displayName = displayName
-        self.address     = address
+        self.address = address
     }
 }
 

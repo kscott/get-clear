@@ -16,12 +16,12 @@
 import Foundation
 
 public struct ParsedOptions {
-    public var date: String       = ""
+    public var date: String = ""
     public var recurrence: String = ""
-    public var priority: String   = ""
-    public var note: String       = ""
-    public var url: String        = ""
-    public var list: String       = ""
+    public var priority: String = ""
+    public var note: String = ""
+    public var url: String = ""
+    public var list: String = ""
 
     public init() {}
 }
@@ -57,10 +57,10 @@ public func parseOptions(_ s: String) -> ParsedOptions {
         let range: Range<String.Index>
     }
     let patterns: [(String, String)] = [
-        ("repeat",   #"\brepeat(?:s|ing|ed)?\b"#),
+        ("repeat", #"\brepeat(?:s|ing|ed)?\b"#),
         ("priority", #"\bpriority\b"#),
-        ("url",      #"\burl\b"#),
-        ("list",     #"\blist\b"#),
+        ("url", #"\burl\b"#),
+        ("list", #"\blist\b"#)
     ]
     var matches: [KwMatch] = []
     for (field, pattern) in patterns {
@@ -81,13 +81,13 @@ public func parseOptions(_ s: String) -> ParsedOptions {
     // Each keyword's value runs from its end to the start of the next keyword (or end of string).
     for (i, match) in matches.enumerated() {
         let start = match.range.upperBound
-        let end   = i + 1 < matches.count ? matches[i + 1].range.lowerBound : work.endIndex
-        let value = String(work[start..<end]).trimmingCharacters(in: .whitespaces)
+        let end = i + 1 < matches.count ? matches[i + 1].range.lowerBound : work.endIndex
+        let value = String(work[start ..< end]).trimmingCharacters(in: .whitespaces)
         switch match.field {
-        case "repeat":   result.recurrence = value
-        case "priority": result.priority   = value
-        case "url":      result.url        = value
-        case "list":     result.list       = value
+        case "repeat": result.recurrence = value
+        case "priority": result.priority = value
+        case "url": result.url = value
+        case "list": result.list = value
         default: break
         }
     }

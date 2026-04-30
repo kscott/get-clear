@@ -2,10 +2,10 @@
 //
 // Tests for GetClearKit ActivityLog and ActivityLogReader.
 
-import Quick
-import Nimble
 import Foundation
 import GetClearKit
+import Nimble
+import Quick
 
 final class ActivityLogSpec: QuickSpec {
     override class func spec() {
@@ -111,7 +111,7 @@ final class ActivityLogSpec: QuickSpec {
                 beforeEach {
                     tempDir = FileManager.default.temporaryDirectory
                         .appendingPathComponent("gc-test-\(UUID().uuidString)")
-                    try? ActivityLog.write(tool: "reminders", cmd: "add",  desc: "First",  container: nil, baseDirectory: tempDir)
+                    try? ActivityLog.write(tool: "reminders", cmd: "add", desc: "First", container: nil, baseDirectory: tempDir)
                     try? ActivityLog.write(tool: "reminders", cmd: "done", desc: "Second", container: nil, baseDirectory: tempDir)
                     let today = ISO8601DateFormatter.logFileDateString(Date())
                     let file = tempDir.appendingPathComponent("\(today).log")
@@ -153,22 +153,22 @@ final class ActivityLogSpec: QuickSpec {
                     let content = [
                         #"{"ts":"\#(ts1)","tool":"reminders","cmd":"done","desc":"Call Sarah","container":"Ibotta"}"#,
                         #"{"ts":"\#(ts2)","tool":"mail","cmd":"send","desc":"Alex Re: notes","container":null}"#,
-                        #"{"ts":"\#(ts3)","tool":"reminders","cmd":"add","desc":"Review PR","container":"Ibotta"}"#,
+                        #"{"ts":"\#(ts3)","tool":"reminders","cmd":"add","desc":"Review PR","container":"Ibotta"}"#
                     ].joined(separator: "\n") + "\n"
                     try? content.write(to: file, atomically: true, encoding: .utf8)
                     todayRange = parseRange("today")
                 }
 
                 it("reads all 3 entries when no tool filter") {
-                    let all = ActivityLogReader.entries(in: todayRange.start...todayRange.end, tool: nil, baseDirectory: tempDir)
+                    let all = ActivityLogReader.entries(in: todayRange.start ... todayRange.end, tool: nil, baseDirectory: tempDir)
                     expect(all.count) == 3
                 }
                 it("filters to reminders entries only") {
-                    let rem = ActivityLogReader.entries(in: todayRange.start...todayRange.end, tool: "reminders", baseDirectory: tempDir)
+                    let rem = ActivityLogReader.entries(in: todayRange.start ... todayRange.end, tool: "reminders", baseDirectory: tempDir)
                     expect(rem.count) == 2
                 }
                 it("filters to mail entries only") {
-                    let mail = ActivityLogReader.entries(in: todayRange.start...todayRange.end, tool: "mail", baseDirectory: tempDir)
+                    let mail = ActivityLogReader.entries(in: todayRange.start ... todayRange.end, tool: "mail", baseDirectory: tempDir)
                     expect(mail.count) == 1
                 }
             }
@@ -190,11 +190,11 @@ final class ActivityLogSpec: QuickSpec {
                         #"{"ts":"\#(tsGood)","tool":"reminders","cmd":"done","desc":"Good entry","container":null}"#,
                         #"{"ts":"broken-date","tool":"reminders","cmd":"done","desc":"Bad ts","container":null}"#,
                         #"{"ts":"\#(tsBad1)","tool":"unknown-tool","cmd":"done","desc":"Unknown tool","container":null}"#,
-                        #"{"ts":"\#(tsBad2)","tool":"reminders","cmd":"done","desc":"","container":null}"#,
+                        #"{"ts":"\#(tsBad2)","tool":"reminders","cmd":"done","desc":"","container":null}"#
                     ].joined(separator: "\n") + "\n"
                     try? content.write(to: file, atomically: true, encoding: .utf8)
                     let range = parseRange("today")!
-                    entries = ActivityLogReader.entries(in: range.start...range.end, tool: nil, baseDirectory: tempDir)
+                    entries = ActivityLogReader.entries(in: range.start ... range.end, tool: nil, baseDirectory: tempDir)
                 }
 
                 it("only the valid entry survives") {
@@ -213,16 +213,18 @@ final class ActivityLogSpec: QuickSpec {
                         .appendingPathComponent("gc-test-\(UUID().uuidString)")
                     try? FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
                     let yesterdayStr = ISO8601DateFormatter.logFileDateString(
-                        cal.date(byAdding: .day, value: -1, to: now)!)
+                        cal.date(byAdding: .day, value: -1, to: now)!
+                    )
                     let file = tempDir.appendingPathComponent("\(yesterdayStr).log")
                     let tsStr = ISO8601DateFormatter().string(from: twoHoursAgo)
                     let line = #"{"ts":"\#(tsStr)","tool":"reminders","cmd":"done","desc":"Late night task","container":null}"# + "\n"
                     try? line.write(to: file, atomically: true, encoding: .utf8)
                     let todayRange = parseRange("today")!
                     let result = ActivityLogReader.entriesForDisplay(
-                        in: todayRange.start...todayRange.end,
+                        in: todayRange.start ... todayRange.end,
                         now: now,
-                        baseDirectory: tempDir)
+                        baseDirectory: tempDir
+                    )
                     expect(result.entries.count) == 1
                 }
                 it("reports yesterday's date when showing recent entry") {
@@ -232,16 +234,18 @@ final class ActivityLogSpec: QuickSpec {
                         .appendingPathComponent("gc-test-\(UUID().uuidString)")
                     try? FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
                     let yesterdayStr = ISO8601DateFormatter.logFileDateString(
-                        cal.date(byAdding: .day, value: -1, to: now)!)
+                        cal.date(byAdding: .day, value: -1, to: now)!
+                    )
                     let file = tempDir.appendingPathComponent("\(yesterdayStr).log")
                     let tsStr = ISO8601DateFormatter().string(from: twoHoursAgo)
                     let line = #"{"ts":"\#(tsStr)","tool":"reminders","cmd":"done","desc":"Late night task","container":null}"# + "\n"
                     try? line.write(to: file, atomically: true, encoding: .utf8)
                     let todayRange = parseRange("today")!
                     let result = ActivityLogReader.entriesForDisplay(
-                        in: todayRange.start...todayRange.end,
+                        in: todayRange.start ... todayRange.end,
                         now: now,
-                        baseDirectory: tempDir)
+                        baseDirectory: tempDir
+                    )
                     expect(cal.isDateInToday(result.dateUsed)) == false
                 }
                 it("does not trigger when last activity was more than 3 hours ago") {
@@ -251,16 +255,18 @@ final class ActivityLogSpec: QuickSpec {
                         .appendingPathComponent("gc-test-\(UUID().uuidString)")
                     try? FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
                     let yesterdayStr = ISO8601DateFormatter.logFileDateString(
-                        cal.date(byAdding: .day, value: -1, to: now)!)
+                        cal.date(byAdding: .day, value: -1, to: now)!
+                    )
                     let file = tempDir.appendingPathComponent("\(yesterdayStr).log")
                     let tsStr = ISO8601DateFormatter().string(from: fourHoursAgo)
                     let line = #"{"ts":"\#(tsStr)","tool":"reminders","cmd":"done","desc":"Old task","container":null}"# + "\n"
                     try? line.write(to: file, atomically: true, encoding: .utf8)
                     let todayRange = parseRange("today")!
                     let result = ActivityLogReader.entriesForDisplay(
-                        in: todayRange.start...todayRange.end,
+                        in: todayRange.start ... todayRange.end,
                         now: now,
-                        baseDirectory: tempDir)
+                        baseDirectory: tempDir
+                    )
                     expect(result.entries).to(beEmpty())
                 }
             }

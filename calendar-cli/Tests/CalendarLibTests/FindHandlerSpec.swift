@@ -1,11 +1,10 @@
-import Quick
-import Nimble
-import Foundation
 import CalendarLib
+import Foundation
+import Nimble
+import Quick
 
 final class CalendarFindHandlerSpec: AsyncSpec {
     override class func spec() {
-
         var store: SpyCalendarStore!
         let config = CalendarConfig.empty
         beforeEach { store = SpyCalendarStore() }

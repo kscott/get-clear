@@ -8,14 +8,14 @@ import ContactKit
 /// Throws notFound or ambiguous when name resolution fails.
 public func resolveTarget(query: String, contacts: [Contact]) throws -> SendResult {
     let q = query.trimmingCharacters(in: .whitespaces)
-    let digits = q.filter { $0.isNumber }
+    let digits = q.filter(\.isNumber)
 
-    if (digits.count == 10 || digits.count == 11) && !q.contains("@") {
+    if digits.count == 10 || digits.count == 11, !q.contains("@") {
         let address = normalizePhone(q)
         return SendResult(displayName: formatPhone(address), address: address)
     }
 
-    if q.contains("@") && !q.contains(" ") {
+    if q.contains("@"), !q.contains(" ") {
         return SendResult(displayName: q, address: q)
     }
 
@@ -24,7 +24,7 @@ public func resolveTarget(query: String, contacts: [Contact]) throws -> SendResu
     if matches.count > 1 {
         let candidates = matches.prefix(5).map { c -> String in
             let addr = c.phones.first.map { formatPhone(normalizePhone($0.value)) }
-                    ?? c.emails.first?.value ?? ""
+                ?? c.emails.first?.value ?? ""
             return addr.isEmpty ? c.name : "\(c.name) (\(addr))"
         }.joined(separator: "\n  ")
         throw TextError.ambiguous("\"\(q)\" matches multiple contacts — be more specific:\n  \(candidates)")
@@ -43,8 +43,8 @@ public func resolveTarget(query: String, contacts: [Contact]) throws -> SendResu
 /// Use this before fetching contacts — fetching triggers the system permission prompt.
 public func requiresContactLookup(_ query: String) -> Bool {
     let q = query.trimmingCharacters(in: .whitespaces)
-    let digits = q.filter { $0.isNumber }
-    if (digits.count == 10 || digits.count == 11) && !q.contains("@") { return false }
-    if q.contains("@") && !q.contains(" ") { return false }
+    let digits = q.filter(\.isNumber)
+    if digits.count == 10 || digits.count == 11, !q.contains("@") { return false }
+    if q.contains("@"), !q.contains(" ") { return false }
     return true
 }

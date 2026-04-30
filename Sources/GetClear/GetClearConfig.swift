@@ -7,7 +7,9 @@ public struct GetClearConfig {
 
     public static let empty = GetClearConfig(recapCalendars: nil)
 
-    public var isRecapConfigured: Bool { recapCalendars != nil }
+    public var isRecapConfigured: Bool {
+        recapCalendars != nil
+    }
 }
 
 /// Reads ~/.config/get-clear/config.toml and returns a GetClearConfig.
@@ -26,12 +28,16 @@ public let getClearConfigURL: URL = FileManager.default.homeDirectoryForCurrentU
 
 func parseGetClearConfig(_ toml: String) -> GetClearConfig {
     var inRecap = false
-    var recapCalendars: [String]? = nil
+    var recapCalendars: [String]?
 
     for line in toml.components(separatedBy: "\n") {
         let trimmed = line.trimmingCharacters(in: .whitespaces)
-        if trimmed == "[recap]" { inRecap = true; continue }
-        if trimmed.hasPrefix("[") { inRecap = false; continue }
+        if trimmed == "[recap]" { inRecap = true
+            continue
+        }
+        if trimmed.hasPrefix("[") { inRecap = false
+            continue
+        }
         guard inRecap else { continue }
 
         let parts = trimmed.components(separatedBy: "=")
@@ -44,7 +50,7 @@ func parseGetClearConfig(_ toml: String) -> GetClearConfig {
             .components(separatedBy: "\"")
             .enumerated()
             .filter { $0.offset % 2 == 1 }
-            .map { $0.element }
+            .map(\.element)
             .filter { !$0.isEmpty }
         if !names.isEmpty { recapCalendars = names }
     }

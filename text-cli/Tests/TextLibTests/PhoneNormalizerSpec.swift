@@ -1,9 +1,9 @@
 // PhoneNormalizerSpec.swift
 // Tests for TextLib PhoneNormalizer — phone normalization and display formatting.
 
-import Quick
-import Nimble
 import Foundation
+import Nimble
+import Quick
 import TextLib
 
 final class PhoneNormalizerSpec: QuickSpec {

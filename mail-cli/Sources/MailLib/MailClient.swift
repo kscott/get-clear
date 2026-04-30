@@ -4,32 +4,33 @@
 import Foundation
 
 public struct OutboundEmail: Equatable {
-    public let from:             MailIdentity
-    public let to:               [AddressEntry]
-    public let cc:               [AddressEntry]
-    public let subject:          String
-    public let body:             String
-    public let attachmentPaths:  [String]
+    public let from: MailIdentity
+    public let to: [AddressEntry]
+    public let cc: [AddressEntry]
+    public let subject: String
+    public let body: String
+    public let attachmentPaths: [String]
 
     public init(from: MailIdentity, to: [AddressEntry], cc: [AddressEntry],
-                subject: String, body: String, attachmentPaths: [String]) {
-        self.from            = from
-        self.to              = to
-        self.cc              = cc
-        self.subject         = subject
-        self.body            = body
+                subject: String, body: String, attachmentPaths: [String])
+    {
+        self.from = from
+        self.to = to
+        self.cc = cc
+        self.subject = subject
+        self.body = body
         self.attachmentPaths = attachmentPaths
     }
 }
 
 public struct EmailSummary: Equatable {
-    public let subject:    String
-    public let from:       String
+    public let subject: String
+    public let from: String
     public let receivedAt: String
 
     public init(subject: String, from: String, receivedAt: String) {
-        self.subject    = subject
-        self.from       = from
+        self.subject = subject
+        self.from = from
         self.receivedAt = receivedAt
     }
 }

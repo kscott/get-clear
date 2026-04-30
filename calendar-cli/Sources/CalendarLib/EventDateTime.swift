@@ -6,13 +6,13 @@ import Foundation
 import GetClearKit
 
 public struct EventDateTime {
-    public let start:    Date
-    public let end:      Date?
+    public let start: Date
+    public let end: Date?
     public let isAllDay: Bool
 
     public init(start: Date, end: Date?, isAllDay: Bool) {
-        self.start    = start
-        self.end      = end
+        self.start = start
+        self.end = end
         self.isAllDay = isAllDay
     }
 }
@@ -29,7 +29,8 @@ public struct EventDateTime {
 /// The `relativeTo` parameter anchors all relative date calculations, making
 /// the function testable with a fixed reference date.
 private let timeTokenRegex = try! NSRegularExpression(
-    pattern: #"\b(\d{1,2})(?::(\d{2}))?\s*(am|pm)\b"#, options: .caseInsensitive)
+    pattern: #"\b(\d{1,2})(?::(\d{2}))?\s*(am|pm)\b"#, options: .caseInsensitive
+)
 
 public func parseEventDateTime(_ input: String, relativeTo now: Date = Date()) -> EventDateTime? {
     let cal = Calendar.current
@@ -39,14 +40,12 @@ public func parseEventDateTime(_ input: String, relativeTo now: Date = Date()) -
     func extractHourMinute(_ m: NSTextCheckingResult) -> (Int, Int)? {
         guard let hourRange = Range(m.range(at: 1), in: input),
               let hour = Int(input[hourRange]) else { return nil }
-        let minute: Int
-        if let minRange = Range(m.range(at: 2), in: input) { minute = Int(input[minRange]) ?? 0 }
-        else { minute = 0 }
+        let minute = if let minRange = Range(m.range(at: 2), in: input) { Int(input[minRange]) ?? 0 } else { 0 }
         var h = hour
         if let apRange = Range(m.range(at: 3), in: input) {
             let ap = input[apRange].lowercased()
-            if ap == "pm" && h < 12 { h += 12 }
-            if ap == "am" && h == 12 { h = 0 }
+            if ap == "pm", h < 12 { h += 12 }
+            if ap == "am", h == 12 { h = 0 }
         }
         return (h, minute)
     }
@@ -57,7 +56,7 @@ public func parseEventDateTime(_ input: String, relativeTo now: Date = Date()) -
         guard !trimmed.isEmpty,
               let date = parseSingleDate(trimmed, cal: cal, now: now) else { return nil }
         let start = cal.startOfDay(for: date)
-        let end   = cal.date(byAdding: DateComponents(day: 1, second: -1), to: start)
+        let end = cal.date(byAdding: DateComponents(day: 1, second: -1), to: start)
         return EventDateTime(start: start, end: end, isAllDay: true)
     }
 
@@ -77,13 +76,15 @@ public func parseEventDateTime(_ input: String, relativeTo now: Date = Date()) -
 
     guard let (startH, startM) = extractHourMinute(timeMatches[0]) else { return nil }
     var startComps = cal.dateComponents([.year, .month, .day], from: baseDate)
-    startComps.hour = startH; startComps.minute = startM
+    startComps.hour = startH
+    startComps.minute = startM
     guard let start = cal.date(from: startComps) else { return nil }
 
     let end: Date?
     if timeMatches.count >= 2, let (endH, endM) = extractHourMinute(timeMatches[1]) {
         var endComps = startComps
-        endComps.hour = endH; endComps.minute = endM
+        endComps.hour = endH
+        endComps.minute = endM
         end = cal.date(from: endComps)
     } else {
         end = cal.date(byAdding: .hour, value: 1, to: start)

@@ -1,12 +1,11 @@
-import Quick
-import Nimble
 import ContactKit
-import ContactTestSupport
 import ContactsLib
+import ContactTestSupport
+import Nimble
+import Quick
 
 final class RenameHandlerSpec: AsyncSpec {
     override class func spec() {
-
         var store: SpyContactStore!
         beforeEach { store = SpyContactStore() }
 

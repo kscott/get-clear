@@ -1,10 +1,10 @@
 // MailErrorsSpec.swift
 // Tests for MailLib MailError — error descriptions.
 
-import Quick
-import Nimble
 import Foundation
 import MailLib
+import Nimble
+import Quick
 
 final class MailErrorsSpec: QuickSpec {
     override class func spec() {

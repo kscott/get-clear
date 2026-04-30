@@ -21,9 +21,10 @@ func handleUpdate() async {
     var latestVersion: String
     var downloadURL: String
     if let cached = UpdateChecker.cachedLatest(),
-       Date().timeIntervalSince(cached.checked) < 3600 {
+       Date().timeIntervalSince(cached.checked) < 3600
+    {
         latestVersion = cached.version
-        downloadURL   = cached.url
+        downloadURL = cached.url
     } else {
         print("Checking for latest version...")
         guard let fresh = UpdateChecker.fetchLatestRelease(userAgent: "get-clear/\(builtVersion)") else {
@@ -31,7 +32,7 @@ func handleUpdate() async {
         }
         UpdateChecker.writeCache(version: fresh.version, url: fresh.url)
         latestVersion = fresh.version
-        downloadURL   = fresh.url
+        downloadURL = fresh.url
     }
 
     guard UpdateChecker.isNewer(latestVersion, than: installed) else {
@@ -42,7 +43,7 @@ func handleUpdate() async {
     print("Updating get-clear \(installed) → \(latestVersion)...")
     print("Downloading get-clear \(latestVersion)...")
 
-    let pkgURL  = URL(string: downloadURL)!
+    let pkgURL = URL(string: downloadURL)!
     let tempPkg = URL(fileURLWithPath: "/tmp/get-clear-\(latestVersion).pkg")
     do {
         let (data, _) = try await URLSession.shared.data(from: pkgURL)

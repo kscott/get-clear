@@ -1,8 +1,8 @@
 // UsageTextSpec.swift
 // Tests for TextLib usageText.
 
-import Quick
 import Nimble
+import Quick
 import TextLib
 
 final class UsageTextSpec: QuickSpec {

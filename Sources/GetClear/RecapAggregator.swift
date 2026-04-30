@@ -1,5 +1,5 @@
-import Foundation
 import EventKit
+import Foundation
 import GetClearKit
 
 // MARK: - Types
@@ -16,9 +16,9 @@ public enum RecapGroup {
 
     public var isEmpty: Bool {
         switch self {
-        case .fromCalendar(let e):   return e.isEmpty
-        case .tasksCompleted(let r): return r.isEmpty
-        case .sent(let e):           return e.isEmpty
+        case let .fromCalendar(e): e.isEmpty
+        case let .tasksCompleted(r): r.isEmpty
+        case let .sent(e): e.isEmpty
         }
     }
 }
@@ -27,13 +27,14 @@ public struct RecapResult {
     public let groups: [RecapGroup]
     public let timespan: TimespanResult?
 
-    public var isEmpty: Bool { groups.isEmpty }
+    public var isEmpty: Bool {
+        groups.isEmpty
+    }
 }
 
 // MARK: - Aggregator
 
-public struct RecapAggregator {
-
+public enum RecapAggregator {
     /// Fetches the recap for the given date range.
     /// Requests EventKit access internally.
     /// - Parameter calendarNames: Calendar names to include. nil = all non-system calendars.
@@ -43,7 +44,7 @@ public struct RecapAggregator {
         calendarNames: [String]?,
         baseDirectory: URL? = nil
     ) async -> RecapResult {
-        async let calendarEvents     = fetchCalendarEvents(in: range, store: store, calendarNames: calendarNames)
+        async let calendarEvents = fetchCalendarEvents(in: range, store: store, calendarNames: calendarNames)
         async let completedReminders = fetchCompletedReminders(in: range, store: store)
 
         let (events, reminders) = await (calendarEvents, completedReminders)
@@ -61,9 +62,9 @@ public struct RecapAggregator {
         }
 
         var groups: [RecapGroup] = []
-        if !events.isEmpty    { groups.append(.fromCalendar(events)) }
+        if !events.isEmpty { groups.append(.fromCalendar(events)) }
         if !reminders.isEmpty { groups.append(.tasksCompleted(reminders)) }
-        if !sent.isEmpty      { groups.append(.sent(sent)) }
+        if !sent.isEmpty { groups.append(.sent(sent)) }
 
         return RecapResult(groups: groups, timespan: timespanResult)
     }
@@ -73,7 +74,7 @@ public struct RecapAggregator {
         store: EKEventStore,
         calendarNames: [String]?
     ) async -> [EKEvent] {
-        guard (try? await store.requestFullAccessToEvents()) == true else { return [] }
+        guard await (try? store.requestFullAccessToEvents()) == true else { return [] }
         let calendars = resolveCalendars(names: calendarNames, store: store)
         return fetchPastEvents(in: range, store: store, calendars: calendars)
     }
@@ -82,7 +83,7 @@ public struct RecapAggregator {
         in range: ClosedRange<Date>,
         store: EKEventStore
     ) async -> [EKReminder] {
-        guard (try? await store.requestFullAccessToReminders()) == true else { return [] }
+        guard await (try? store.requestFullAccessToReminders()) == true else { return [] }
         let pred = store.predicateForReminders(in: nil)
         let all: [EKReminder] = await withCheckedContinuation { continuation in
             store.fetchReminders(matching: pred) { continuation.resume(returning: $0 ?? []) }
@@ -99,12 +100,12 @@ public struct RecapAggregator {
     /// If names is nil, returns all user calendars (local/CalDAV/Exchange — excludes Birthdays, Holidays).
     private static func resolveCalendars(names: [String]?, store: EKEventStore) -> [EKCalendar]? {
         let all = store.calendars(for: .event)
-        guard let names = names else {
+        guard let names else {
             // Default: all user-owned calendars (excludes birthday and subscription calendars)
             let user = all.filter {
                 switch $0.type {
-                case .local, .calDAV, .exchange: return true
-                default: return false
+                case .local, .calDAV, .exchange: true
+                default: false
                 }
             }
             return user.isEmpty ? nil : user
@@ -137,9 +138,9 @@ public struct RecapAggregator {
 
         return deduped.filter { event in
             if event.isAllDay {
-                let eventDay   = cal.startOfDay(for: event.startDate)
+                let eventDay = cal.startOfDay(for: event.startDate)
                 let rangeStart = cal.startOfDay(for: range.lowerBound)
-                let rangeEnd   = cal.startOfDay(for: range.upperBound)
+                let rangeEnd = cal.startOfDay(for: range.upperBound)
                 return eventDay >= rangeStart && eventDay <= rangeEnd
             } else {
                 return event.endDate <= now

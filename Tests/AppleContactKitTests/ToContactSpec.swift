@@ -2,24 +2,25 @@
 //
 // Tests for ContactKit toContact — CNContact to Contact conversion.
 
-import Quick
-import Nimble
-import Contacts
-import ContactKit
 @testable import AppleContactKit
+import ContactKit
+import Contacts
+import Nimble
+import Quick
 
 final class ToContactSpec: QuickSpec {
     override class func spec() {
         func makeContact(given: String = "", family: String = "",
                          org: String = "",
                          emails: [(String, String)] = [],
-                         phones: [(String, String)] = []) -> CNMutableContact {
+                         phones: [(String, String)] = []) -> CNMutableContact
+        {
             let c = CNMutableContact()
-            c.givenName        = given
-            c.familyName       = family
+            c.givenName = given
+            c.familyName = family
             c.organizationName = org
-            c.emailAddresses   = emails.map { CNLabeledValue(label: $0.0, value: $0.1 as NSString) }
-            c.phoneNumbers     = phones.map { CNLabeledValue(label: $0.0, value: CNPhoneNumber(stringValue: $0.1)) }
+            c.emailAddresses = emails.map { CNLabeledValue(label: $0.0, value: $0.1 as NSString) }
+            c.phoneNumbers = phones.map { CNLabeledValue(label: $0.0, value: CNPhoneNumber(stringValue: $0.1)) }
             return c
         }
 

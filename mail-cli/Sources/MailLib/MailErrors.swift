@@ -14,12 +14,12 @@ public enum MailError: Error, LocalizedError {
 
     public var errorDescription: String? {
         switch self {
-        case .noToken:                   return "No JMAP token — run 'mail setup' first"
-        case .noConfig:                  return "No config — run 'mail setup' first"
-        case .noMatchingIdentity(let e): return "No identity found for '\(e)' — run 'mail setup' to refresh"
-        case .sendFailed(let m):         return "Send failed: \(m)"
-        case .notFound(let q):           return "Not found: \(q)"
-        case .jmapError(let m):          return "JMAP error: \(m)"
+        case .noToken: "No JMAP token — run 'mail setup' first"
+        case .noConfig: "No config — run 'mail setup' first"
+        case let .noMatchingIdentity(e): "No identity found for '\(e)' — run 'mail setup' to refresh"
+        case let .sendFailed(m): "Send failed: \(m)"
+        case let .notFound(q): "Not found: \(q)"
+        case let .jmapError(m): "JMAP error: \(m)"
         }
     }
 }

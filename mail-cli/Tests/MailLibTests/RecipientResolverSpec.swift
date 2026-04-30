@@ -1,12 +1,12 @@
 // RecipientResolverSpec.swift
 // Tests for MailLib RecipientResolver — recipient resolution and address formatting.
 
-import Quick
-import Nimble
-import Foundation
-import MailLib
 import ContactKit
 import ContactTestSupport
+import Foundation
+import MailLib
+import Nimble
+import Quick
 
 final class RecipientResolverSpec: QuickSpec {
     override class func spec() {
@@ -33,8 +33,8 @@ final class RecipientResolverSpec: QuickSpec {
         let groups: [String: [AddressEntry]] = [
             "Board": [
                 AddressEntry(name: "Alice Smith", email: "alice@example.com"),
-                AddressEntry(name: "Bob Jones",   email: "bob@jones.org"),
-            ],
+                AddressEntry(name: "Bob Jones", email: "bob@jones.org")
+            ]
         ]
 
         describe("resolveRecipients") {
@@ -111,7 +111,7 @@ final class RecipientResolverSpec: QuickSpec {
                 }
                 it("expands multiple to recipients") {
                     let (to, _) = buildRecipients(to: ["Alice Smith", "bob@jones.org"], cc: [],
-                                                   groups: groups, contacts: contacts)
+                                                  groups: groups, contacts: contacts)
                     expect(to.count) == 2
                 }
             }
@@ -119,12 +119,12 @@ final class RecipientResolverSpec: QuickSpec {
             context("cc field") {
                 it("resolves a cc recipient") {
                     let (_, cc) = buildRecipients(to: ["bob"], cc: ["alice@work.com"],
-                                                   groups: groups, contacts: contacts)
+                                                  groups: groups, contacts: contacts)
                     expect(cc.first?.email) == "alice@work.com"
                 }
                 it("resolves multiple cc entries") {
                     let (_, cc) = buildRecipients(to: ["bob"], cc: ["alice@work.com", "cbrown@peanuts.com"],
-                                                   groups: groups, contacts: contacts)
+                                                  groups: groups, contacts: contacts)
                     expect(cc.count) == 2
                 }
             }
@@ -133,7 +133,7 @@ final class RecipientResolverSpec: QuickSpec {
                 it("cc resolves identically to a direct resolveRecipients call") {
                     let direct = resolveRecipients("alice@work.com", groups: groups, contacts: contacts)
                     let (_, cc) = buildRecipients(to: ["bob"], cc: ["alice@work.com"],
-                                                   groups: groups, contacts: contacts)
+                                                  groups: groups, contacts: contacts)
                     expect(cc) == direct
                 }
             }

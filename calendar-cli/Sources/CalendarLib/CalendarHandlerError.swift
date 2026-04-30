@@ -4,5 +4,7 @@ import Foundation
 
 public struct CalendarHandlerError: Error, CustomStringConvertible {
     public let description: String
-    public init(_ message: String) { self.description = message }
+    public init(_ message: String) {
+        description = message
+    }
 }

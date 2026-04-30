@@ -6,7 +6,7 @@ import GetClearKit
 public func handleNext(
     args: [String], store: any CalendarStore, calFilter: String?, config: CalendarConfig
 ) async throws -> String {
-    let n   = args.count > 1 ? (Int(args[1]) ?? 5) : 5
+    let n = args.count > 1 ? (Int(args[1]) ?? 5) : 5
     let now = Date()
     let ids = try await resolvedIdentifiers(calFilter: calFilter, config: config, store: store)
     if ids?.isEmpty == true { fail("No calendars matched filter '\(calFilter!)'") }
@@ -15,9 +15,9 @@ public func handleNext(
         .prefix(n)
     if upcoming.isEmpty { return "No upcoming events in the next 90 days" }
     return upcoming.map { e in
-        let lbl  = nextRelativeLabel(for: e.startDate, relativeTo: now)
+        let lbl = nextRelativeLabel(for: e.startDate, relativeTo: now)
         let time = e.isAllDay ? "All day  " : formatEventTime(e.startDate)
-        var txt  = e.title
+        var txt = e.title
         if let loc = e.location, !loc.isEmpty {
             txt += " · " + (loc.components(separatedBy: "\n").first ?? loc)
         }

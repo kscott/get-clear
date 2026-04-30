@@ -7,7 +7,7 @@ let package = Package(
     dependencies: [
         .package(url: "https://github.com/kscott/get-clear.git", branch: "main"),
         .package(url: "https://github.com/Quick/Quick.git", from: "7.0.0"),
-        .package(url: "https://github.com/Quick/Nimble.git", from: "13.0.0"),
+        .package(url: "https://github.com/Quick/Nimble.git", from: "13.0.0")
     ],
     targets: [
         // Pure logic — no Apple framework dependencies, fully testable
@@ -21,7 +21,7 @@ let package = Package(
             name: "RemindersEventKit",
             dependencies: [
                 "RemindersLib",
-                .product(name: "GetClearKit", package: "get-clear"),
+                .product(name: "GetClearKit", package: "get-clear")
             ],
             path: "Sources/RemindersEventKit"
         ),
@@ -30,12 +30,12 @@ let package = Package(
             name: "reminders-bin",
             dependencies: [
                 "RemindersEventKit",
-                .product(name: "GetClearKit", package: "get-clear"),
+                .product(name: "GetClearKit", package: "get-clear")
             ],
             path: "Sources/RemindersCLI",
             linkerSettings: [
                 .linkedFramework("EventKit"),
-                .linkedFramework("AppKit"),
+                .linkedFramework("AppKit")
             ]
         ),
         // Test suite — run via: swift test
@@ -45,9 +45,9 @@ let package = Package(
                 "RemindersLib",
                 .product(name: "GetClearKit", package: "get-clear"),
                 .product(name: "Quick", package: "Quick"),
-                .product(name: "Nimble", package: "Nimble"),
+                .product(name: "Nimble", package: "Nimble")
             ],
             path: "Tests/RemindersLibTests"
-        ),
+        )
     ]
 )

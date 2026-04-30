@@ -1,14 +1,13 @@
 // WhatHandlerSpec.swift
 // Tests for MailLib handleWhat.
 
-import Quick
-import Nimble
 import Foundation
 import MailLib
+import Nimble
+import Quick
 
 final class MailWhatHandlerSpec: QuickSpec {
     override class func spec() {
-
         describe("handleWhat") {
             it("returns output for the default range") {
                 expect { try handleWhat(args: ["what"]) }.notTo(throwError())

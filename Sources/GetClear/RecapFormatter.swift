@@ -1,8 +1,8 @@
 // RecapFormatter.swift
 // Formats recap output for terminal display.
 
-import Foundation
 import EventKit
+import Foundation
 import GetClearKit
 
 // MARK: - Calendar dot
@@ -19,7 +19,9 @@ func calendarDot(_ calendar: EKCalendar) -> String {
         b = Int(components[2] * 255)
     } else if colorSpace == .monochrome, components.count >= 1 {
         let w = Int(components[0] * 255)
-        r = w; g = w; b = w
+        r = w
+        g = w
+        b = w
     } else {
         return "  "
     }
@@ -49,17 +51,17 @@ func formatRecapGroups(_ groups: [RecapGroup]) -> [String] {
         let label: String
         let items: [String]
         switch group {
-        case .fromCalendar(let events):
+        case let .fromCalendar(events):
             label = "From your calendar"
             items = events.map { $0.title ?? "(no title)" }
-        case .tasksCompleted(let reminders):
+        case let .tasksCompleted(reminders):
             label = "Tasks completed"
             items = reminders.map { rem in
                 let title = rem.title ?? "(no title)"
                 if let list = rem.calendar?.title { return "\(title) [\(list)]" }
                 return title
             }
-        case .sent(let entries):
+        case let .sent(entries):
             label = "Sent"
             items = entries.map { formatSentItem($0) }
         }
@@ -81,7 +83,7 @@ func formatRecap(
     let fr018Active = isToday && !cal.isDateInToday(dateUsed)
 
     if result.isEmpty {
-        if isToday && !fr018Active {
+        if isToday, !fr018Active {
             return "Quiet so far. Ready for the next thing."
         } else {
             return "Nothing recorded \(rangeStr)."
@@ -106,9 +108,9 @@ func formatRecap(
         }
         for group in result.groups {
             switch group {
-            case .fromCalendar(let events):   events.forEach { registerDay($0.startDate) }
-            case .tasksCompleted(let rems):   rems.forEach { if let cd = $0.completionDate { registerDay(cd) } }
-            case .sent(let entries):          entries.forEach { registerDay($0.ts) }
+            case let .fromCalendar(events): events.forEach { registerDay($0.startDate) }
+            case let .tasksCompleted(rems): rems.forEach { if let cd = $0.completionDate { registerDay(cd) } }
+            case let .sent(entries): entries.forEach { registerDay($0.ts) }
             }
         }
         for (i, day) in days.sorted().enumerated() {
@@ -118,13 +120,13 @@ func formatRecap(
             var dayGroups: [RecapGroup] = []
             for group in result.groups {
                 switch group {
-                case .fromCalendar(let events):
+                case let .fromCalendar(events):
                     let d = events.filter { cal.isDate($0.startDate, inSameDayAs: day) }
                     if !d.isEmpty { dayGroups.append(.fromCalendar(d)) }
-                case .tasksCompleted(let rems):
+                case let .tasksCompleted(rems):
                     let d = rems.filter { $0.completionDate.map { cal.isDate($0, inSameDayAs: day) } ?? false }
                     if !d.isEmpty { dayGroups.append(.tasksCompleted(d)) }
-                case .sent(let entries):
+                case let .sent(entries):
                     let d = entries.filter { cal.isDate($0.ts, inSameDayAs: day) }
                     if !d.isEmpty { dayGroups.append(.sent(d)) }
                 }

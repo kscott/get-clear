@@ -26,17 +26,20 @@ public struct Contact: Equatable, Sendable {
     public let phones: [ContactField]
     public let company: String
 
-    public var displayName: String { name.isEmpty ? company : name }
+    public var displayName: String {
+        name.isEmpty ? company : name
+    }
 
     public init(identifier: String,
                 name: String,
                 emails: [ContactField],
                 phones: [ContactField],
-                company: String) {
+                company: String)
+    {
         self.identifier = identifier
-        self.name       = name
-        self.emails     = emails
-        self.phones     = phones
-        self.company    = company
+        self.name = name
+        self.emails = emails
+        self.phones = phones
+        self.company = company
     }
 }

@@ -17,7 +17,9 @@ public struct ReminderItem: Equatable {
     public let url: URL?
     public let creationDate: Date?
 
-    public var hasRecurrenceRules: Bool { recurrenceDescription != nil }
+    public var hasRecurrenceRules: Bool {
+        recurrenceDescription != nil
+    }
 
     public init(
         identifier: String = "",
@@ -31,15 +33,15 @@ public struct ReminderItem: Equatable {
         url: URL? = nil,
         creationDate: Date? = nil
     ) {
-        self.identifier            = identifier
-        self.title                 = title
-        self.list                  = list
-        self.dueDateComponents     = dueDateComponents
+        self.identifier = identifier
+        self.title = title
+        self.list = list
+        self.dueDateComponents = dueDateComponents
         self.recurrenceDescription = recurrenceDescription
-        self.recurrenceSpec        = recurrenceSpec
-        self.priority              = priority
-        self.notes                 = notes
-        self.url                   = url
-        self.creationDate          = creationDate
+        self.recurrenceSpec = recurrenceSpec
+        self.priority = priority
+        self.notes = notes
+        self.url = url
+        self.creationDate = creationDate
     }
 }

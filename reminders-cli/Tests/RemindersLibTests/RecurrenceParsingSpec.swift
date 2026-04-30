@@ -2,9 +2,9 @@
 //
 // Tests for RecurrenceParsing — natural-language recurrence string parsing.
 
-import Quick
-import Nimble
 import Foundation
+import Nimble
+import Quick
 import RemindersLib
 
 final class RecurrenceParsingSpec: QuickSpec {
@@ -275,12 +275,12 @@ final class RecurrenceParsingSpec: QuickSpec {
             context("ordinal weekday") {
                 it("describes last tuesday of the month") {
                     let spec = RecurrenceSpec(frequency: .monthly, interval: 1,
-                        ordinalWeekday: .init(weekday: 3, weekNumber: -1))
+                                              ordinalWeekday: .init(weekday: 3, weekNumber: -1))
                     expect(describeRecurrence(spec)) == "repeat last tuesday of the month"
                 }
                 it("describes first friday of the month") {
                     let spec = RecurrenceSpec(frequency: .monthly, interval: 1,
-                        ordinalWeekday: .init(weekday: 6, weekNumber: 1))
+                                              ordinalWeekday: .init(weekday: 6, weekNumber: 1))
                     expect(describeRecurrence(spec)) == "repeat first friday of the month"
                 }
             }

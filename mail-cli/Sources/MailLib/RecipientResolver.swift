@@ -1,15 +1,15 @@
 // RecipientResolver.swift
 // Resolve a recipient string to one or more email addresses.
 
-import Foundation
 import ContactKit
+import Foundation
 
 public struct AddressEntry: Equatable {
-    public let name:  String
+    public let name: String
     public let email: String
 
     public init(name: String, email: String) {
-        self.name  = name
+        self.name = name
         self.email = email
     }
 
@@ -33,9 +33,9 @@ public func requiresContactLookup(_ query: String) -> Bool {
 ///   3. Fuzzy contact match via matchContacts → primary email
 ///   4. No match → empty array
 public func resolveRecipients(
-    _ input:   String,
-    groups:    [String: [AddressEntry]],
-    contacts:  [Contact]
+    _ input: String,
+    groups: [String: [AddressEntry]],
+    contacts: [Contact]
 ) -> [AddressEntry] {
     let q = input.trimmingCharacters(in: .whitespaces)
 
@@ -63,9 +63,9 @@ public func resolveRecipients(
 
 /// Resolve to and cc fields for a send operation.
 public func buildRecipients(
-    to:       [String],
-    cc:       [String],
-    groups:   [String: [AddressEntry]],
+    to: [String],
+    cc: [String],
+    groups: [String: [AddressEntry]],
     contacts: [Contact]
 ) -> (to: [AddressEntry], cc: [AddressEntry]) {
     let toAddrs = to.flatMap { resolveRecipients($0, groups: groups, contacts: contacts) }

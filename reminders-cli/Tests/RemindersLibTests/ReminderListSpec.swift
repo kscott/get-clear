@@ -1,5 +1,5 @@
-import Quick
 import Nimble
+import Quick
 @testable import RemindersLib
 
 final class ReminderListSpec: QuickSpec {

@@ -1,12 +1,11 @@
-import Quick
-import Nimble
 import ContactKit
-import ContactTestSupport
 import ContactsLib
+import ContactTestSupport
+import Nimble
+import Quick
 
 final class AddHandlerSpec: AsyncSpec {
     override class func spec() {
-
         var store: SpyContactStore!
         beforeEach { store = SpyContactStore() }
 
@@ -32,7 +31,7 @@ final class AddHandlerSpec: AsyncSpec {
         describe("handleAdd (to group)") {
             it("calls store.add(identifier:to:) and returns confirmation") {
                 store.contacts = [aliceContact]
-                store.groups   = [ContactGroup(identifier: "g1", name: "Friends")]
+                store.groups = [ContactGroup(identifier: "g1", name: "Friends")]
                 let out = try await handleAdd(args: ["add", "alice", "to", "Friends"], store: store)
                 expect(store.addedToGroup.count) == 1
                 expect(store.addedToGroup.first?.identifier) == "alice-id"

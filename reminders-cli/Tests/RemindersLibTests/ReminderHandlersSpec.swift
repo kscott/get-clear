@@ -1,39 +1,62 @@
 // ReminderHandlersSpec.swift
 // Tests for store-dependent handlers — each handler returns a String, throws ReminderHandlerError.
 
-import Quick
-import Nimble
 import Foundation
 import GetClearKit
+import Nimble
+import Quick
 import RemindersLib
 
 // MARK: - Mock
 
 final class SpyStore: ReminderStore {
-    var lists: [ReminderList]  = []
-    var items: [ReminderItem]  = []
+    var lists: [ReminderList] = []
+    var items: [ReminderItem] = []
 
-    var addedItems:   [ReminderItem]                         = []
-    var completedIds: [String]                               = []
-    var deletedIds:   [String]                               = []
-    var renamedItems: [(id: String, to: String)]             = []
+    var addedItems: [ReminderItem] = []
+    var completedIds: [String] = []
+    var deletedIds: [String] = []
+    var renamedItems: [(id: String, to: String)] = []
     var updatedItems: [(id: String, changes: ReminderChanges)] = []
 
-    func fetchLists() async throws -> [ReminderList]                              { lists }
-    func defaultList() async throws -> ReminderList                               { lists.first ?? ReminderList(title: "Reminders") }
-    func fetchIncomplete(in list: ReminderList?) async throws -> [ReminderItem]   { items }
-    func add(_ item: ReminderItem) async throws -> ReminderItem                   { addedItems.append(item); return item }
-    func update(identifier: String, changes: ReminderChanges) async throws        { updatedItems.append((identifier, changes)) }
-    func complete(identifier: String) async throws                                { completedIds.append(identifier) }
-    func rename(identifier: String, to title: String) async throws                { renamedItems.append((identifier, title)) }
-    func delete(identifier: String) async throws                                  { deletedIds.append(identifier) }
+    func fetchLists() async throws -> [ReminderList] {
+        lists
+    }
+
+    func defaultList() async throws -> ReminderList {
+        lists.first ?? ReminderList(title: "Reminders")
+    }
+
+    func fetchIncomplete(in list: ReminderList?) async throws -> [ReminderItem] {
+        items
+    }
+
+    func add(_ item: ReminderItem) async throws -> ReminderItem {
+        addedItems.append(item)
+        return item
+    }
+
+    func update(identifier: String, changes: ReminderChanges) async throws {
+        updatedItems.append((identifier, changes))
+    }
+
+    func complete(identifier: String) async throws {
+        completedIds.append(identifier)
+    }
+
+    func rename(identifier: String, to title: String) async throws {
+        renamedItems.append((identifier, title))
+    }
+
+    func delete(identifier: String) async throws {
+        deletedIds.append(identifier)
+    }
 }
 
 // MARK: - Spec
 
 final class ReminderHandlersSpec: AsyncSpec {
     override class func spec() {
-
         var store: SpyStore!
 
         beforeEach { store = SpyStore() }

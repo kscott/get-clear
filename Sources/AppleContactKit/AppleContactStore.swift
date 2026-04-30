@@ -2,20 +2,20 @@
 //
 // Apple Contacts backend — implements ContactStore using Contacts.framework.
 
-import Foundation
-@preconcurrency import Contacts
 import ContactKit
+@preconcurrency import Contacts
+import Foundation
 
 private let keysToFetch: [CNKeyDescriptor] = [
-    CNContactIdentifierKey        as CNKeyDescriptor,
-    CNContactGivenNameKey         as CNKeyDescriptor,
-    CNContactFamilyNameKey        as CNKeyDescriptor,
-    CNContactOrganizationNameKey  as CNKeyDescriptor,
-    CNContactEmailAddressesKey    as CNKeyDescriptor,
-    CNContactPhoneNumbersKey      as CNKeyDescriptor,
+    CNContactIdentifierKey as CNKeyDescriptor,
+    CNContactGivenNameKey as CNKeyDescriptor,
+    CNContactFamilyNameKey as CNKeyDescriptor,
+    CNContactOrganizationNameKey as CNKeyDescriptor,
+    CNContactEmailAddressesKey as CNKeyDescriptor,
+    CNContactPhoneNumbersKey as CNKeyDescriptor
 ]
 
-internal func cleanLabel(_ raw: String) -> String {
+func cleanLabel(_ raw: String) -> String {
     var s = raw
     if s.hasPrefix("_$!<") { s = String(s.dropFirst(4)) }
     if s.hasSuffix(">!$_") { s = String(s.dropLast(4)) }
@@ -25,16 +25,16 @@ internal func cleanLabel(_ raw: String) -> String {
 func toContact(_ c: CNContact) -> Contact {
     Contact(
         identifier: c.identifier,
-        name:    [c.givenName, c.familyName].filter { !$0.isEmpty }.joined(separator: " "),
-        emails:  c.emailAddresses.map { ContactField(label: cleanLabel($0.label ?? ""), value: $0.value as String) },
-        phones:  c.phoneNumbers.map   { ContactField(label: cleanLabel($0.label ?? ""), value: $0.value.stringValue) },
+        name: [c.givenName, c.familyName].filter { !$0.isEmpty }.joined(separator: " "),
+        emails: c.emailAddresses.map { ContactField(label: cleanLabel($0.label ?? ""), value: $0.value as String) },
+        phones: c.phoneNumbers.map { ContactField(label: cleanLabel($0.label ?? ""), value: $0.value.stringValue) },
         company: c.organizationName
     )
 }
 
 private func setName(_ name: String, on contact: CNMutableContact) {
     let parts = name.components(separatedBy: " ")
-    contact.givenName  = parts.first ?? ""
+    contact.givenName = parts.first ?? ""
     contact.familyName = parts.count > 1 ? parts.dropFirst().joined(separator: " ") : ""
 }
 
@@ -43,11 +43,11 @@ private func applyChanges(_ changes: ContactChanges, to contact: inout CNMutable
     case .unchanged: break
     case .cleared:
         contact.emailAddresses = []
-    case .added(let v):
+    case let .added(v):
         contact.emailAddresses.append(CNLabeledValue(label: CNLabelWork, value: v as NSString))
-    case .removed(let v):
+    case let .removed(v):
         contact.emailAddresses.removeAll { ($0.value as String).caseInsensitiveCompare(v) == .orderedSame }
-    case .replaced(let from, let to):
+    case let .replaced(from, to):
         if let idx = contact.emailAddresses.firstIndex(where: { ($0.value as String).caseInsensitiveCompare(from) == .orderedSame }) {
             let label = contact.emailAddresses[idx].label
             contact.emailAddresses[idx] = CNLabeledValue(label: label, value: to as NSString)
@@ -60,11 +60,11 @@ private func applyChanges(_ changes: ContactChanges, to contact: inout CNMutable
     case .unchanged: break
     case .cleared:
         contact.phoneNumbers = []
-    case .added(let v):
+    case let .added(v):
         contact.phoneNumbers.append(CNLabeledValue(label: CNLabelPhoneNumberMobile, value: CNPhoneNumber(stringValue: v)))
-    case .removed(let v):
+    case let .removed(v):
         contact.phoneNumbers.removeAll { $0.value.stringValue.caseInsensitiveCompare(v) == .orderedSame }
-    case .replaced(let from, let to):
+    case let .replaced(from, to):
         if let idx = contact.phoneNumbers.firstIndex(where: { $0.value.stringValue.caseInsensitiveCompare(from) == .orderedSame }) {
             let label = contact.phoneNumbers[idx].label
             contact.phoneNumbers[idx] = CNLabeledValue(label: label, value: CNPhoneNumber(stringValue: to))
@@ -77,7 +77,7 @@ private func applyChanges(_ changes: ContactChanges, to contact: inout CNMutable
     case .unchanged: break
     case .cleared:
         contact.organizationName = ""
-    case .replaced(_, let to):
+    case let .replaced(_, to):
         contact.organizationName = to
     case .added, .removed:
         break // parser never produces these for company
@@ -88,7 +88,7 @@ public final class AppleContactStore: ContactStore {
     private let cnStore: CNContactStore
 
     public init(store: CNContactStore = CNContactStore()) {
-        self.cnStore = store
+        cnStore = store
     }
 
     public func fetchGroups() async throws -> [ContactGroup] {
@@ -171,19 +171,23 @@ public final class AppleContactStore: ContactStore {
 
         let savedStderrFd = dup(STDERR_FILENO)
         freopen("/dev/null", "w", stderr)
-        var saved = false; var lastError: Error?
+        var saved = false
+        var lastError: Error?
         for source in sources {
             var m = source.mutableCopy() as! CNMutableContact
             applyChanges(changes, to: &m)
-            let req = CNSaveRequest(); req.update(m)
-            do { try cnStore.execute(req); saved = true; break }
-            catch { lastError = error }
+            let req = CNSaveRequest()
+            req.update(m)
+            do { try cnStore.execute(req)
+                saved = true
+                break
+            } catch { lastError = error }
         }
         dup2(savedStderrFd, STDERR_FILENO)
         close(savedStderrFd)
 
         if !saved {
-            if let err = lastError as NSError?, err.code == 134092 {
+            if let err = lastError as NSError?, err.code == 134_092 {
                 throw ContactStoreError.conflict
             }
             throw lastError ?? ContactStoreError.notFound(identifier)
@@ -194,14 +198,16 @@ public final class AppleContactStore: ContactStore {
         let unified = try cnStore.unifiedContact(withIdentifier: identifier, keysToFetch: keysToFetch)
         let mutable = unified.mutableCopy() as! CNMutableContact
         setName(newName, on: mutable)
-        let request = CNSaveRequest(); request.update(mutable)
+        let request = CNSaveRequest()
+        request.update(mutable)
         try cnStore.execute(request)
     }
 
     public func delete(identifier: String) async throws {
         let unified = try cnStore.unifiedContact(withIdentifier: identifier, keysToFetch: keysToFetch)
         let mutable = unified.mutableCopy() as! CNMutableContact
-        let request = CNSaveRequest(); request.delete(mutable)
+        let request = CNSaveRequest()
+        request.delete(mutable)
         try cnStore.execute(request)
     }
 }

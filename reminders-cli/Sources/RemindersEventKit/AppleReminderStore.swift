@@ -12,18 +12,19 @@ enum AppleStoreError: LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .noDefaultList:             return "No default reminders list found"
-        case .listNotFound(let name):    return "List not found: \(name)"
-        case .reminderNotFound(let id):  return "Reminder not found: \(id)"
+        case .noDefaultList: "No default reminders list found"
+        case let .listNotFound(name): "List not found: \(name)"
+        case let .reminderNotFound(id): "Reminder not found: \(id)"
         }
     }
 }
 
 public final class AppleReminderStore: ReminderStore {
-
     private let ek: EKEventStore
 
-    public init(_ store: EKEventStore) { self.ek = store }
+    public init(_ store: EKEventStore) {
+        ek = store
+    }
 
     public func fetchLists() async throws -> [ReminderList] {
         ek.calendars(for: .reminder).map(ReminderList.init(ekCalendar:))
@@ -37,13 +38,12 @@ public final class AppleReminderStore: ReminderStore {
     }
 
     public func fetchIncomplete(in list: ReminderList?) async throws -> [ReminderItem] {
-        let scope: [EKCalendar]
-        if let list {
-            scope = ek.calendars(for: .reminder).filter {
+        let scope: [EKCalendar] = if let list {
+            ek.calendars(for: .reminder).filter {
                 list.matches(identifier: $0.calendarIdentifier, title: $0.title)
             }
         } else {
-            scope = ek.calendars(for: .reminder)
+            ek.calendars(for: .reminder)
         }
         let predicate = ek.predicateForIncompleteReminders(withDueDateStarting: nil, ending: nil, calendars: scope)
         return await withCheckedContinuation { continuation in
@@ -57,21 +57,21 @@ public final class AppleReminderStore: ReminderStore {
         guard let cal = calendar(for: item.list) else {
             throw AppleStoreError.listNotFound(item.list.title)
         }
-        let reminder       = EKReminder(eventStore: ek)
-        reminder.title     = item.title
-        reminder.calendar  = cal
+        let reminder = EKReminder(eventStore: ek)
+        reminder.title = item.title
+        reminder.calendar = cal
         reminder.dueDateComponents = item.dueDateComponents
         if let spec = item.recurrenceSpec { reminder.addRecurrenceRule(toEKRule(spec)) }
         reminder.priority = item.priority
-        reminder.notes    = item.notes
-        reminder.url      = item.url
+        reminder.notes = item.notes
+        reminder.url = item.url
         try ek.save(reminder, commit: true)
         return ReminderItem(reminder)
     }
 
     public func update(identifier: String, changes: ReminderChanges) async throws {
         let reminder = try ekReminder(identifier: identifier)
-        if case .replaced(_, let targetName) = changes.list {
+        if case let .replaced(_, targetName) = changes.list {
             guard let cal = calendar(for: ReminderList(title: targetName)) else {
                 throw AppleStoreError.listNotFound(targetName)
             }
@@ -119,15 +119,15 @@ public final class AppleReminderStore: ReminderStore {
 extension ReminderItem {
     init(_ r: EKReminder) {
         self.init(
-            identifier:            r.calendarItemIdentifier,
-            title:                 r.title ?? "",
-            list:                  ReminderList(ekCalendar: r.calendar),
-            dueDateComponents:     r.dueDateComponents,
+            identifier: r.calendarItemIdentifier,
+            title: r.title ?? "",
+            list: ReminderList(ekCalendar: r.calendar),
+            dueDateComponents: r.dueDateComponents,
             recurrenceDescription: r.recurrenceRules?.first.map { describeEKRule($0) },
-            priority:              r.priority,
-            notes:                 r.notes,
-            url:                   r.url,
-            creationDate:          r.creationDate
+            priority: r.priority,
+            notes: r.notes,
+            url: r.url,
+            creationDate: r.creationDate
         )
     }
 }
@@ -137,9 +137,14 @@ private func hexColor(from cgColor: CGColor?) -> String? {
     let r, g, b: Int
     switch cg.colorSpace?.model {
     case .rgb where components.count >= 3:
-        r = Int(components[0] * 255); g = Int(components[1] * 255); b = Int(components[2] * 255)
+        r = Int(components[0] * 255)
+        g = Int(components[1] * 255)
+        b = Int(components[2] * 255)
     case .monochrome where components.count >= 1:
-        let w = Int(components[0] * 255); r = w; g = w; b = w
+        let w = Int(components[0] * 255)
+        r = w
+        g = w
+        b = w
     default: return nil
     }
     return String(format: "%02X%02X%02X", r, g, b)
@@ -148,10 +153,10 @@ private func hexColor(from cgColor: CGColor?) -> String? {
 extension ReminderList {
     init(ekCalendar cal: EKCalendar) {
         self.init(
-            identifier:   cal.calendarIdentifier,
-            title:        cal.title,
-            color:        hexColor(from: cal.cgColor),
-            source:       cal.source.title,
+            identifier: cal.calendarIdentifier,
+            title: cal.title,
+            color: hexColor(from: cal.cgColor),
+            source: cal.source.title,
             isModifiable: cal.allowsContentModifications
         )
     }
@@ -165,7 +170,8 @@ private func toEKRule(_ spec: RecurrenceSpec) -> EKRecurrenceRule {
     if let ow = spec.ordinalWeekday {
         let dow = EKRecurrenceDayOfWeek(
             dayOfTheWeek: EKWeekday(rawValue: ow.weekday)!,
-            weekNumber: ow.weekNumber)
+            weekNumber: ow.weekNumber
+        )
         return monthlyEKRule(daysOfTheWeek: [dow])
     }
     if let day = spec.dayOfMonth {
@@ -192,32 +198,31 @@ private func describeEKRule(_ rule: EKRecurrenceRule) -> String {
 
 private func applyChanges(_ changes: ReminderChanges, to reminder: EKReminder) {
     switch changes.due {
-    case .cleared:                                  reminder.dueDateComponents = nil
-    case .added(let c), .replaced(_, let c):        reminder.dueDateComponents = c
+    case .cleared: reminder.dueDateComponents = nil
+    case let .added(c), let .replaced(_, c): reminder.dueDateComponents = c
     default: break
     }
 
     switch changes.recurrence {
     case .cleared:
         reminder.recurrenceRules?.forEach { reminder.removeRecurrenceRule($0) }
-    case .added(let spec), .replaced(_, let spec):
+    case let .added(spec), let .replaced(_, spec):
         reminder.recurrenceRules?.forEach { reminder.removeRecurrenceRule($0) }
         reminder.addRecurrenceRule(toEKRule(spec))
     default: break
     }
 
-    if case .replaced(_, let p) = changes.priority { reminder.priority = p }
+    if case let .replaced(_, p) = changes.priority { reminder.priority = p }
 
     switch changes.note {
-    case .cleared:                              reminder.notes = nil
-    case .added(let n), .replaced(_, let n):    reminder.notes = n
+    case .cleared: reminder.notes = nil
+    case let .added(n), let .replaced(_, n): reminder.notes = n
     default: break
     }
 
     switch changes.url {
-    case .cleared:                              reminder.url = nil
-    case .added(let u), .replaced(_, let u):    reminder.url = u
+    case .cleared: reminder.url = nil
+    case let .added(u), let .replaced(_, u): reminder.url = u
     default: break
     }
 }
-

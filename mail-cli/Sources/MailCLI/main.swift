@@ -2,11 +2,11 @@
 // Entry point for mail-bin. Dispatch only — all logic lives in MailLib or MailClientFactory.
 
 import AppKit
-import MailLib
-import MailClientFactory
 import GetClearKit
+import MailClientFactory
+import MailLib
 
-let args   = Array(CommandLine.arguments.dropFirst())
+let args = Array(CommandLine.arguments.dropFirst())
 let config = (try? loadConfig()) ?? MailConfig(defaultFrom: "", identities: [])
 
 await runCLI(args: args, identity: identity, usage: usage) { command, args in
@@ -15,7 +15,7 @@ await runCLI(args: args, identity: identity, usage: usage) { command, args in
         return
     }
     if command == .what {
-        print(try handleWhat(args: args))
+        try print(handleWhat(args: args))
         return
     }
 
@@ -23,10 +23,10 @@ await runCLI(args: args, identity: identity, usage: usage) { command, args in
 
     switch command {
     case .setup: try await handleSetup(args: args, client: client)
-    case .find:  print(try await handleFind(args: args, client: client))
+    case .find: try await print(handleFind(args: args, client: client))
     case .send:
         let store = await makeStore()
-        print(try await handleSend(args: args, config: config, client: client, contactStore: store))
+        try await print(handleSend(args: args, config: config, client: client, contactStore: store))
     default:
         print(usage())
     }

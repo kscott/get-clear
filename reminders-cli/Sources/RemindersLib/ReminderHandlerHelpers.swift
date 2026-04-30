@@ -7,9 +7,9 @@ import GetClearKit
 func storeError(title: String, list: ReminderList?, cmd: String, _ err: ReminderStoreError) -> ReminderHandlerError {
     switch err {
     case .notFound:
-        return ReminderHandlerError(notFoundMessage(title: title, list: list?.title))
-    case .ambiguous(let matches):
-        return ReminderHandlerError(disambiguationMessage(title: title, matches: matches, cmd: cmd))
+        ReminderHandlerError(notFoundMessage(title: title, list: list?.title))
+    case let .ambiguous(matches):
+        ReminderHandlerError(disambiguationMessage(title: title, matches: matches, cmd: cmd))
     }
 }
 
@@ -22,7 +22,7 @@ func resolvedList(named name: String?, from lists: [ReminderList]) throws -> Rem
 }
 
 func resolvedList(named name: String?, from store: any ReminderStore) async throws -> ReminderList? {
-    try resolvedList(named: name, from: try await store.fetchLists())
+    try await resolvedList(named: name, from: store.fetchLists())
 }
 
 func dateComponents(from pd: ParsedDate) -> DateComponents {

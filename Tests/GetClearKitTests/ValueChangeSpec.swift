@@ -1,6 +1,6 @@
-import Quick
-import Nimble
 import GetClearKit
+import Nimble
+import Quick
 
 final class ValueChangeSpec: QuickSpec {
     override class func spec() {

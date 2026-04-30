@@ -2,10 +2,10 @@
 //
 // Tests for ContactKit cleanLabel — strips Apple CNLabel format wrapping.
 
-import Quick
-import Nimble
-import Foundation
 @testable import AppleContactKit
+import Foundation
+import Nimble
+import Quick
 
 final class CleanLabelSpec: QuickSpec {
     override class func spec() {

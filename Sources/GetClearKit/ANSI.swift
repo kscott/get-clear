@@ -7,11 +7,8 @@ import Foundation
 ///   - stdout is not a terminal (piped, redirected, captured by completions)
 ///   - the NO_COLOR environment variable is set (https://no-color.org)
 public enum ANSI {
-
-    public static let enabled: Bool = {
-        ProcessInfo.processInfo.environment["NO_COLOR"] == nil &&
+    public static let enabled: Bool = ProcessInfo.processInfo.environment["NO_COLOR"] == nil &&
         isatty(STDOUT_FILENO) != 0
-    }()
 
     /// Primary identifier — name, title. Draws the eye in a list.
     public static func bold(_ s: String) -> String {

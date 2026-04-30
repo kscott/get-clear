@@ -1,7 +1,7 @@
-import Quick
-import Nimble
-import Foundation
 import ContactsLib
+import Foundation
+import Nimble
+import Quick
 
 final class OpenHandlerSpec: QuickSpec {
     override class func spec() {

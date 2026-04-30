@@ -14,10 +14,10 @@ public func sorted(_ items: [ReminderItem], by order: ReminderSortOrder) -> [Rem
 /// Returns the sort comparator for `order`, for use when sorting paired arrays in CLI.
 public func comparator(for order: ReminderSortOrder) -> (ReminderItem, ReminderItem) -> Bool {
     switch order {
-    case .due:      return byDue
-    case .priority: return byPriority
-    case .title:    return byTitle
-    case .created:  return byCreated
+    case .due: byDue
+    case .priority: byPriority
+    case .title: byTitle
+    case .created: byCreated
     }
 }
 
@@ -27,10 +27,10 @@ private func dueDate(of item: ReminderItem) -> Date? {
 
 private func byDue(_ a: ReminderItem, _ b: ReminderItem) -> Bool {
     switch (dueDate(of: a), dueDate(of: b)) {
-    case (nil, nil):         return a.title < b.title
-    case (nil, _):           return false
-    case (_, nil):           return true
-    case (let da?, let db?): return da < db
+    case (nil, nil): a.title < b.title
+    case (nil, _): false
+    case (_, nil): true
+    case let (da?, db?): da < db
     }
 }
 

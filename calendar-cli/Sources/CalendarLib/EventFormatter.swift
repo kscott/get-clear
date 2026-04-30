@@ -64,7 +64,7 @@ public func eventLine(for event: EventItem) -> String {
         timeCol = " All day              "
     } else {
         let start = formatEventTime(event.startDate)
-        let end   = event.endDate.map { formatEventTime($0) } ?? formatEventTime(event.startDate)
+        let end = event.endDate.map { formatEventTime($0) } ?? formatEventTime(event.startDate)
         timeCol = String(format: " %8@ – %-8@  ", start as CVarArg, end as CVarArg)
     }
 
@@ -89,7 +89,7 @@ public func nextRelativeLabel(for date: Date, relativeTo now: Date) -> String {
                                   from: cal.startOfDay(for: now),
                                   to: cal.startOfDay(for: date)).day ?? 99
     let raw = days < 7 ? dayNameFormatter.string(from: date)
-                       : monthDayFormatter.string(from: date)
+        : monthDayFormatter.string(from: date)
     return raw.padding(toLength: 9, withPad: " ", startingAt: 0)
 }
 
@@ -110,13 +110,13 @@ func formatAmbiguous(_ matches: [EventItem], title: String, command: String) -> 
 // MARK: - Grouped and flat output
 
 public func formatGrouped(_ events: [EventItem]) -> String {
-    let cal     = Calendar.current
+    let cal = Calendar.current
     let grouped = Dictionary(grouping: events) { cal.startOfDay(for: $0.startDate) }
-    let days    = grouped.keys.sorted()
+    let days = grouped.keys.sorted()
     return days.enumerated().map { i, day in
         let header = ANSI.bold(dayHeaderFormatter.string(from: day))
         let sorted = (grouped[day] ?? []).sorted { $0.startDate < $1.startDate }
-        let lines  = sorted.map { eventLine(for: $0) }
+        let lines = sorted.map { eventLine(for: $0) }
         return (i > 0 ? "\n" : "") + header + "\n" + lines.joined(separator: "\n")
     }.joined()
 }

@@ -1,12 +1,11 @@
-import Quick
-import Nimble
 import ContactKit
-import ContactTestSupport
 import ContactsLib
+import ContactTestSupport
+import Nimble
+import Quick
 
 final class ContactFormatterSpec: QuickSpec {
     override class func spec() {
-
         describe("cardLines") {
             context("name") {
                 it("first line contains the contact name") {
@@ -68,6 +67,5 @@ final class ContactFormatterSpec: QuickSpec {
                 }
             }
         }
-
     }
 }

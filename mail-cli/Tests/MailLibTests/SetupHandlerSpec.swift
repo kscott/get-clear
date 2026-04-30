@@ -1,17 +1,16 @@
 // SetupHandlerSpec.swift
 // Tests for MailLib selectIdentityEmail.
 
-import Quick
-import Nimble
 import MailLib
+import Nimble
+import Quick
 
 final class MailSetupHandlerSpec: QuickSpec {
     override class func spec() {
-
         let identities = [
             MailIdentity(id: "id1", email: "a@example.com", name: "Alice"),
             MailIdentity(id: "id2", email: "b@example.com", name: "Bob"),
-            MailIdentity(id: "id3", email: "c@example.com", name: "Charlie"),
+            MailIdentity(id: "id3", email: "c@example.com", name: "Charlie")
         ]
 
         describe("selectIdentityEmail") {

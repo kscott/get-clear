@@ -4,8 +4,7 @@ import Foundation
 /// Writes timestamped entries to the daily activity log.
 /// Log location: `~/.local/share/get-clear/log/YYYY-MM-DD.log`
 /// Append is atomic via POSIX O_APPEND — safe for concurrent processes.
-public struct ActivityLog {
-
+public enum ActivityLog {
     static let defaultBaseDirectory: URL =
         FileManager.default.homeDirectoryForCurrentUser
             .appendingPathComponent(".local/share/get-clear/log")
@@ -32,15 +31,15 @@ public struct ActivityLog {
         try FileManager.default.createDirectory(at: base, withIntermediateDirectories: true)
 
         let entry = ActivityLogEntry(ts: Date(), tool: tool, cmd: cmd, desc: desc, container: container)
-        let data  = try JSONEncoder.logEncoder().encode(entry)
+        let data = try JSONEncoder.logEncoder().encode(entry)
         guard var line = String(data: data, encoding: .utf8) else {
             throw CocoaError(.fileWriteUnknown)
         }
         line += "\n"
 
-        let today   = ISO8601DateFormatter.logFileDateString(Date())
+        let today = ISO8601DateFormatter.logFileDateString(Date())
         let fileURL = base.appendingPathComponent("\(today).log")
-        let path    = fileURL.path
+        let path = fileURL.path
 
         // POSIX O_APPEND: kernel guarantees atomicity for small writes on macOS.
         // Do not use FileHandle.seekToEndOfFile() — seek and write are not atomic.

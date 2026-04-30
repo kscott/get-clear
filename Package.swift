@@ -11,14 +11,13 @@ let package = Package(
         .executable(name: "calendar-bin", targets: ["calendar-bin"]),
         .executable(name: "contacts-bin", targets: ["contacts-bin"]),
         .executable(name: "mail-bin", targets: ["mail-bin"]),
-        .executable(name: "text-bin", targets: ["text-bin"]),
+        .executable(name: "text-bin", targets: ["text-bin"])
     ],
     dependencies: [
         .package(url: "https://github.com/Quick/Quick.git", from: "7.0.0"),
-        .package(url: "https://github.com/Quick/Nimble.git", from: "13.0.0"),
+        .package(url: "https://github.com/Quick/Nimble.git", from: "13.0.0")
     ],
     targets: [
-
         // MARK: - GetClearKit
 
         .target(
@@ -36,7 +35,7 @@ let package = Package(
             dependencies: [
                 "GetClearKit",
                 .product(name: "Quick", package: "Quick"),
-                .product(name: "Nimble", package: "Nimble"),
+                .product(name: "Nimble", package: "Nimble")
             ],
             path: "Tests/GetClearKitTests"
         ),
@@ -59,7 +58,7 @@ let package = Package(
             dependencies: [
                 "ContactKit", "GetClearKit", "ContactTestSupport",
                 .product(name: "Quick", package: "Quick"),
-                .product(name: "Nimble", package: "Nimble"),
+                .product(name: "Nimble", package: "Nimble")
             ],
             path: "Tests/ContactKitTests"
         ),
@@ -78,7 +77,7 @@ let package = Package(
                 "AppleContactKit",
                 "ContactKit",
                 .product(name: "Quick", package: "Quick"),
-                .product(name: "Nimble", package: "Nimble"),
+                .product(name: "Nimble", package: "Nimble")
             ],
             path: "Tests/AppleContactKitTests"
         ),
@@ -110,7 +109,7 @@ let package = Package(
             path: "reminders-cli/Sources/RemindersCLI",
             linkerSettings: [
                 .linkedFramework("EventKit"),
-                .linkedFramework("AppKit"),
+                .linkedFramework("AppKit")
             ]
         ),
         .testTarget(
@@ -119,7 +118,7 @@ let package = Package(
                 "RemindersLib",
                 "GetClearKit",
                 .product(name: "Quick", package: "Quick"),
-                .product(name: "Nimble", package: "Nimble"),
+                .product(name: "Nimble", package: "Nimble")
             ],
             path: "reminders-cli/Tests/RemindersLibTests"
         ),
@@ -142,7 +141,7 @@ let package = Package(
             path: "calendar-cli/Sources/CalendarCLI",
             linkerSettings: [
                 .linkedFramework("EventKit"),
-                .linkedFramework("AppKit"),
+                .linkedFramework("AppKit")
             ]
         ),
         .testTarget(
@@ -151,7 +150,7 @@ let package = Package(
                 "CalendarLib",
                 "GetClearKit",
                 .product(name: "Quick", package: "Quick"),
-                .product(name: "Nimble", package: "Nimble"),
+                .product(name: "Nimble", package: "Nimble")
             ],
             path: "calendar-cli/Tests/CalendarLibTests"
         ),
@@ -174,7 +173,7 @@ let package = Package(
             dependencies: [
                 "ContactsLib", "ContactKit", "GetClearKit", "ContactTestSupport",
                 .product(name: "Quick", package: "Quick"),
-                .product(name: "Nimble", package: "Nimble"),
+                .product(name: "Nimble", package: "Nimble")
             ],
             path: "contacts-cli/Tests/ContactsLibTests"
         ),
@@ -201,7 +200,7 @@ let package = Package(
             dependencies: ["MailClientFactory", "MailLib", "ContactStoreFactory", "GetClearKit"],
             path: "mail-cli/Sources/MailCLI",
             linkerSettings: [
-                .linkedFramework("AppKit"),
+                .linkedFramework("AppKit")
             ]
         ),
         .testTarget(
@@ -209,7 +208,7 @@ let package = Package(
             dependencies: [
                 "MailLib", "ContactKit", "ContactTestSupport", "GetClearKit",
                 .product(name: "Quick", package: "Quick"),
-                .product(name: "Nimble", package: "Nimble"),
+                .product(name: "Nimble", package: "Nimble")
             ],
             path: "mail-cli/Tests/MailLibTests"
         ),
@@ -231,7 +230,7 @@ let package = Package(
             dependencies: ["TextMessages", "TextLib", "ContactStoreFactory", "GetClearKit"],
             path: "text-cli/Sources/TextCLI",
             linkerSettings: [
-                .linkedFramework("AppKit"),
+                .linkedFramework("AppKit")
             ]
         ),
         .testTarget(
@@ -240,9 +239,9 @@ let package = Package(
                 "TextLib",
                 "ContactKit",
                 .product(name: "Quick", package: "Quick"),
-                .product(name: "Nimble", package: "Nimble"),
+                .product(name: "Nimble", package: "Nimble")
             ],
             path: "text-cli/Tests/TextLibTests"
-        ),
+        )
     ]
 )

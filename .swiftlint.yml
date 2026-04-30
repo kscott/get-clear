@@ -1,0 +1,86 @@
+excluded:
+  # Build artifacts
+  - .build
+  - reminders-cli/.build
+  - calendar-cli/.build
+  - contacts-cli/.build
+  - mail-cli/.build
+  - text-cli/.build
+  # Test code — different rules apply (force_try, force_unwrapping, long spec bodies are all fine)
+  - Tests
+  - reminders-cli/Tests
+  - calendar-cli/Tests
+  - contacts-cli/Tests
+  - mail-cli/Tests
+  - text-cli/Tests
+
+opt_in_rules:
+  - force_unwrapping
+  - closure_spacing
+  - empty_count
+
+analyzer_rules:
+  - unused_import
+
+disabled_rules:
+  - todo
+  # QuickSpec requires `override class func spec()` — static is not valid on an override
+  - static_over_final_class
+
+identifier_name:
+  min_length:
+    warning: 2
+    error: 2
+  excluded:
+    # Single-char closure params and loop indices idiomatic in Swift
+    - a
+    - b
+    - c
+    - d
+    - e
+    - f
+    - g
+    - h
+    - i
+    - j
+    - k
+    - l
+    - m
+    - n
+    - o
+    - p
+    - q
+    - r
+    - s
+    - t
+    - u
+    - v
+    - w
+    - x
+    - y
+    - z
+    # Two-char domain names used throughout the suite
+    - id
+    - to
+    - cc
+
+# Static regex patterns with try! are safe; force_cast in framework boundary is
+# necessary (CNContact casting). Downgrade to warnings so they surface but don't block.
+force_try: warning
+force_cast: warning
+force_unwrapping: warning
+
+line_length:
+  warning: 140
+  error: 200
+  ignores_comments: true
+  ignores_urls: true
+
+# Quick/Nimble spec() bodies are intentionally long — error only at 400
+function_body_length:
+  warning: 60
+  error: 400
+
+cyclomatic_complexity:
+  warning: 15
+  error: 25

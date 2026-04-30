@@ -1,8 +1,8 @@
 // SetupCommand.swift
 // handleSetup() dispatches the setup command; pickAndSaveCalendars() runs the interactive picker.
 
-import Foundation
 import EventKit
+import Foundation
 import GetClearKit
 
 /// Top-level dispatch for the setup command.
@@ -15,14 +15,16 @@ func handleSetup() async {
 func pickAndSaveCalendars() async -> Bool {
     // Install SIGINT handler here rather than at the call site — setup is the only command
     // that blocks on user input, so this is the only place where Ctrl-C needs clean handling.
-    signal(SIGINT) { _ in print("\nCancelled."); exit(0) }
+    signal(SIGINT) { _ in print("\nCancelled.")
+        exit(0)
+    }
     let store = EKEventStore()
 
-    guard (try? await store.requestFullAccessToEvents()) == true else {
+    guard await (try? store.requestFullAccessToEvents()) == true else {
         fail("Calendar access required for setup")
     }
 
-    let all     = store.calendars(for: .event)
+    let all = store.calendars(for: .event)
     let grouped = Dictionary(grouping: all) { $0.source.title }
 
     let configURL = getClearConfigURL
@@ -47,7 +49,9 @@ func pickAndSaveCalendars() async -> Bool {
     print("Recap calendars: ", terminator: "")
     fflush(stdout)
 
-    guard let rawInput = readLine() else { print("\nCancelled."); return false }
+    guard let rawInput = readLine() else { print("\nCancelled.")
+        return false
+    }
     let input = String(rawInput.unicodeScalars.filter { $0.value >= 32 && $0.value < 127 })
     guard !input.trimmingCharacters(in: .whitespaces).isEmpty else {
         print("No calendars entered — nothing written.")
@@ -62,7 +66,8 @@ func pickAndSaveCalendars() async -> Bool {
     var unmatched: [String] = []
     for token in tokens {
         if let num = Int(token),
-           let match = numberedCals.first(where: { $0.0 == num }) {
+           let match = numberedCals.first(where: { $0.0 == num })
+        {
             calNames.append(match.1.title)
         } else if let match = all.first(where: {
             $0.title.lowercased() == token.lowercased()

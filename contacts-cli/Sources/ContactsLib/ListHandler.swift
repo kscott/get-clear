@@ -19,4 +19,3 @@ public func handleList(args: [String], store: any ContactStore) async throws -> 
         }
         .joined(separator: "\n")
 }
-

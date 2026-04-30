@@ -2,9 +2,9 @@
 //
 // Tests for OptionsParsing — combined options string parsing into individual fields.
 
-import Quick
-import Nimble
 import Foundation
+import Nimble
+import Quick
 import RemindersLib
 
 final class OptionsParsingSpec: QuickSpec {
@@ -158,43 +158,43 @@ final class OptionsParsingSpec: QuickSpec {
                 }
             }
 
-        describe("splitListAndOptions") {
-            let titles = ["Reminders", "Work Tasks", "Shopping"]
+            describe("splitListAndOptions") {
+                let titles = ["Reminders", "Work Tasks", "Shopping"]
 
-            context("no args") {
-                it("returns nil list and empty options string") {
-                    let (list, opts) = splitListAndOptions(from: [], calendarTitles: titles)
-                    expect(list).to(beNil())
-                    expect(opts) == ""
+                context("no args") {
+                    it("returns nil list and empty options string") {
+                        let (list, opts) = splitListAndOptions(from: [], calendarTitles: titles)
+                        expect(list).to(beNil())
+                        expect(opts) == ""
+                    }
+                }
+
+                context("first arg matches a calendar title") {
+                    it("returns that title as the list") {
+                        let (list, _) = splitListAndOptions(from: ["Work Tasks", "friday"], calendarTitles: titles)
+                        expect(list) == "Work Tasks"
+                    }
+                    it("joins the remaining args as the options string") {
+                        let (_, opts) = splitListAndOptions(from: ["Work Tasks", "friday", "repeat weekly"], calendarTitles: titles)
+                        expect(opts) == "friday repeat weekly"
+                    }
+                    it("returns empty options string when no args follow the list name") {
+                        let (_, opts) = splitListAndOptions(from: ["Shopping"], calendarTitles: titles)
+                        expect(opts) == ""
+                    }
+                }
+
+                context("first arg does not match any calendar title") {
+                    it("returns nil list") {
+                        let (list, _) = splitListAndOptions(from: ["friday", "repeat weekly"], calendarTitles: titles)
+                        expect(list).to(beNil())
+                    }
+                    it("joins all args as the options string") {
+                        let (_, opts) = splitListAndOptions(from: ["friday", "repeat weekly"], calendarTitles: titles)
+                        expect(opts) == "friday repeat weekly"
+                    }
                 }
             }
-
-            context("first arg matches a calendar title") {
-                it("returns that title as the list") {
-                    let (list, _) = splitListAndOptions(from: ["Work Tasks", "friday"], calendarTitles: titles)
-                    expect(list) == "Work Tasks"
-                }
-                it("joins the remaining args as the options string") {
-                    let (_, opts) = splitListAndOptions(from: ["Work Tasks", "friday", "repeat weekly"], calendarTitles: titles)
-                    expect(opts) == "friday repeat weekly"
-                }
-                it("returns empty options string when no args follow the list name") {
-                    let (_, opts) = splitListAndOptions(from: ["Shopping"], calendarTitles: titles)
-                    expect(opts) == ""
-                }
-            }
-
-            context("first arg does not match any calendar title") {
-                it("returns nil list") {
-                    let (list, _) = splitListAndOptions(from: ["friday", "repeat weekly"], calendarTitles: titles)
-                    expect(list).to(beNil())
-                }
-                it("joins all args as the options string") {
-                    let (_, opts) = splitListAndOptions(from: ["friday", "repeat weekly"], calendarTitles: titles)
-                    expect(opts) == "friday repeat weekly"
-                }
-            }
-        }
 
             context("keyword order independence") {
                 it("captures priority when it appears before repeat") {

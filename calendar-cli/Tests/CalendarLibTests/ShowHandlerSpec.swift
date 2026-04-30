@@ -1,11 +1,10 @@
-import Quick
-import Nimble
-import Foundation
 import CalendarLib
+import Foundation
+import Nimble
+import Quick
 
 final class CalendarShowHandlerSpec: AsyncSpec {
     override class func spec() {
-
         var store: SpyCalendarStore!
         let config = CalendarConfig.empty
         beforeEach { store = SpyCalendarStore() }
@@ -41,8 +40,8 @@ final class CalendarShowHandlerSpec: AsyncSpec {
             }
             it("returns attendees with their status when present") {
                 let attendees = [AttendeeItem(name: "Alice", status: "accepted")]
-                store.events  = [makeEvent(title: "Review", attendees: attendees)]
-                let out       = try await handleShow(args: ["show", "Review"], store: store, calFilter: nil, config: config)
+                store.events = [makeEvent(title: "Review", attendees: attendees)]
+                let out = try await handleShow(args: ["show", "Review"], store: store, calFilter: nil, config: config)
                 expect(out).to(contain("Alice (accepted)"))
             }
             it("returns disambiguation message when multiple events match") {

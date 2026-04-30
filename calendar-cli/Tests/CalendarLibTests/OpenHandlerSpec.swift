@@ -1,7 +1,7 @@
-import Quick
-import Nimble
-import Foundation
 import CalendarLib
+import Foundation
+import Nimble
+import Quick
 
 final class CalendarOpenHandlerSpec: QuickSpec {
     override class func spec() {

@@ -12,10 +12,10 @@ public enum TextError: Error, LocalizedError, Equatable {
 
     public var errorDescription: String? {
         switch self {
-        case .sendFailed(let m):   return "Send failed: \(m)"
-        case .notFound(let q):     return "No contact found for \"\(q)\""
-        case .ambiguous(let m):    return m
-        case .badArguments(let m): return m
+        case let .sendFailed(m): "Send failed: \(m)"
+        case let .notFound(q): "No contact found for \"\(q)\""
+        case let .ambiguous(m): m
+        case let .badArguments(m): m
         }
     }
 }

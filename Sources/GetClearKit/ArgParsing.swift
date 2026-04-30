@@ -30,7 +30,7 @@ public func parseArgs(_ rawArgs: [String]) -> ParsedArgs {
 
     // First arg: bare words and flags both redirect
     if isVersionFlag(first) { return .version }
-    if isHelpFlag(first)    { return .help }
+    if isHelpFlag(first) { return .help }
 
     // Non-first args: flag-style tokens are invalid here
     let rest = Array(rawArgs.dropFirst())

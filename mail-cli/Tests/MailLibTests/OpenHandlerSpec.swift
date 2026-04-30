@@ -1,14 +1,13 @@
 // OpenHandlerSpec.swift
 // Tests for MailLib handleOpen.
 
-import Quick
-import Nimble
 import Foundation
 import MailLib
+import Nimble
+import Quick
 
 final class MailOpenHandlerSpec: QuickSpec {
     override class func spec() {
-
         describe("handleOpen") {
             it("calls the opener with the config web app URL") {
                 var openedURL: URL?

@@ -4,7 +4,7 @@ import GetClearKit
 public func cardLines(for contact: Contact) -> [String] {
     var lines: [String] = []
     lines.append(ANSI.bold(contact.displayName))
-    if !contact.company.isEmpty && !contact.name.isEmpty {
+    if !contact.company.isEmpty, !contact.name.isEmpty {
         lines.append("  \(ANSI.dim("Company:"))  \(contact.company)")
     }
     for field in contact.emails {

@@ -1,11 +1,10 @@
-import Quick
-import Nimble
-import Foundation
 import CalendarLib
+import Foundation
+import Nimble
+import Quick
 
 final class CalendarNextHandlerSpec: AsyncSpec {
     override class func spec() {
-
         var store: SpyCalendarStore!
         let config = CalendarConfig.empty
         beforeEach { store = SpyCalendarStore() }
@@ -22,14 +21,14 @@ final class CalendarNextHandlerSpec: AsyncSpec {
                 expect(out).to(contain("Quarterly Review"))
             }
             it("defaults to 5 events when no count argument is given") {
-                store.events = (1...10).map { makeEvent(identifier: "e\($0)", title: "Event \($0)", dayOffset: $0) }
-                let out   = try await handleNext(args: ["next"], store: store, calFilter: nil, config: config)
+                store.events = (1 ... 10).map { makeEvent(identifier: "e\($0)", title: "Event \($0)", dayOffset: $0) }
+                let out = try await handleNext(args: ["next"], store: store, calFilter: nil, config: config)
                 let lines = out.components(separatedBy: "\n").filter { !$0.isEmpty }
                 expect(lines.count) == 5
             }
             it("respects a custom count argument") {
-                store.events = (1...10).map { makeEvent(identifier: "e\($0)", title: "Event \($0)", dayOffset: $0) }
-                let out   = try await handleNext(args: ["next", "3"], store: store, calFilter: nil, config: config)
+                store.events = (1 ... 10).map { makeEvent(identifier: "e\($0)", title: "Event \($0)", dayOffset: $0) }
+                let out = try await handleNext(args: ["next", "3"], store: store, calFilter: nil, config: config)
                 let lines = out.components(separatedBy: "\n").filter { !$0.isEmpty }
                 expect(lines.count) == 3
             }

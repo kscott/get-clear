@@ -1,16 +1,14 @@
 // FindHandlerSpec.swift
 // Tests for MailLib handleFind.
 
-import Quick
-import Nimble
 import Foundation
 import MailLib
+import Nimble
+import Quick
 
 final class MailFindHandlerSpec: AsyncSpec {
     override class func spec() {
-
         describe("handleFind") {
-
             context("missing query") {
                 it("throws when no search term is provided") {
                     await expect {
@@ -33,16 +31,16 @@ final class MailFindHandlerSpec: AsyncSpec {
                     let client = SpyMailClient()
                     client.findResults = [
                         EmailSummary(subject: "Hello", from: "Alice <alice@example.com>", receivedAt: "2026-04-01T10:00:00Z"),
-                        EmailSummary(subject: "World", from: "Bob <bob@jones.org>",       receivedAt: "2026-04-02T09:00:00Z"),
+                        EmailSummary(subject: "World", from: "Bob <bob@jones.org>", receivedAt: "2026-04-02T09:00:00Z")
                     ]
                     let result = try await handleFind(args: ["find", "query"], client: client)
-                    let lines  = result.split(separator: "\n", omittingEmptySubsequences: false)
+                    let lines = result.split(separator: "\n", omittingEmptySubsequences: false)
                     expect(lines.count) == 2
                 }
                 it("includes the subject in the output") {
                     let client = SpyMailClient()
                     client.findResults = [
-                        EmailSummary(subject: "Meeting notes", from: "Alice", receivedAt: "2026-04-01T10:00:00Z"),
+                        EmailSummary(subject: "Meeting notes", from: "Alice", receivedAt: "2026-04-01T10:00:00Z")
                     ]
                     let result = try await handleFind(args: ["find", "meeting"], client: client)
                     expect(result).to(contain("Meeting notes"))

@@ -2,11 +2,11 @@
 //
 // Tests for matchContacts — contact query matching and result ordering.
 
-import Quick
-import Nimble
-import Foundation
 import ContactKit
 import ContactTestSupport
+import Foundation
+import Nimble
+import Quick
 
 final class ContactMatchingSpec: QuickSpec {
     override class func spec() {
@@ -58,9 +58,9 @@ final class ContactMatchingSpec: QuickSpec {
             context("sort order") {
                 it("sorts exact name before prefix before substring") {
                     let contacts = [
-                        makeContact(identifier: "jr-id",   name: "Smith Jr"),
+                        makeContact(identifier: "jr-id", name: "Smith Jr"),
                         makeContact(identifier: "smith-id", name: "Smith"),
-                        makeContact(identifier: "john-id",  name: "John Smith"),
+                        makeContact(identifier: "john-id", name: "John Smith")
                     ]
                     let r = matchContacts("smith", in: contacts)
                     expect(r[0].name) == "Smith"

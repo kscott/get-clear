@@ -7,9 +7,10 @@ public struct ContactChanges: Equatable {
 
     public init(email: ValueChange<String> = .unchanged,
                 phone: ValueChange<String> = .unchanged,
-                company: ValueChange<String> = .unchanged) {
-        self.email   = email
-        self.phone   = phone
+                company: ValueChange<String> = .unchanged)
+    {
+        self.email = email
+        self.phone = phone
         self.company = company
     }
 }

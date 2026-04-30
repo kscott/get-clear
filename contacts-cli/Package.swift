@@ -7,14 +7,14 @@ let package = Package(
     dependencies: [
         .package(url: "https://github.com/kscott/get-clear.git", branch: "main"),
         .package(url: "https://github.com/Quick/Quick.git", from: "7.0.0"),
-        .package(url: "https://github.com/Quick/Nimble.git", from: "13.0.0"),
+        .package(url: "https://github.com/Quick/Nimble.git", from: "13.0.0")
     ],
     targets: [
         // Pure logic — no Apple framework dependencies, fully testable
         .target(
             name: "ContactsLib",
             dependencies: [
-                .product(name: "GetClearKit", package: "get-clear"),
+                .product(name: "GetClearKit", package: "get-clear")
             ],
             path: "Sources/ContactsLib"
         ),
@@ -23,12 +23,12 @@ let package = Package(
             name: "contacts-bin",
             dependencies: [
                 "ContactsLib",
-                .product(name: "GetClearKit", package: "get-clear"),
+                .product(name: "GetClearKit", package: "get-clear")
             ],
             path: "Sources/ContactsCLI",
             linkerSettings: [
                 .linkedFramework("Contacts"),
-                .linkedFramework("AppKit"),
+                .linkedFramework("AppKit")
             ]
         ),
         // Test suite — run via: swift test
@@ -37,9 +37,9 @@ let package = Package(
             dependencies: [
                 "ContactsLib",
                 .product(name: "Quick", package: "Quick"),
-                .product(name: "Nimble", package: "Nimble"),
+                .product(name: "Nimble", package: "Nimble")
             ],
             path: "Tests/ContactsLibTests"
-        ),
+        )
     ]
 )

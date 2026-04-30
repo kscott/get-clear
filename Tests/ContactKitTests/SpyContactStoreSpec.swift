@@ -2,11 +2,11 @@
 //
 // Documents and verifies the SpyContactStore test double pattern for ContactStore.
 
-import Quick
-import Nimble
-import Foundation
 import ContactKit
 import ContactTestSupport
+import Foundation
+import Nimble
+import Quick
 
 final class SpyContactStoreSpec: AsyncSpec {
     override class func spec() {
@@ -14,13 +14,13 @@ final class SpyContactStoreSpec: AsyncSpec {
             it("returns pre-loaded contacts via contacts()") {
                 let spy = SpyContactStore()
                 spy.contacts = [aliceContact]
-                let fetched = (try? await spy.contacts()) ?? []
+                let fetched = await (try? spy.contacts()) ?? []
                 expect(fetched.count) == 1
                 expect(fetched.first?.name) == "Alice Smith"
             }
             it("returns an empty list when initialized with no contacts") {
                 let spy = SpyContactStore()
-                let fetched = (try? await spy.contacts()) ?? []
+                let fetched = await (try? spy.contacts()) ?? []
                 expect(fetched).to(beEmpty())
             }
             it("records delete calls") {

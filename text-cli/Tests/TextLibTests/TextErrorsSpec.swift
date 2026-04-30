@@ -1,8 +1,8 @@
 // TextErrorsSpec.swift
 // Tests for TextLib TextError — error descriptions.
 
-import Quick
 import Nimble
+import Quick
 import TextLib
 
 final class TextErrorsSpec: QuickSpec {

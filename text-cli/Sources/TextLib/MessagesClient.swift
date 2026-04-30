@@ -3,7 +3,7 @@
 
 import Foundation
 
-// AppleScript has no escape sequences — split on " and rejoin with the built-in quote constant.
+/// AppleScript has no escape sequences — split on " and rejoin with the built-in quote constant.
 public func appleScriptLiteral(_ s: String) -> String {
     let parts = s.components(separatedBy: "\"")
     if parts.count == 1 { return "\"\(s)\"" }

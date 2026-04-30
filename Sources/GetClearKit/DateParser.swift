@@ -30,7 +30,7 @@ public struct ParsedDate {
     public let hasDate: Bool
 
     public init(date: Date, hasTime: Bool, hasDate: Bool) {
-        self.date    = date
+        self.date = date
         self.hasTime = hasTime
         self.hasDate = hasDate
     }
@@ -41,7 +41,7 @@ public func parseDate(_ input: String) -> ParsedDate? {
     let cal = Calendar.current
     let now = Date()
     var components = cal.dateComponents([.year, .month, .day, .hour, .minute], from: now)
-    components.hour   = 9
+    components.hour = 9
     components.minute = 0
 
     let timePatterns = [
@@ -49,16 +49,16 @@ public func parseDate(_ input: String) -> ParsedDate? {
         #"(?:at\s+)?(\d{1,2}):(\d{2})$"#
     ]
 
-    var dayPart  = s
-    var timePart: String? = nil
+    var dayPart = s
+    var timePart: String?
 
     for pattern in timePatterns {
         if let range = s.range(of: pattern, options: .regularExpression) {
             timePart = String(s[range])
             dayPart = s.replacingCharacters(in: range, with: "")
-                       .trimmingCharacters(in: .whitespaces)
-                       .replacingOccurrences(of: #"\bat\b,?"#, with: "", options: .regularExpression)
-                       .trimmingCharacters(in: .whitespaces)
+                .trimmingCharacters(in: .whitespaces)
+                .replacingOccurrences(of: #"\bat\b,?"#, with: "", options: .regularExpression)
+                .trimmingCharacters(in: .whitespaces)
             break
         }
     }
@@ -67,23 +67,23 @@ public func parseDate(_ input: String) -> ParsedDate? {
         let tp = timePart.replacingOccurrences(of: "at ", with: "")
         let numRegex = try! NSRegularExpression(pattern: #"(\d{1,2})(?::(\d{2}))?\s*(am|pm)?"#)
         if let match = numRegex.firstMatch(in: tp, range: NSRange(tp.startIndex..., in: tp)) {
-            let hour   = Int((tp as NSString).substring(with: match.range(at: 1))) ?? 9
+            let hour = Int((tp as NSString).substring(with: match.range(at: 1))) ?? 9
             let minute = match.range(at: 2).location != NSNotFound
                 ? Int((tp as NSString).substring(with: match.range(at: 2))) ?? 0 : 0
-            let ampm   = match.range(at: 3).location != NSNotFound
+            let ampm = match.range(at: 3).location != NSNotFound
                 ? (tp as NSString).substring(with: match.range(at: 3)) : ""
-            components.hour   = ampm == "pm" && hour < 12 ? hour + 12 :
-                                ampm == "am" && hour == 12 ? 0 : hour
+            components.hour = ampm == "pm" && hour < 12 ? hour + 12 :
+                ampm == "am" && hour == 12 ? 0 : hour
             components.minute = minute
         }
     }
 
-    let weekdays = ["sunday":1,"monday":2,"tuesday":3,"wednesday":4,
-                    "thursday":5,"friday":6,"saturday":7]
-    let months   = ["january":1,"february":2,"march":3,"april":4,"may":5,"june":6,
-                    "july":7,"august":8,"september":9,"october":10,"november":11,"december":12,
-                    "jan":1,"feb":2,"mar":3,"apr":4,"jun":6,
-                    "jul":7,"aug":8,"sep":9,"oct":10,"nov":11,"dec":12]
+    let weekdays = ["sunday": 1, "monday": 2, "tuesday": 3, "wednesday": 4,
+                    "thursday": 5, "friday": 6, "saturday": 7]
+    let months = ["january": 1, "february": 2, "march": 3, "april": 4, "may": 5, "june": 6,
+                  "july": 7, "august": 8, "september": 9, "october": 10, "november": 11, "december": 12,
+                  "jan": 1, "feb": 2, "mar": 3, "apr": 4, "jun": 6,
+                  "jul": 7, "aug": 8, "sep": 9, "oct": 10, "nov": 11, "dec": 12]
 
     let dayTrimmed = dayPart.trimmingCharacters(in: .whitespaces)
 
@@ -92,20 +92,27 @@ public func parseDate(_ input: String) -> ParsedDate? {
     } else if dayTrimmed == "tomorrow" {
         let tomorrow = cal.date(byAdding: .day, value: 1, to: now)!
         let tc = cal.dateComponents([.year, .month, .day], from: tomorrow)
-        components.year = tc.year; components.month = tc.month; components.day = tc.day
+        components.year = tc.year
+        components.month = tc.month
+        components.day = tc.day
     } else if let weekdayNum = weekdays[dayTrimmed.replacingOccurrences(
-                  of: #"^(?:next|this)\s+"#, with: "", options: .regularExpression)] {
+        of: #"^(?:next|this)\s+"#, with: "", options: .regularExpression
+    )] {
         // "next friday", "this monday" — strip the prefix, same behaviour as bare weekday
-        var dc = DateComponents(); dc.weekday = weekdayNum
+        var dc = DateComponents()
+        dc.weekday = weekdayNum
         if let next = cal.nextDate(after: now, matching: dc, matchingPolicy: .nextTime) {
             let nc = cal.dateComponents([.year, .month, .day], from: next)
-            components.year = nc.year; components.month = nc.month; components.day = nc.day
+            components.year = nc.year
+            components.month = nc.month
+            components.day = nc.day
         }
     } else {
         let parts = dayTrimmed.split(separator: " ").map(String.init)
         if parts.count == 2, let monthNum = months[parts[0]], let day = Int(parts[1]) {
             // "march 15" — roll to next year if past
-            components.month = monthNum; components.day = day
+            components.month = monthNum
+            components.day = day
             if let d = cal.date(from: components), d < now {
                 components.year = (components.year ?? 0) + 1
             }
@@ -114,10 +121,12 @@ public func parseDate(_ input: String) -> ParsedDate? {
             let p0 = parts[0].trimmingCharacters(in: CharacterSet(charactersIn: ","))
             let p1 = parts[1].trimmingCharacters(in: CharacterSet(charactersIn: ","))
             if let monthNum = months[p0], let day = Int(p1), let year = Int(parts[2]) {
-                components.month = monthNum; components.day = day
+                components.month = monthNum
+                components.day = day
                 components.year = year < 100 ? 2000 + year : year
             } else if let day = Int(p0), let monthNum = months[p1], let year = Int(parts[2]) {
-                components.month = monthNum; components.day = day
+                components.month = monthNum
+                components.day = day
                 components.year = year < 100 ? 2000 + year : year
             } else {
                 return nil
@@ -125,16 +134,22 @@ public func parseDate(_ input: String) -> ParsedDate? {
         } else if parts.count == 1 {
             let numParts = parts[0].components(separatedBy: CharacterSet(charactersIn: "/-"))
             if numParts.count == 3,
-               let p0 = Int(numParts[0]), let p1 = Int(numParts[1]), let p2 = Int(numParts[2]) {
+               let p0 = Int(numParts[0]), let p1 = Int(numParts[1]), let p2 = Int(numParts[2])
+            {
                 // Heuristic: first part > 31 → Y/M/D (ISO); otherwise → M/D/Y (US)
                 let y, m, d: Int
-                if p0 > 31 { (y, m, d) = (p0, p1, p2) }
-                else { let yr = p2 < 100 ? 2000 + p2 : p2; (y, m, d) = (yr, p0, p1) }
-                components.year = y; components.month = m; components.day = d
+                if p0 > 31 { (y, m, d) = (p0, p1, p2) } else { let yr = p2 < 100 ? 2000 + p2 : p2
+                    (y, m, d) = (yr, p0, p1)
+                }
+                components.year = y
+                components.month = m
+                components.day = d
             } else if numParts.count == 2,
-                      let m = Int(numParts[0]), let d = Int(numParts[1]) {
+                      let m = Int(numParts[0]), let d = Int(numParts[1])
+            {
                 // "3/15" or "3-15" — roll to next year if past
-                components.month = m; components.day = d
+                components.month = m
+                components.day = d
                 if let date = cal.date(from: components), date < now {
                     components.year = (components.year ?? 0) + 1
                 }

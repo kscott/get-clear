@@ -23,10 +23,10 @@ public struct ReminderMeta {
         hasURL: Bool = false
     ) {
         self.formattedDue = formattedDue
-        self.isRepeating  = isRepeating
-        self.priority     = priority
-        self.hasNote      = hasNote
-        self.hasURL       = hasURL
+        self.isRepeating = isRepeating
+        self.priority = priority
+        self.hasNote = hasNote
+        self.hasURL = hasURL
     }
 }
 
@@ -39,13 +39,13 @@ public func metaLine(for meta: ReminderMeta) -> String {
     if let due = meta.formattedDue { parts.append(due) }
     if meta.isRepeating { parts.append("repeating") }
     switch meta.priority {
-    case 1...4: parts.append("high")
-    case 5:     parts.append("medium")
-    case 6...9: parts.append("low")
-    default:    break
+    case 1 ... 4: parts.append("high")
+    case 5: parts.append("medium")
+    case 6 ... 9: parts.append("low")
+    default: break
     }
     if meta.hasNote { parts.append("+ note") }
-    if meta.hasURL  { parts.append("+ url") }
+    if meta.hasURL { parts.append("+ url") }
     return parts.isEmpty ? "" : "  ·  " + parts.joined(separator: " · ")
 }
 
@@ -69,10 +69,10 @@ public func formatListRow(_ item: ReminderItem) -> String {
     }
     let meta = metaLine(for: ReminderMeta(
         formattedDue: formattedDue,
-        isRepeating:  item.hasRecurrenceRules,
-        priority:     item.priority,
-        hasNote:      item.notes != nil,
-        hasURL:       item.url != nil
+        isRepeating: item.hasRecurrenceRules,
+        priority: item.priority,
+        hasNote: item.notes != nil,
+        hasURL: item.url != nil
     ))
     return "\(ANSI.bold(item.title))\(ANSI.dim(meta))"
 }
@@ -91,13 +91,13 @@ public func formatShow(item: ReminderItem) -> String {
         lines.append("Repeat:   \(desc)")
     }
     switch item.priority {
-    case 1...4: lines.append("Priority: high")
-    case 5:     lines.append("Priority: medium")
-    case 6...9: lines.append("Priority: low")
-    default:    break
+    case 1 ... 4: lines.append("Priority: high")
+    case 5: lines.append("Priority: medium")
+    case 6 ... 9: lines.append("Priority: low")
+    default: break
     }
     if let notes = item.notes, !notes.isEmpty { lines.append("Note:     \(notes)") }
-    if let url = item.url                      { lines.append("URL:      \(url)") }
+    if let url = item.url { lines.append("URL:      \(url)") }
     return lines.joined(separator: "\n")
 }
 
@@ -114,11 +114,11 @@ public func formatAddConfirmation(
     url: String
 ) -> String {
     var parts = ["Added: \(title) (in \(list))"]
-    if let pd = date      { parts.append("due \(formatDate(pd.date, showTime: pd.hasTime))") }
+    if let pd = date { parts.append("due \(formatDate(pd.date, showTime: pd.hasTime))") }
     if let s = recurrence { parts.append(describeRecurrence(s)) }
-    if !priority.isEmpty  { parts.append("priority \(priority)") }
-    if hasNote            { parts.append("+ note") }
-    if !url.isEmpty       { parts.append("url \(url)") }
+    if !priority.isEmpty { parts.append("priority \(priority)") }
+    if hasNote { parts.append("+ note") }
+    if !url.isEmpty { parts.append("url \(url)") }
     return parts.joined(separator: " · ")
 }
 
@@ -130,7 +130,9 @@ public func notFoundMessage(title: String, list: String?) -> String {
 
 public func disambiguationMessage(title: String, matches: [ReminderItem], cmd: String) -> String {
     var lines = ["Multiple reminders named '\(title)':"]
-    for m in matches { lines.append("  [\(m.list.title)]") }
+    for m in matches {
+        lines.append("  [\(m.list.title)]")
+    }
     lines.append("Add the list name to narrow: reminders \(cmd) \"\(title)\" \(matches[0].list.title)")
     return lines.joined(separator: "\n")
 }

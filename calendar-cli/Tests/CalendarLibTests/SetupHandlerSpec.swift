@@ -2,18 +2,17 @@
 // Tests for the pure helper functions extracted from SetupHandler.
 // handleSetup itself is not tested (interactive I/O).
 
-import Quick
-import Nimble
-import Foundation
 import CalendarLib
+import Foundation
+import Nimble
+import Quick
 
 final class CalendarSetupHandlerSpec: QuickSpec {
     override class func spec() {
-
         let cals = [
-            CalendarItem(identifier: "id-work",     title: "Work",     source: "iCloud"),
+            CalendarItem(identifier: "id-work", title: "Work", source: "iCloud"),
             CalendarItem(identifier: "id-meetings", title: "Meetings", source: "iCloud"),
-            CalendarItem(identifier: "id-home",     title: "Home",     source: "Personal"),
+            CalendarItem(identifier: "id-home", title: "Home", source: "Personal")
         ]
 
         // MARK: - numberCalendars
@@ -100,12 +99,12 @@ final class CalendarSetupHandlerSpec: QuickSpec {
                 expect(toml).to(contain("\"Meetings\""))
             }
             it("writes one line per subset") {
-                let toml  = buildSubsetTOML(subsets: [("work", ["Work"]), ("personal", ["Home"])])
+                let toml = buildSubsetTOML(subsets: [("work", ["Work"]), ("personal", ["Home"])])
                 let lines = toml.components(separatedBy: "\n").filter { $0.contains("=") }
                 expect(lines.count) == 2
             }
             it("produces a parseable config for a round-trip") {
-                let toml   = buildSubsetTOML(subsets: [("work", ["Work", "Meetings"])])
+                let toml = buildSubsetTOML(subsets: [("work", ["Work", "Meetings"])])
                 let config = parseConfig(toml)
                 expect(config.subsets["work"]) == ["Work", "Meetings"]
             }

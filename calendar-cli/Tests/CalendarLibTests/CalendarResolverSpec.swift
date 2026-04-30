@@ -1,19 +1,18 @@
 // CalendarResolverSpec.swift
 // Tests for CalendarLib CalendarResolver — subset filter resolution to calendar identifiers.
 
-import Quick
-import Nimble
-import Foundation
 import CalendarLib
+import Foundation
+import Nimble
+import Quick
 
 final class CalendarResolverSpec: QuickSpec {
     override class func spec() {
-
         let calendars: [CalendarItem] = [
-            CalendarItem(identifier: "id-work",     title: "Work"),
+            CalendarItem(identifier: "id-work", title: "Work"),
             CalendarItem(identifier: "id-meetings", title: "Meetings"),
-            CalendarItem(identifier: "id-home",     title: "Home"),
-            CalendarItem(identifier: "id-family",   title: "Family"),
+            CalendarItem(identifier: "id-home", title: "Home"),
+            CalendarItem(identifier: "id-family", title: "Family")
         ]
 
         let config = parseConfig("""
@@ -23,7 +22,6 @@ final class CalendarResolverSpec: QuickSpec {
         """)
 
         describe("resolveCalendarIdentifiers") {
-
             context("nil filter — no subset specified") {
                 it("returns nil") {
                     let ids = resolveCalendarIdentifiers(filter: nil, calendars: calendars, config: config)

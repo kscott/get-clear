@@ -1,7 +1,7 @@
 // StoreFactory.swift
 
-import CalendarLib
 import CalendarEventKit
+import CalendarLib
 
 func makeCalendarStore() async throws -> any CalendarStore {
     try await AppleCalendarStore.authorized()

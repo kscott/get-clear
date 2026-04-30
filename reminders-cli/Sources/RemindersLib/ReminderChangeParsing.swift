@@ -30,11 +30,11 @@ public enum ReminderChangeError: Error {
 /// Returns nil for unrecognized input.
 public func parsePriority(_ s: String) -> Int? {
     switch s.lowercased().trimmingCharacters(in: .whitespaces) {
-    case "high":          return 1
-    case "medium", "med": return 5
-    case "low":           return 9
-    case "none":          return 0
-    default:              return nil
+    case "high": 1
+    case "medium", "med": 5
+    case "low": 9
+    case "none": 0
+    default: nil
     }
 }
 
@@ -49,13 +49,13 @@ public func parseReminderChanges(
     _ opts: ParsedOptions,
     existingItem: ReminderItem
 ) throws -> ReminderChanges {
-    var due: ValueChange<DateComponents>        = .unchanged
+    var due: ValueChange<DateComponents> = .unchanged
     var recurrence: ValueChange<RecurrenceSpec> = .unchanged
-    var priority: ValueChange<Int>              = .unchanged
-    var note: ValueChange<String>               = .unchanged
-    var url: ValueChange<URL>                   = .unchanged
-    var list: ValueChange<String>               = .unchanged
-    var descriptions: [String]                  = []
+    var priority: ValueChange<Int> = .unchanged
+    var note: ValueChange<String> = .unchanged
+    var url: ValueChange<URL> = .unchanged
+    var list: ValueChange<String> = .unchanged
+    var descriptions: [String] = []
 
     if !opts.date.isEmpty {
         if opts.date.lowercased() == "none" {
@@ -63,13 +63,13 @@ public func parseReminderChanges(
             descriptions.append("due cleared")
         } else if let pd = parseDate(opts.date) {
             let cal = Calendar.current
-            if pd.hasTime && !pd.hasDate, let existing = existingItem.dueDateComponents {
+            if pd.hasTime, !pd.hasDate, let existing = existingItem.dueDateComponents {
                 // Time-only input — preserve existing date, update time only
                 var comps = existing
                 let t = cal.dateComponents([.hour, .minute], from: pd.date)
-                comps.hour   = t.hour
+                comps.hour = t.hour
                 comps.minute = t.minute
-                let display  = cal.date(from: comps) ?? pd.date
+                let display = cal.date(from: comps) ?? pd.date
                 due = .replaced(from: existing, to: comps)
                 descriptions.append("due → \(formatDate(display, showTime: true))")
             } else {
@@ -133,7 +133,7 @@ public func parseReminderChanges(
         list = .replaced(from: existingItem.list.title, to: opts.list)
     }
 
-    if descriptions.isEmpty && opts.list.isEmpty {
+    if descriptions.isEmpty, opts.list.isEmpty {
         throw ReminderChangeError.nothingToChange
     }
 

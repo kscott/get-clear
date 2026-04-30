@@ -1,14 +1,12 @@
 // CalendarDotSpec.swift
 
-import Quick
 import Nimble
+import Quick
 import RemindersLib
 
 final class CalendarDotSpec: QuickSpec {
     override class func spec() {
-
         describe("calendarDot") {
-
             context("when ANSI is disabled") {
                 it("returns two spaces regardless of hex value") {
                     expect(calendarDot(hex: "FF5733", ansiEnabled: false)) == "  "
@@ -35,6 +33,5 @@ final class CalendarDotSpec: QuickSpec {
                 }
             }
         }
-
     }
 }

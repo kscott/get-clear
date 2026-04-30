@@ -12,8 +12,8 @@ public func lookup(title: String, in items: [ReminderItem]) -> LookupResult {
         items[$0].title.caseInsensitiveCompare(title) == .orderedSame
     }
     switch indices.count {
-    case 0:  return .notFound
-    case 1:  return .found(indices[0])
+    case 0: return .notFound
+    case 1: return .found(indices[0])
     default: return .ambiguous(indices)
     }
 }

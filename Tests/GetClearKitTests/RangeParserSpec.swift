@@ -2,10 +2,10 @@
 //
 // Tests for GetClearKit RangeParser — date range string parsing into ParsedRange.
 
-import Quick
-import Nimble
 import Foundation
 import GetClearKit
+import Nimble
+import Quick
 
 final class RangeParserSpec: QuickSpec {
     override class func spec() {
@@ -77,13 +77,13 @@ final class RangeParserSpec: QuickSpec {
 
             context("specific dates — ISO format") {
                 it("'2026-03-15' resolves to year 2026") {
-                    expect(parseRange("2026-03-15").map { cal.component(.year,  from: $0.start) }) == 2026
+                    expect(parseRange("2026-03-15").map { cal.component(.year, from: $0.start) }) == 2026
                 }
                 it("'2026-03-15' resolves to month 3") {
                     expect(parseRange("2026-03-15").map { cal.component(.month, from: $0.start) }) == 3
                 }
                 it("'2026-03-15' resolves to day 15") {
-                    expect(parseRange("2026-03-15").map { cal.component(.day,   from: $0.start) }) == 15
+                    expect(parseRange("2026-03-15").map { cal.component(.day, from: $0.start) }) == 15
                 }
                 it("'2026-03-15' is a single-day range") {
                     expect(parseRange("2026-03-15")?.isSingleDay) == true
@@ -95,7 +95,7 @@ final class RangeParserSpec: QuickSpec {
                     expect(parseRange("3/15").map { cal.component(.month, from: $0.start) }) == 3
                 }
                 it("'3/15' resolves to day 15") {
-                    expect(parseRange("3/15").map { cal.component(.day,   from: $0.start) }) == 15
+                    expect(parseRange("3/15").map { cal.component(.day, from: $0.start) }) == 15
                 }
                 it("'3/15' is a single-day range") {
                     expect(parseRange("3/15")?.isSingleDay) == true

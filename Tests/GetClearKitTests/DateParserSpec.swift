@@ -2,10 +2,10 @@
 //
 // Tests for GetClearKit DateParser — natural language date string parsing.
 
-import Quick
-import Nimble
 import Foundation
 import GetClearKit
+import Nimble
+import Quick
 
 final class DateParserSpec: QuickSpec {
     override class func spec() {
@@ -96,10 +96,12 @@ final class DateParserSpec: QuickSpec {
                 }
                 it("each weekday is within 7 days from today") {
                     for day in days {
-                        guard let pd = parseDate(day) else { fail("parseDate(\(day)) returned nil"); continue }
+                        guard let pd = parseDate(day) else { fail("parseDate(\(day)) returned nil")
+                            continue
+                        }
                         let diff = cal.dateComponents([.day],
-                            from: cal.startOfDay(for: Date()),
-                            to: cal.startOfDay(for: pd.date)).day ?? 99
+                                                      from: cal.startOfDay(for: Date()),
+                                                      to: cal.startOfDay(for: pd.date)).day ?? 99
                         expect(diff) <= 7
                     }
                 }

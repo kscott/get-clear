@@ -26,7 +26,7 @@ public func formatDate(_ iso: String) -> String {
 
     let cal = Calendar.current
     let now = Date()
-    let df  = DateFormatter()
+    let df = DateFormatter()
     if cal.isDateInToday(date) {
         df.dateFormat = "h:mma"
         return df.string(from: date).lowercased()
@@ -41,12 +41,14 @@ public func formatDate(_ iso: String) -> String {
 
 public func formatDateLong(_ iso: String) -> String {
     guard let date = parseISO8601(iso) else { return iso }
-    let df = DateFormatter(); df.dateStyle = .full; df.timeStyle = .short
+    let df = DateFormatter()
+    df.dateStyle = .full
+    df.timeStyle = .short
     return df.string(from: date)
 }
 
 public func formatAddress(_ addr: [String: Any]) -> String {
-    let name  = addr["name"]  as? String ?? ""
+    let name = addr["name"] as? String ?? ""
     let email = addr["email"] as? String ?? ""
     return name.isEmpty ? email : "\(name) <\(email)>"
 }
@@ -60,7 +62,7 @@ public func formatSendConfirmation(to: String, cc: [AddressEntry], subject: Stri
         return "Saved draft to \(to)\(subject.isEmpty ? "" : " — \(subject)")"
     }
     var out = "Sent to \(ANSI.bold(to))"
-    if !cc.isEmpty { out += "; cc \(ANSI.bold(cc.map { $0.formatted }.joined(separator: ", ")))" }
+    if !cc.isEmpty { out += "; cc \(ANSI.bold(cc.map(\.formatted).joined(separator: ", ")))" }
     if !subject.isEmpty { out += " \(ANSI.dim("— \(subject)"))" }
     return out
 }

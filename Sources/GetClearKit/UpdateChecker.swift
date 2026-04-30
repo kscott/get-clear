@@ -14,11 +14,10 @@ import Darwin
 import Foundation
 
 public enum UpdateChecker {
-
     // MARK: - Constants
 
-    static let packageID      = "com.kenscott.get-clear"
-    static let binaryPath     = "/usr/local/bin/get-clear"
+    static let packageID = "com.kenscott.get-clear"
+    static let binaryPath = "/usr/local/bin/get-clear"
     static let releasesAPIURL = "https://api.github.com/repos/kscott/get-clear/releases/latest"
     static let releasesTagURL = "https://github.com/kscott/get-clear/releases/tag/v"
 
@@ -58,7 +57,7 @@ public enum UpdateChecker {
         guard let data = try? Data(contentsOf: cacheURL),
               let json = try? JSONSerialization.jsonObject(with: data) as? [String: String],
               let version = json["version"],
-              let url     = json["url"],
+              let url = json["url"],
               let checked = json["checked"].flatMap({ iso8601.date(from: $0) })
         else { return nil }
         return (version, url, checked)
@@ -70,16 +69,16 @@ public enum UpdateChecker {
         guard let apiURL = URL(string: releasesAPIURL) else { return nil }
         var request = URLRequest(url: apiURL)
         request.setValue(userAgent, forHTTPHeaderField: "User-Agent")
-        var result: (String, String)? = nil
+        var result: (String, String)?
         let sem = DispatchSemaphore(value: 0)
         URLSession.shared.dataTask(with: request) { data, _, _ in
             defer { sem.signal() }
-            guard let data = data,
+            guard let data,
                   let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-                  let tag  = json["tag_name"] as? String,
+                  let tag = json["tag_name"] as? String,
                   let assets = json["assets"] as? [[String: Any]],
-                  let asset  = assets.first(where: { ($0["name"] as? String) == "get-clear.pkg" }),
-                  let url    = asset["browser_download_url"] as? String
+                  let asset = assets.first(where: { ($0["name"] as? String) == "get-clear.pkg" }),
+                  let url = asset["browser_download_url"] as? String
             else { return }
             let ver = tag.hasPrefix("v") ? String(tag.dropFirst()) : tag
             guard ver != "latest" else { return } // rolling tag — no semver info available
@@ -109,7 +108,7 @@ public enum UpdateChecker {
         p.executableURL = URL(fileURLWithPath: binaryPath)
         p.arguments = ["check-update"]
         p.standardOutput = FileHandle.nullDevice
-        p.standardError  = FileHandle.nullDevice
+        p.standardError = FileHandle.nullDevice
         do {
             try p.run()
             // Create a new process group so the child outlives the parent
@@ -126,7 +125,7 @@ public enum UpdateChecker {
     public static func writeCache(version: String, url: String) {
         let json: [String: String] = [
             "version": version,
-            "url":     url,
+            "url": url,
             "checked": iso8601.string(from: Date())
         ]
         guard let data = try? JSONSerialization.data(withJSONObject: json) else { return }
@@ -140,7 +139,7 @@ public enum UpdateChecker {
     public static func isNewer(_ a: String, than b: String) -> Bool {
         let av = components(of: a)
         let bv = components(of: b)
-        for i in 0..<3 {
+        for i in 0 ..< 3 {
             let ai = i < av.count ? av[i] : 0
             let bi = i < bv.count ? bv[i] : 0
             if ai != bi { return ai > bi }
@@ -150,7 +149,7 @@ public enum UpdateChecker {
 
     private static func components(of version: String) -> [Int] {
         version.trimmingCharacters(in: CharacterSet(charactersIn: "v"))
-               .components(separatedBy: ".")
-               .compactMap(Int.init)
+            .components(separatedBy: ".")
+            .compactMap(Int.init)
     }
 }

@@ -1,9 +1,9 @@
 // ToolIdentitySpec.swift
 // Tests for ToolIdentity.
 
-import Quick
-import Nimble
 import GetClearKit
+import Nimble
+import Quick
 
 final class ToolIdentitySpec: QuickSpec {
     override class func spec() {

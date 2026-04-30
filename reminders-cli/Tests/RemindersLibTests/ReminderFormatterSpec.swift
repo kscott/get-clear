@@ -2,23 +2,24 @@
 //
 // Tests for ReminderFormatter — metaLine, row formatters, show output, and lookup messages.
 
-import Quick
-import Nimble
 import Foundation
 import GetClearKit
+import Nimble
+import Quick
 import RemindersLib
 
 final class ReminderFormatterSpec: QuickSpec {
     override class func spec() {
-
         describe("metaLine") {
-
             context("no metadata") {
                 it("returns empty string for empty meta") {
                     expect(metaLine(for: ReminderMeta())) == ""
                 }
                 it("returns empty string when all flags are false and priority is 0") {
-                    expect(metaLine(for: ReminderMeta(formattedDue: nil, isRepeating: false, priority: 0, hasNote: false, hasURL: false))) == ""
+                    expect(
+                        metaLine(for: ReminderMeta(formattedDue: nil, isRepeating: false, priority: 0, hasNote: false, hasURL: false))
+                    ) ==
+                        ""
                 }
             }
 
@@ -143,7 +144,8 @@ final class ReminderFormatterSpec: QuickSpec {
                     let result = formatAddConfirmation(
                         title: "Pay rent", list: "Personal",
                         date: nil, recurrence: nil,
-                        priority: "", hasNote: false, url: "")
+                        priority: "", hasNote: false, url: ""
+                    )
                     expect(result) == "Added: Pay rent (in Personal)"
                 }
             }
@@ -153,7 +155,8 @@ final class ReminderFormatterSpec: QuickSpec {
                     let result = formatAddConfirmation(
                         title: "Pay rent", list: "Personal",
                         date: pd, recurrence: nil,
-                        priority: "", hasNote: false, url: "")
+                        priority: "", hasNote: false, url: ""
+                    )
                     expect(result).to(contain("due"))
                 }
             }
@@ -163,7 +166,8 @@ final class ReminderFormatterSpec: QuickSpec {
                     let result = formatAddConfirmation(
                         title: "Pay rent", list: "Personal",
                         date: nil, recurrence: spec,
-                        priority: "", hasNote: false, url: "")
+                        priority: "", hasNote: false, url: ""
+                    )
                     expect(result).to(contain("repeat monthly"))
                 }
             }
@@ -172,14 +176,16 @@ final class ReminderFormatterSpec: QuickSpec {
                     let result = formatAddConfirmation(
                         title: "Pay rent", list: "Personal",
                         date: nil, recurrence: nil,
-                        priority: "high", hasNote: false, url: "")
+                        priority: "high", hasNote: false, url: ""
+                    )
                     expect(result).to(contain("priority high"))
                 }
                 it("omits priority segment when priority is empty") {
                     let result = formatAddConfirmation(
                         title: "Pay rent", list: "Personal",
                         date: nil, recurrence: nil,
-                        priority: "", hasNote: false, url: "")
+                        priority: "", hasNote: false, url: ""
+                    )
                     expect(result).notTo(contain("priority"))
                 }
             }
@@ -188,14 +194,16 @@ final class ReminderFormatterSpec: QuickSpec {
                     let result = formatAddConfirmation(
                         title: "Pay rent", list: "Personal",
                         date: nil, recurrence: nil,
-                        priority: "", hasNote: true, url: "")
+                        priority: "", hasNote: true, url: ""
+                    )
                     expect(result).to(contain("+ note"))
                 }
                 it("omits note segment when hasNote is false") {
                     let result = formatAddConfirmation(
                         title: "Pay rent", list: "Personal",
                         date: nil, recurrence: nil,
-                        priority: "", hasNote: false, url: "")
+                        priority: "", hasNote: false, url: ""
+                    )
                     expect(result).notTo(contain("note"))
                 }
             }
@@ -204,14 +212,16 @@ final class ReminderFormatterSpec: QuickSpec {
                     let result = formatAddConfirmation(
                         title: "Pay rent", list: "Personal",
                         date: nil, recurrence: nil,
-                        priority: "", hasNote: false, url: "https://example.com")
+                        priority: "", hasNote: false, url: "https://example.com"
+                    )
                     expect(result).to(contain("url https://example.com"))
                 }
                 it("omits url segment when url is empty") {
                     let result = formatAddConfirmation(
                         title: "Pay rent", list: "Personal",
                         date: nil, recurrence: nil,
-                        priority: "", hasNote: false, url: "")
+                        priority: "", hasNote: false, url: ""
+                    )
                     expect(result).notTo(contain("url"))
                 }
             }
@@ -221,7 +231,8 @@ final class ReminderFormatterSpec: QuickSpec {
                     let result = formatAddConfirmation(
                         title: "Pay rent", list: "Personal",
                         date: nil, recurrence: spec,
-                        priority: "high", hasNote: true, url: "https://example.com")
+                        priority: "high", hasNote: true, url: "https://example.com"
+                    )
                     expect(result).to(contain(" · "))
                     expect(result).to(contain("repeat weekly"))
                     expect(result).to(contain("priority high"))

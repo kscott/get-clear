@@ -1,0 +1,36 @@
+#!/bin/bash
+# Blocks push on SwiftLint errors or SwiftFormat violations.
+# Warnings are allowed through and intentionally not shown here — run `swiftlint lint` to review them.
+# To fix: swiftlint --fix && swiftformat .
+
+set -uo pipefail
+
+if ! command -v swiftlint &>/dev/null; then
+    echo "swiftlint not found — run: brew install swiftlint"
+    exit 1
+fi
+
+if ! command -v swiftformat &>/dev/null; then
+    echo "swiftformat not found — run: brew install swiftformat"
+    exit 1
+fi
+
+echo "SwiftLint..."
+lint_output=$(swiftlint lint --quiet 2>&1)
+lint_errors=$(echo "$lint_output" | grep ": error:" || true)
+if [ -n "$lint_errors" ]; then
+    echo "$lint_errors"
+    echo ""
+    echo "Fix SwiftLint errors before pushing. Run: swiftlint --fix"
+    exit 1
+fi
+
+echo "SwiftFormat..."
+if ! swiftformat --lint . &>/dev/null; then
+    swiftformat --lint . 2>/dev/null | grep "error:" || true
+    echo ""
+    echo "Fix formatting before pushing. Run: swiftformat ."
+    exit 1
+fi
+
+echo "Lint clean."

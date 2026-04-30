@@ -7,9 +7,9 @@ import Foundation
 /// Returns all identifiers when `filter` is nil.
 /// Returns an empty array when `filter` names a subset not found in config.
 public func resolveCalendarIdentifiers(
-    filter:    String?,
+    filter: String?,
     calendars: [CalendarItem],
-    config:    CalendarConfig
+    config: CalendarConfig
 ) -> [String]? {
     guard let filter else { return nil }
     guard let names = config.subsets[filter.lowercased()] else { return [] }

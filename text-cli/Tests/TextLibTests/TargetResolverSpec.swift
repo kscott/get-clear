@@ -1,29 +1,33 @@
 // TargetResolverSpec.swift
 // Tests for TextLib resolveTarget and requiresContactLookup.
 
-import Quick
-import Nimble
-import Foundation
 import ContactKit
+import Foundation
+import Nimble
+import Quick
 import TextLib
 
-private func phone(_ value: String) -> ContactField { ContactField(label: "mobile", value: value) }
-private func email(_ value: String) -> ContactField { ContactField(label: "home", value: value) }
+private func phone(_ value: String) -> ContactField {
+    ContactField(label: "mobile", value: value)
+}
+
+private func email(_ value: String) -> ContactField {
+    ContactField(label: "home", value: value)
+}
+
 private func contact(_ name: String, phones: [ContactField] = [], emails: [ContactField] = []) -> Contact {
     Contact(identifier: "", name: name, emails: emails, phones: phones, company: "")
 }
 
 final class TargetResolverSpec: QuickSpec {
     override class func spec() {
-
-        let alice   = contact("Alice Smith",   phones: [phone("+15551234567")], emails: [email("alice@example.com")])
-        let bob     = contact("Bob Jones",     phones: [phone("(555) 999-8888")])
+        let alice = contact("Alice Smith", phones: [phone("+15551234567")], emails: [email("alice@example.com")])
+        let bob = contact("Bob Jones", phones: [phone("(555) 999-8888")])
         let charlie = contact("Charlie Brown", emails: [email("charlie@example.com")])
-        let noAddr  = contact("Dana White")
-        let all     = [alice, bob, charlie, noAddr]
+        let noAddr = contact("Dana White")
+        let all = [alice, bob, charlie, noAddr]
 
         describe("resolveTarget") {
-
             context("direct phone number") {
                 it("normalizes 10-digit number to E.164 address") {
                     expect(try! resolveTarget(query: "5551234567", contacts: []).address) == "+15551234567"

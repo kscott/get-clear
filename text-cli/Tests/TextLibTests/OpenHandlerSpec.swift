@@ -1,9 +1,9 @@
 // OpenHandlerSpec.swift
 // Tests for TextLib handleOpen.
 
-import Quick
-import Nimble
 import Foundation
+import Nimble
+import Quick
 import TextLib
 
 final class OpenHandlerSpec: QuickSpec {

@@ -1,12 +1,11 @@
-import Quick
-import Nimble
 import ContactKit
-import ContactTestSupport
 import ContactsLib
+import ContactTestSupport
+import Nimble
+import Quick
 
 final class RemoveHandlerSpec: AsyncSpec {
     override class func spec() {
-
         var store: SpyContactStore!
         beforeEach { store = SpyContactStore() }
 
@@ -25,7 +24,7 @@ final class RemoveHandlerSpec: AsyncSpec {
         describe("handleRemove (from group)") {
             it("calls store.remove(identifier:from:) and returns confirmation") {
                 store.contacts = [aliceContact]
-                store.groups   = [ContactGroup(identifier: "g1", name: "Friends")]
+                store.groups = [ContactGroup(identifier: "g1", name: "Friends")]
                 let out = try await handleRemove(args: ["remove", "alice", "from", "Friends"], store: store)
                 expect(store.removedFromGroup.count) == 1
                 expect(store.removedFromGroup.first?.identifier) == "alice-id"

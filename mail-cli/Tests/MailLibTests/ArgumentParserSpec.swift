@@ -2,10 +2,10 @@
 //
 // Tests for MailLib ArgumentParser — send argument parsing into ComposedMessage.
 
-import Quick
-import Nimble
 import Foundation
 import MailLib
+import Nimble
+import Quick
 
 final class ArgumentParserSpec: QuickSpec {
     override class func spec() {

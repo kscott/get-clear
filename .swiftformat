@@ -1,0 +1,13 @@
+--indent 4
+--allman false
+--semicolons never
+--linebreaks lf
+--trimwhitespace nonblank-lines
+--importgrouping preserve
+--wraparguments preserve
+--wrapcollections preserve
+--trailingcommas never
+--strip-unused-args closure-only
+--self remove
+--maxwidth 140
+--exclude .build,reminders-cli/.build,calendar-cli/.build,contacts-cli/.build,mail-cli/.build,text-cli/.build

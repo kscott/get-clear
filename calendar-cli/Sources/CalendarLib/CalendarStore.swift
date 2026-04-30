@@ -18,13 +18,13 @@ public protocol CalendarStore {
 public extension CalendarStore {
     func resolve(title: String, in range: DateInterval, calendarIdentifiers: [String]?) async throws -> EventItem {
         let events = try await fetchEvents(in: range, calendarIdentifiers: calendarIdentifiers)
-        let lower  = title.lowercased()
+        let lower = title.lowercased()
         let matches = events.filter { e in
             e.title.caseInsensitiveCompare(title) == .orderedSame || e.title.lowercased().contains(lower)
         }
         switch matches.count {
-        case 0:  throw CalendarStoreError.notFound(title)
-        case 1:  return matches[0]
+        case 0: throw CalendarStoreError.notFound(title)
+        case 1: return matches[0]
         default: throw CalendarStoreError.ambiguous(matches)
         }
     }

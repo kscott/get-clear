@@ -1,14 +1,12 @@
-import Quick
-import Nimble
-import GetClearKit
 import ContactKit
 import ContactsLib
+import GetClearKit
+import Nimble
+import Quick
 
 final class ContactChangeParsingSpec: QuickSpec {
     override class func spec() {
-
         describe("parseContactChanges") {
-
             context("email: add") {
                 it("returns added case for 'add email X'") {
                     let c = try! parseContactChanges(["add", "email", "alice@example.com"])

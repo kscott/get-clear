@@ -1,8 +1,8 @@
 // MailClientFactory.swift
 // Backend selection for mail — returns any MailClient from the configured backend.
 
-import MailLib
 import MailJMAP
+import MailLib
 
 /// Connect using the token stored in Keychain.
 public func makeMailClient() async throws -> any MailClient {

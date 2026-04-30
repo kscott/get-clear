@@ -2,9 +2,9 @@
 // Interactive setup: token prompting, identity selection, Keychain storage, config write.
 
 import Foundation
-import MailLib
-import MailClientFactory
 import GetClearKit
+import MailClientFactory
+import MailLib
 
 func handleSetup(args: [String], client: any MailClient) async throws {
     let token: String
@@ -34,7 +34,7 @@ func handleSetup(args: [String], client: any MailClient) async throws {
         }
         print("\nDefault identity [1]: ", terminator: "")
         fflush(stdout)
-        let input  = readLine(strippingNewline: true)?.trimmingCharacters(in: .whitespaces) ?? ""
+        let input = readLine(strippingNewline: true)?.trimmingCharacters(in: .whitespaces) ?? ""
         let choice = Int(input) ?? 1
         defaultFrom = selectIdentityEmail(from: identities, choice: choice)
     }

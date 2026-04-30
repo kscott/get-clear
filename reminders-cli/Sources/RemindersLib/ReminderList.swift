@@ -18,10 +18,10 @@ public struct ReminderList: Equatable {
         source: String? = nil,
         isModifiable: Bool = true
     ) {
-        self.identifier   = identifier
-        self.title        = title
-        self.color        = color
-        self.source       = source
+        self.identifier = identifier
+        self.title = title
+        self.color = color
+        self.source = source
         self.isModifiable = isModifiable
     }
 

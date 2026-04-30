@@ -11,14 +11,17 @@ public func handleFind(
     let query: String
     let range: ParsedRange
     if rem.count > 1, let r = parseRange(rem.dropFirst().joined(separator: " ")) {
-        query = rem[0]; range = r
+        query = rem[0]
+        range = r
     } else if rem.count > 1, let r = parseRange(rem.last!) {
-        query = rem.dropLast().joined(separator: " "); range = r
+        query = rem.dropLast().joined(separator: " ")
+        range = r
     } else {
-        query = rem.joined(separator: " "); range = parseRange("30d")!
+        query = rem.joined(separator: " ")
+        range = parseRange("30d")!
     }
     let lower = query.lowercased()
-    let ids   = try await resolvedIdentifiers(calFilter: calFilter, config: config, store: store)
+    let ids = try await resolvedIdentifiers(calFilter: calFilter, config: config, store: store)
     if ids?.isEmpty == true { fail("No calendars matched filter '\(calFilter!)'") }
     let matches = try await store.fetchEvents(in: range.interval, calendarIdentifiers: ids)
         .filter { $0.title.lowercased().contains(lower) || ($0.notes?.lowercased().contains(lower) ?? false) }

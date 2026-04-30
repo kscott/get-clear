@@ -17,17 +17,17 @@ await runCLI(args: args, identity: identity, usage: usage) { command, args in
 
     do {
         switch command {
-        case .what:   print(try await handleWhat(args: args))
-        case .lists:  print(try await handleLists(store: store))
-        case .list:   print(try await handleList(args: args, store: store))
-        case .find:   print(try await handleFind(args: args, store: store))
-        case .show:   print(try await handleShow(args: args, store: store))
-        case .add:    print(try await handleAdd(args: args, store: store))
-        case .change: print(try await handleChange(args: args, store: store))
-        case .done:   print(try await handleDone(args: args, store: store))
-        case .rename: print(try await handleRename(args: args, store: store))
-        case .remove: print(try await handleRemove(args: args, store: store))
-        default:      print(usage())
+        case .what: try await print(handleWhat(args: args))
+        case .lists: try await print(handleLists(store: store))
+        case .list: try await print(handleList(args: args, store: store))
+        case .find: try await print(handleFind(args: args, store: store))
+        case .show: try await print(handleShow(args: args, store: store))
+        case .add: try await print(handleAdd(args: args, store: store))
+        case .change: try await print(handleChange(args: args, store: store))
+        case .done: try await print(handleDone(args: args, store: store))
+        case .rename: try await print(handleRename(args: args, store: store))
+        case .remove: try await print(handleRemove(args: args, store: store))
+        default: print(usage())
         }
     } catch let e as ReminderHandlerError {
         fail(e.message)

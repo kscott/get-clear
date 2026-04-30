@@ -1,18 +1,16 @@
 // SendHandlerSpec.swift
 // Tests for MailLib handleSend.
 
-import Quick
-import Nimble
-import Foundation
-import MailLib
 import ContactKit
 import ContactTestSupport
+import Foundation
+import MailLib
+import Nimble
+import Quick
 
 final class MailSendHandlerSpec: AsyncSpec {
     override class func spec() {
-
         describe("handleSend") {
-
             context("missing arguments") {
                 it("throws when no recipient is provided") {
                     await expect {
@@ -41,7 +39,7 @@ final class MailSendHandlerSpec: AsyncSpec {
             context("sending to a raw email address") {
                 it("calls send on the client") {
                     let client = SpyMailClient()
-                    let store  = SpyContactStore()
+                    let store = SpyContactStore()
                     _ = try await handleSend(args: ["send", "alice@example.com", "body", "Hello"],
                                              config: testConfig, client: client, contactStore: store)
                     expect(client.sentEmails.count) == 1
@@ -94,7 +92,7 @@ final class MailSendHandlerSpec: AsyncSpec {
             context("contact name resolution") {
                 it("resolves a contact name to an email address") {
                     let client = SpyMailClient()
-                    let store  = SpyContactStore()
+                    let store = SpyContactStore()
                     store.contacts = [aliceContact]
                     _ = try await handleSend(args: ["send", "Alice", "body", "Hello"],
                                              config: testConfig, client: client, contactStore: store)
@@ -102,7 +100,7 @@ final class MailSendHandlerSpec: AsyncSpec {
                 }
                 it("includes the resolved display name in the output") {
                     let client = SpyMailClient()
-                    let store  = SpyContactStore()
+                    let store = SpyContactStore()
                     store.contacts = [aliceContact]
                     let result = try await handleSend(args: ["send", "Alice", "body", "Hello"],
                                                       config: testConfig, client: client, contactStore: store)
@@ -119,18 +117,19 @@ final class MailSendHandlerSpec: AsyncSpec {
             context("cc field") {
                 it("resolves a cc recipient") {
                     let client = SpyMailClient()
-                    let store  = SpyContactStore()
+                    let store = SpyContactStore()
                     store.contacts = [aliceContact, bobContact]
                     _ = try await handleSend(
                         args: ["send", "alice@example.com", "cc", "bob@jones.org", "body", "Hi"],
-                        config: testConfig, client: client, contactStore: store)
+                        config: testConfig, client: client, contactStore: store
+                    )
                     expect(client.sentEmails.first?.cc.first?.email) == "bob@jones.org"
                 }
             }
 
             context("client throws") {
                 it("propagates send errors") {
-                    let client     = SpyMailClient()
+                    let client = SpyMailClient()
                     client.shouldThrow = MailError.sendFailed("network error")
                     await expect {
                         try await handleSend(args: ["send", "alice@example.com", "body", "Hello"],
@@ -164,14 +163,14 @@ final class MailSendHandlerSpec: AsyncSpec {
             }
             it("maps group names to member AddressEntries") {
                 let store = SpyContactStore()
-                store.groups   = [ContactGroup(identifier: "g1", name: "Team")]
+                store.groups = [ContactGroup(identifier: "g1", name: "Team")]
                 store.contacts = [aliceContact]
                 let result = try await loadGroupMembers(from: store)
                 expect(result["Team"]?.first?.email) == "alice@example.com"
             }
             it("omits contacts with no email from group members") {
                 let store = SpyContactStore()
-                store.groups   = [ContactGroup(identifier: "g1", name: "Team")]
+                store.groups = [ContactGroup(identifier: "g1", name: "Team")]
                 store.contacts = [noEmailContact]
                 let result = try await loadGroupMembers(from: store)
                 expect(result).to(beEmpty())

@@ -1,15 +1,13 @@
 // ReminderLookupSpec.swift
 // Tests for lookup(title:in:) — exact case-insensitive match with disambiguation.
 
-import Quick
 import Nimble
+import Quick
 import RemindersLib
 
 final class ReminderLookupSpec: QuickSpec {
     override class func spec() {
-
         describe("lookup") {
-
             context("single match") {
                 it("returns found with the correct index") {
                     let items = [makeItem(title: "Pay rent"), makeItem(title: "Buy groceries")]
@@ -44,14 +42,14 @@ final class ReminderLookupSpec: QuickSpec {
                     let items = [
                         makeItem(title: "Pay rent", list: personalList),
                         makeItem(title: "Buy groceries"),
-                        makeItem(title: "Pay rent", list: workList),
+                        makeItem(title: "Pay rent", list: workList)
                     ]
                     expect(lookup(title: "Pay rent", in: items)) == .ambiguous([0, 2])
                 }
                 it("is case-insensitive for ambiguous matches") {
                     let items = [
                         makeItem(title: "Pay Rent", list: personalList),
-                        makeItem(title: "PAY RENT", list: workList),
+                        makeItem(title: "PAY RENT", list: workList)
                     ]
                     expect(lookup(title: "pay rent", in: items)) == .ambiguous([0, 1])
                 }

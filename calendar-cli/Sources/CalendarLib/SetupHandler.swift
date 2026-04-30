@@ -8,15 +8,16 @@ import GetClearKit
 /// Parses user-supplied comma-separated tokens into matched calendar titles and unmatched tokens.
 /// Tokens may be numeric (referring to position in `numbered`) or calendar-title strings.
 public func parseCalendarTokens(
-    tokens:   [String],
+    tokens: [String],
     numbered: [(number: Int, title: String)],
-    all:      [CalendarItem]
+    all: [CalendarItem]
 ) -> (matched: [String], unmatched: [String]) {
-    var matched:   [String] = []
+    var matched: [String] = []
     var unmatched: [String] = []
     for token in tokens {
         if let num = Int(token),
-           let entry = numbered.first(where: { $0.number == num }) {
+           let entry = numbered.first(where: { $0.number == num })
+        {
             matched.append(entry.title)
         } else if let cal = all.first(where: { $0.title.lowercased() == token.lowercased() }) {
             matched.append(cal.title)
@@ -41,7 +42,8 @@ public func buildSubsetTOML(subsets: [(name: String, calendars: [String])]) -> S
 /// Returns (number, title) pairs for display and token matching.
 public func numberCalendars(_ calendars: [CalendarItem]) -> [(number: Int, title: String)] {
     let sorted = calendars.sorted {
-        let s0 = $0.source ?? ""; let s1 = $1.source ?? ""
+        let s0 = $0.source ?? ""
+        let s1 = $1.source ?? ""
         return s0 == s1 ? $0.title < $1.title : s0 < s1
     }
     return sorted.enumerated().map { (number: $0.offset + 1, title: $0.element.title) }
@@ -61,7 +63,7 @@ public func handleSetup(store: any CalendarStore) async throws -> String {
     }
 
     let numbered = numberCalendars(all)
-    let grouped  = Dictionary(grouping: all) { $0.source ?? "" }
+    let grouped = Dictionary(grouping: all) { $0.source ?? "" }
     print("Available calendars:\n")
     var idx = 0
     for source in grouped.keys.sorted() {
@@ -76,18 +78,24 @@ public func handleSetup(store: any CalendarStore) async throws -> String {
     print("Enter calendar names or numbers, comma-separated. Press Enter with no name to finish.\n")
 
     var subsets: [(name: String, calendars: [String])] = []
-    signal(SIGINT) { _ in print("\nCancelled."); exit(0) }
+    signal(SIGINT) { _ in print("\nCancelled.")
+        exit(0)
+    }
 
     while true {
         print("Subset name: ", terminator: "")
         fflush(stdout)
-        guard let rawNameInput = readLine() else { print("\nCancelled."); break }
+        guard let rawNameInput = readLine() else { print("\nCancelled.")
+            break
+        }
         let subsetName = sanitize(rawNameInput).lowercased()
         guard !subsetName.isEmpty else { break }
 
         print("Calendars for \"\(subsetName)\": ", terminator: "")
         fflush(stdout)
-        guard let rawCalInput = readLine() else { print("\nCancelled."); break }
+        guard let rawCalInput = readLine() else { print("\nCancelled.")
+            break
+        }
         let calInput = sanitize(rawCalInput)
         guard !calInput.trimmingCharacters(in: .whitespaces).isEmpty else {
             print("  No calendars entered — skipping\n")

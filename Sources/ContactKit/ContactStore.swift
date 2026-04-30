@@ -14,10 +14,10 @@ public enum ContactStoreError: Error {
 extension ContactStoreError: LocalizedError {
     public var errorDescription: String? {
         switch self {
-        case .notFound(let q):      return "No contact found matching '\(q)'"
-        case .ambiguous(let cs):    return "Multiple contacts match — \(cs.map(\.displayName).joined(separator: ", "))"
-        case .groupNotFound(let n): return "No group named '\(n)'"
-        case .conflict:             return "Could not save — contact may have been modified in another app"
+        case let .notFound(q): "No contact found matching '\(q)'"
+        case let .ambiguous(cs): "Multiple contacts match — \(cs.map(\.displayName).joined(separator: ", "))"
+        case let .groupNotFound(n): "No group named '\(n)'"
+        case .conflict: "Could not save — contact may have been modified in another app"
         }
     }
 }
@@ -39,10 +39,10 @@ public extension ContactStore {
     }
 
     func resolve(query: String) async throws -> Contact {
-        let matches = matchContacts(query, in: try await fetchContacts(in: nil))
+        let matches = try await matchContacts(query, in: fetchContacts(in: nil))
         switch matches.count {
-        case 0:  throw ContactStoreError.notFound(query)
-        case 1:  return matches[0]
+        case 0: throw ContactStoreError.notFound(query)
+        case 1: return matches[0]
         default: throw ContactStoreError.ambiguous(matches)
         }
     }
@@ -55,4 +55,3 @@ public extension ContactStore {
         return match
     }
 }
-

@@ -1,8 +1,8 @@
 // main.swift
 // Entry point for text-bin. Argument parsing and dispatch only.
 
-import Foundation
 import AppKit
+import Foundation
 import GetClearKit
 import TextLib
 
@@ -19,8 +19,8 @@ await runCLI(args: args, identity: identity, usage: usage) { command, args in
         case .what: print(handleWhat(args: args))
         case .send:
             let sender = await makeMessageSender()
-            print(try await handleSend(args: args, sender: sender))
-        default:    print(usage())
+            try await print(handleSend(args: args, sender: sender))
+        default: print(usage())
         }
     } catch {
         fail(error.localizedDescription)
