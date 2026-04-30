@@ -87,12 +87,11 @@ All five extractions complete (#35–39). Each tool's `main.swift` is ≤60 line
 - `CalendarEventKit` (framework boundary): `AppleCalendarStore` — full `CalendarStore` conformance; owns `EKEvent`/`EKCalendar`/`EKParticipant` conversion; `hexColor(_:)` for CGColor → hex
 - `CalendarCLI`: `main.swift` (~40 lines), `Usage`, `Version`
 
-**Other tools** — two-tier (Lib + CLI); three-tier pending (#142):
-| Tool | Lib contains |
-|---|---|
-| mail | `JMAPClient`, `MailConfiguration`, `MailErrors`, `MailFormatter`, `RecipientResolver`, `SendCommand`, `SetupCommand` |
-
-`MailClient` protocol abstraction tracked in #142. Use reminders-cli as the template. Required before Google backends (#145, #146).
+**mail-cli** — three-tier complete (#142):
+- `MailLib`: `MailClient` protocol + `OutboundEmail` + `EmailSummary`, `SendHandler`, `FindHandler`, `WhatHandler`, `OpenHandler`, `SetupHandler` (`selectIdentityEmail`), `RecipientResolver`, `ArgumentParser`, `MailConfiguration`, `MailErrors`, `MailFormatter`
+- `MailJMAP` (framework boundary): `JMAPClient` — `MailClient` conformance over JMAP; `Keychain` — JMAP credential storage (Security framework)
+- `MailClientFactory` — backend selection; `makeMailClient()`, `makeMailClient(token:)`, `loadMailCredential()`, `saveMailCredential()`. Mirrors `ContactStoreFactory` pattern.
+- `MailCLI`: `main.swift` (~30 lines), `SetupCommand` (interactive flow only), `StoreFactory`, `Usage`, `Version`
 
 ### Command dispatch (as of 2026-04-10)
 
@@ -165,6 +164,22 @@ contacts-cli is the reference implementation (adopted 2026-04-10, commit 37e9a75
 - `matchContacts` is a free function, not a protocol requirement — pure, testable, no store dependency
 - `toContact()` and `cleanLabel()` are `internal` in `AppleContactKit` — not part of the tool-implementor contract
 - `makeContactStore()` in `ContactStoreFactory` is the single entry point for all CLI binaries; concrete backend type never exposed
+
+### 2026-04-29 — mail-cli three-tier migration complete (#142)
+
+**Decision:** Three tiers introduced for mail — `MailLib` (pure handlers + protocol), `MailJMAP` (JMAP boundary), `MailCLI` (dispatch only). Plus `MailClientFactory` — a fourth target mirroring `ContactStoreFactory` for backend selection.
+
+**Key patterns:**
+- `MailClient` protocol with `send(_:)`, `saveDraft(_:)`, `find(query:limit:)`, `fetchIdentities()`. Two separate methods for send vs. draft avoids a Bool flag on `OutboundEmail`.
+- `OutboundEmail` pure value type with `from: MailIdentity`, `to/cc: [AddressEntry]`, resolved body text, attachment paths. `[AddressEntry]` is the resolved type; `[String]` is the unresolved query type passed to `buildRecipients`.
+- `buildRecipients(to: [String], cc: [String], ...)` — symmetric `[String]` for both fields, ready for multi-recipient when the parser supports it.
+- `MailClientFactory` wraps backend construction so `main.swift` and all handlers are backend-agnostic. Gmail support (#61) adds a new `GmailClient: MailClient` + backend selection in `MailClientFactory` without touching any handler.
+- `Keychain.swift` moved to `MailJMAP` — JMAP credential storage is backend-specific, not suite infrastructure.
+- `selectIdentityEmail(from:choice:)` extracted to `MailLib/SetupHandler.swift` — the testable pure function from the interactive setup flow.
+- `RecipientResolver` updated to use `Contact` (ContactKit) and `matchContacts()` — `MailContact` deleted.
+- `webAppURL` added to `MailConfig` (defaults to Fastmail) — mail has no native app to open, so the URL is config-driven.
+
+**Gmail blockers remaining for #61:** `MailConfig` needs a `backend` field, `MailClientFactory` needs backend dispatch, `makeMailClient(token:)` API is JMAP-specific (Gmail OAuth is browser-based), `SetupCommand` is entirely JMAP-specific.
 
 ### 2026-04-29 — calendar-cli three-tier migration complete (#140)
 

@@ -19,10 +19,15 @@ public struct MailIdentity: Equatable {
 public struct MailConfig {
     public var defaultFrom: String
     public var identities:  [MailIdentity]
+    public var webAppURL:   URL
 
-    public init(defaultFrom: String, identities: [MailIdentity]) {
+    public static let defaultWebAppURL = URL(string: "https://app.fastmail.com")!
+
+    public init(defaultFrom: String, identities: [MailIdentity],
+                webAppURL: URL = MailConfig.defaultWebAppURL) {
         self.defaultFrom = defaultFrom
         self.identities  = identities
+        self.webAppURL   = webAppURL
     }
 
     public func identity(for email: String) -> MailIdentity? {
@@ -38,6 +43,7 @@ public let configURL: URL = FileManager.default.homeDirectoryForCurrentUser
 public func parseConfig(_ content: String) -> MailConfig {
     var defaultFrom = ""
     var identities: [MailIdentity] = []
+    var webAppURL   = MailConfig.defaultWebAppURL
     var inIdentities = false
 
     for rawLine in content.components(separatedBy: "\n") {
@@ -61,10 +67,11 @@ public func parseConfig(_ content: String) -> MailConfig {
             }
         } else {
             if key == "default_from" { defaultFrom = value }
+            if key == "web_app_url", let url = URL(string: value) { webAppURL = url }
         }
     }
 
-    return MailConfig(defaultFrom: defaultFrom, identities: identities)
+    return MailConfig(defaultFrom: defaultFrom, identities: identities, webAppURL: webAppURL)
 }
 
 public func loadConfig(from url: URL = configURL) throws -> MailConfig {
@@ -77,6 +84,7 @@ public func loadConfig(from url: URL = configURL) throws -> MailConfig {
 public func saveConfig(_ config: MailConfig, to url: URL = configURL) throws {
     var lines = [
         "default_from = \"\(config.defaultFrom)\"",
+        "web_app_url = \"\(config.webAppURL.absoluteString)\"",
         "",
         "[identities]",
         "# id = \"email|display name\"",

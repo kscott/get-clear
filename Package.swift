@@ -183,20 +183,31 @@ let package = Package(
 
         .target(
             name: "MailLib",
+            dependencies: ["GetClearKit", "ContactKit"],
             path: "mail-cli/Sources/MailLib"
+        ),
+        .target(
+            name: "MailJMAP",
+            dependencies: ["MailLib", "GetClearKit"],
+            path: "mail-cli/Sources/MailJMAP"
+        ),
+        .target(
+            name: "MailClientFactory",
+            dependencies: ["MailLib", "MailJMAP"],
+            path: "mail-cli/Sources/MailClientFactory"
         ),
         .executableTarget(
             name: "mail-bin",
-            dependencies: ["MailLib", "GetClearKit"],
+            dependencies: ["MailClientFactory", "MailLib", "ContactStoreFactory", "GetClearKit"],
             path: "mail-cli/Sources/MailCLI",
             linkerSettings: [
-                .linkedFramework("Contacts"),
+                .linkedFramework("AppKit"),
             ]
         ),
         .testTarget(
             name: "MailLibTests",
             dependencies: [
-                "MailLib",
+                "MailLib", "ContactKit", "ContactTestSupport", "GetClearKit",
                 .product(name: "Quick", package: "Quick"),
                 .product(name: "Nimble", package: "Nimble"),
             ],

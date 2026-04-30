@@ -9,7 +9,7 @@ import MailLib
 private let keychainService = "mail-cli"
 private let keychainAccount = "jmap-token"
 
-func loadToken() throws -> String {
+public func loadToken() throws -> String {
     let query: [String: Any] = [
         kSecClass      as String: kSecClassGenericPassword,
         kSecAttrService as String: keychainService,
@@ -27,7 +27,7 @@ func loadToken() throws -> String {
     return token
 }
 
-func storeToken(_ token: String) throws {
+public func storeToken(_ token: String) throws {
     let attrs: [String: Any] = [
         kSecClass      as String: kSecClassGenericPassword,
         kSecAttrService as String: keychainService,

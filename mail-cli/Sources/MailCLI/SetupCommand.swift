@@ -1,17 +1,16 @@
 // SetupCommand.swift
-//
 // Interactive setup: token prompting, identity selection, Keychain storage, config write.
 
 import Foundation
 import MailLib
+import MailClientFactory
 import GetClearKit
 
-func handleSetup(args: [String]) async throws {
-    // Resolve token: argument → existing Keychain → interactive prompt
+func handleSetup(args: [String], client: any MailClient) async throws {
     let token: String
     if args.count > 1 {
         token = args[1]
-    } else if let existing = try? loadToken() {
+    } else if let existing = loadMailCredential() {
         token = existing
     } else {
         print("Enter your Fastmail JMAP token: ", terminator: "")
@@ -22,13 +21,9 @@ func handleSetup(args: [String]) async throws {
         token = t
     }
 
-    print("Connecting to Fastmail...")
-    let client = try await JMAPClient.connect(token: token)
-
     print("Fetching identities...")
-    let identities = try await discoverIdentities(client: client)
+    let identities = try await client.fetchIdentities()
 
-    // Select default identity
     let defaultFrom: String
     if identities.count == 1 {
         defaultFrom = identities[0].email
@@ -40,15 +35,13 @@ func handleSetup(args: [String]) async throws {
         }
         print("\nDefault identity [1]: ", terminator: "")
         fflush(stdout)
-        let input = readLine(strippingNewline: true)?.trimmingCharacters(in: .whitespaces) ?? ""
+        let input  = readLine(strippingNewline: true)?.trimmingCharacters(in: .whitespaces) ?? ""
         let choice = Int(input) ?? 1
-        let idx = (choice >= 1 && choice <= identities.count) ? choice - 1 : 0
-        defaultFrom = identities[idx].email
+        defaultFrom = selectIdentityEmail(from: identities, choice: choice)
     }
 
-    let config = MailConfig(defaultFrom: defaultFrom, identities: identities)
-    try storeToken(token)
-    try saveConfig(config)
+    try saveMailCredential(token)
+    try saveConfig(MailConfig(defaultFrom: defaultFrom, identities: identities))
 
     print("Setup complete. Found \(identities.count) \(identities.count == 1 ? "identity" : "identities"):")
     for id in identities {

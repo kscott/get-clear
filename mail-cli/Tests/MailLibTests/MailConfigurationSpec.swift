@@ -53,6 +53,26 @@ final class MailConfigurationSpec: QuickSpec {
                 }
             }
 
+            context("web_app_url field") {
+                let toml = """
+                    default_from = "ken@optikos.net"
+                    web_app_url = "https://mail.google.com"
+
+                    [identities]
+                    id1 = "ken@optikos.net|Ken Scott"
+                    """
+
+                it("parses a custom web app URL") {
+                    expect(parseConfig(toml).webAppURL) == URL(string: "https://mail.google.com")
+                }
+            }
+
+            context("missing web_app_url") {
+                it("defaults to the Fastmail URL") {
+                    expect(parseConfig("").webAppURL) == MailConfig.defaultWebAppURL
+                }
+            }
+
             context("empty config") {
                 it("returns empty defaultFrom") {
                     expect(parseConfig("").defaultFrom) == ""

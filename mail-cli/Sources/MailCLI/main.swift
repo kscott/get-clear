@@ -1,35 +1,33 @@
 // main.swift
-//
-// Entry point for mail-bin executable.
-// Argument parsing and dispatch only — all logic lives in MailLib or MailCLI helpers.
+// Entry point for mail-bin. Dispatch only — all logic lives in MailLib or MailClientFactory.
 
-import Foundation
+import AppKit
 import MailLib
+import MailClientFactory
 import GetClearKit
 
-let semaphore = DispatchSemaphore(value: 0)
-let args      = Array(CommandLine.arguments.dropFirst())
+let args   = Array(CommandLine.arguments.dropFirst())
+let config = (try? loadConfig()) ?? MailConfig(defaultFrom: "", identities: [])
 
-Task { await runCLI(args: args, identity: identity, usage: usage) { command, args in
-    Task {
-        do {
-            switch command {
-            case .what:  handleWhat(args: args)
-            case .open:  try handleOpen()
-            case .setup: try await handleSetup(args: args)
-            case .send:  try await handleSend(args: args)
-            case .find:  try await handleFind(args: args)
-            default:     usage()
-            }
-        } catch {
-            fputs("Error: \(error.localizedDescription)\n", stderr)
-            exit(1)
-        }
-        semaphore.signal()
+await runCLI(args: args, identity: identity, usage: usage) { command, args in
+    if command == .open {
+        handleOpen(opener: { NSWorkspace.shared.open($0) }, config: config)
+        return
     }
-} }
+    if command == .what {
+        print(try handleWhat(args: args))
+        return
+    }
 
-semaphore.wait()
+    let client = try await makeMailClient()
 
-UpdateChecker.spawnBackgroundCheckIfNeeded()
-if let hint = UpdateChecker.hint() { fputs(hint + "\n", stderr) }
+    switch command {
+    case .setup: try await handleSetup(args: args, client: client)
+    case .find:  print(try await handleFind(args: args, client: client))
+    case .send:
+        let store = await makeStore()
+        print(try await handleSend(args: args, config: config, client: client, contactStore: store))
+    default:
+        print(usage())
+    }
+}
