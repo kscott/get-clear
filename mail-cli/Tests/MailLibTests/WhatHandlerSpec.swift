@@ -16,6 +16,9 @@ final class MailWhatHandlerSpec: QuickSpec {
             it("returns output for a named range") {
                 expect { try handleWhat(args: ["what", "today"]) }.notTo(throwError())
             }
+            it("returns output for a non-today named range") {
+                expect { try handleWhat(args: ["what", "yesterday"]) }.notTo(throwError())
+            }
             it("throws for an unrecognised range") {
                 expect { try handleWhat(args: ["what", "notarange"]) }.to(throwError())
             }

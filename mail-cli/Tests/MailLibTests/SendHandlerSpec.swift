@@ -147,6 +147,13 @@ final class MailSendHandlerSpec: AsyncSpec {
             it("returns empty string unchanged") {
                 expect(resolvedBody("")) == ""
             }
+            it("reads body text from the file when the path exists") {
+                let url = FileManager.default.temporaryDirectory
+                    .appendingPathComponent("mail-test-body.txt")
+                try? "Hello from file".write(to: url, atomically: true, encoding: .utf8)
+                expect(resolvedBody(url.path)) == "Hello from file"
+                try? FileManager.default.removeItem(at: url)
+            }
         }
 
         describe("loadGroupMembers") {

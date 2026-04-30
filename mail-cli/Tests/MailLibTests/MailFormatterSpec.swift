@@ -55,12 +55,25 @@ final class MailFormatterSpec: QuickSpec {
         }
 
         describe("formatDate") {
-            context("a date with fractional seconds") {
-                it("does not return the raw ISO string for a valid date") {
-                    // We cannot assert the exact formatted value without freezing the clock,
-                    // but we can confirm the formatter does not fall back to the raw input.
+            context("a date with fractional seconds in the current year") {
+                it("returns a short month-day string, not the raw ISO input") {
                     let iso = "2026-04-13T14:30:00.000Z"
                     expect(formatDate(iso)) != iso
+                }
+            }
+
+            context("today's date") {
+                it("returns a time string (h:mma) for a date that is today") {
+                    let fmt = ISO8601DateFormatter()
+                    fmt.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+                    let result = formatDate(fmt.string(from: Date()))
+                    expect(result).to(contain(":"))
+                }
+            }
+
+            context("a date in a past year") {
+                it("returns a string containing the year") {
+                    expect(formatDate("2020-06-15T10:00:00Z")).to(contain("2020"))
                 }
             }
 
@@ -72,6 +85,12 @@ final class MailFormatterSpec: QuickSpec {
         }
 
         describe("formatDateLong") {
+            context("a valid date") {
+                it("returns a formatted string, not the raw ISO input") {
+                    expect(formatDateLong("2026-04-13T14:30:00.000Z")) != "2026-04-13T14:30:00.000Z"
+                }
+            }
+
             context("an unparseable string") {
                 it("returns the raw string unchanged") {
                     expect(formatDateLong("not-a-date")) == "not-a-date"

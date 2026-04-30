@@ -73,11 +73,11 @@ Output formatting, arg parsing duplication, `describeEKRule`, grouping logic, re
 
 ### 6. ✅ Shared contact resolution library — #150
 
-`ContactKit` (pure types + `matchContacts`), `AppleContactKit` (boundary), `ContactStoreFactory` (factory). Text-cli migration (#143) fully adopted the shared layer; contacts and mail pending (#141, #142).
+`ContactKit` (pure types + `matchContacts`), `AppleContactKit` (boundary), `ContactStoreFactory` (factory). All five tools now use the shared layer.
 
 ---
 
-### 7. Protocol abstractions — #142 (✅ #147, ✅ #140, ✅ #143, ✅ #141)
+### 7. ✅ Protocol abstractions — #142 (✅ #147, ✅ #140, ✅ #143, ✅ #141, ✅ #142)
 **Depends on:** ✅ #144, ✅ #150
 
 | Issue | Tool | What ships |
@@ -85,7 +85,7 @@ Output formatting, arg parsing duplication, `describeEKRule`, grouping logic, re
 | #147 ✅ | reminders | `ReminderStore` protocol, `AppleReminderStore`, `ListItem`, `StoreFactory` |
 | #140 ✅ | calendar | `CalendarStore` protocol, `CalendarEventKit` target, `EventItem` conversion layer |
 | #141 ✅ | contacts | `ContactStore` protocol, `ContactsLib` handlers, `ValueChange<T>` in GetClearKit |
-| #142 | mail | `MailClient` protocol, `MailJMAP` target — adopts shared Contact type |
+| #142 ✅ | mail | `MailClient` protocol, `MailJMAP` target — adopts shared Contact type |
 | #143 ✅ | text | `MessageSender` protocol, `TextMessages` target, `TargetResolver` in TextLib |
 
 ---
@@ -184,7 +184,7 @@ These are good work but wait until real users are using the tools:
 ✅ #141    ContactStore protocol + ContactsLib + ValueChange<T>
 ✅ #154    Retrofit RemindersLib FieldChange → ValueChange
 ✅ #140    CalendarStore protocol + CalendarEventKit
-#142  MailClient protocol + MailJMAP
+✅ #142  MailClient protocol + MailJMAP
   └── #61  Gmail              ← hard user-facing blocker
 
 #53, #80, #68  feature additions (calendar change, move to list, multi-recipient text)
