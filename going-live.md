@@ -30,6 +30,7 @@
 | #141 — contacts-cli three-tier: ContactStore protocol, ContactsLib handlers, ValueChange<T> | 2026-04-27 |
 | #154 — retrofit RemindersLib FieldChange<T> → ValueChange<T> | 2026-04-27 |
 | #140 — calendar-cli three-tier: CalendarStore protocol, CalendarEventKit, handler extraction (972 tests, 93.9% coverage) | 2026-04-29 |
+| Phase 2 install validation — clean macOS account, all five tools, permission prompts, Gatekeeper, postinstall browser | 2026-05-06 |
 
 ---
 
@@ -144,13 +145,9 @@ Can be worked in parallel with any of the above. Skills are the Claude integrati
 
 ---
 
-### 13. Install validation — Phase 2
-**Depends on:** all code changes complete (do last)
+### 13. ✅ Install validation — Phase 2
 
-Manual testing on a clean macOS account (PKG install only):
-- Gatekeeper acceptance, postinstall browser open, permission prompts for each tool
-- First-run flow: `reminders list`, `calendar today`, `contacts lists`, `text open`, `mail setup`
-- calendar without config: acceptable fallback behavior
+Clean macOS account, PKG install. All tools validated 2026-05-06.
 
 ---
 
@@ -194,7 +191,7 @@ These are good work but wait until real users are using the tools:
 #30   bundle skills     ← independent, work in parallel
 #135  smoke tests       ← independent
 
-Phase 2 install validation ← last, after all code
+✅ Phase 2 install validation
 ```
 
-**Minimum to ship:** #142 → #61 (Gmail) → #53, #80, #68 → #40 → #41–45 → #30 → #135 → Phase 2
+**Minimum to ship:** #142 → #61 (Gmail) → #53, #80, #68 → #40 → #41–45 → #30 → #135
