@@ -14,6 +14,8 @@ Every tool has three package targets. The split is structural, not conventional 
 
 **Framework boundary** (`*EventKit`, `*Messages`, `*JMAP`, etc.) — imports the system framework and implements the Lib protocol. Its job is type conversion and field assignment. A line of code at the boundary should read like `field = value`, not like a decision. A conditional at the boundary is a signal that logic has leaked from Lib. Pure assignment needs no tests — the field names say what they do.
 
+**Auditing for boundary leakage:** `grep -rn "private func" <boundary-dirs>` surfaces every candidate. The filter: if the function's signature contains no framework types (`EK*`, `CN*`, `JMAP*`, etc.), it has no reason to be at the boundary — it's a pure function that belongs in Lib where it can be tested. Functions whose signatures are entirely `String → String` or `String → Bool` are the clearest offenders.
+
 **`*CLI` / `main.swift`** — requests permissions, constructs the concrete store, dispatches to handler functions, prints output. 30–40 lines. No logic beyond dispatch.
 
 **`GetClearKit`** — shared infrastructure with no tool-specific knowledge: arg parsing, command dispatch, ANSI output, date/range parsing, activity logging, update checking. Check here before writing anything suite-wide — if it's not tool-specific, it probably belongs here or already exists.
