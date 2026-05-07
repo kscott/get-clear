@@ -12,7 +12,9 @@ public func hexColor(from cgColor: CGColor?) -> String? {
         b = Int(components[2] * 255)
     case .monochrome where components.count >= 1:
         let w = Int(components[0] * 255)
-        r = w; g = w; b = w
+        r = w
+        g = w
+        b = w
     default:
         return nil
     }
