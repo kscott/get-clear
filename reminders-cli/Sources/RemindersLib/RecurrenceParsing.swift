@@ -54,6 +54,18 @@ private let weekdayNums: [String: Int] = [
 ]
 private let weekdayPattern =
     #"sunday|monday|tuesday|wednesday|thursday|friday|saturday"#
+private let wordOrdinalRegex = try! NSRegularExpression(
+    pattern: #"(first|second|third|fourth|last)\s+(\#(weekdayPattern))"#
+)
+private let numOrdinalWeekdayRegex = try! NSRegularExpression(
+    pattern: #"(1st|2nd|3rd|4th)\s+(\#(weekdayPattern))"#
+)
+private let dayOfMonthRegex = try! NSRegularExpression(
+    pattern: #"(?:on\s+)?(?:the\s+)?(\d{1,2})(?:st|nd|rd|th)(?:\s+of\s+(?:the\s+)?month)?"#
+)
+private let everyRegex = try! NSRegularExpression(
+    pattern: #"every\s+(\d+)\s+(day|week|month|year)s?"#
+)
 
 public func parseRecurrence(_ s: String) -> RecurrenceSpec? {
     let lower = s.lowercased().trimmingCharacters(in: .whitespaces)
@@ -61,9 +73,6 @@ public func parseRecurrence(_ s: String) -> RecurrenceSpec? {
     // 1. Word ordinal weekday: "last tuesday", "first friday", "second monday", etc.
     //    Also handles leading articles: "the last wednesday", "on the first friday"
     let wordOrdinals: [String: Int] = ["first": 1, "second": 2, "third": 3, "fourth": 4, "last": -1]
-    let wordOrdinalRegex = try! NSRegularExpression(
-        pattern: #"(first|second|third|fourth|last)\s+(\#(weekdayPattern))"#
-    )
     if let m = wordOrdinalRegex.firstMatch(in: lower, range: NSRange(lower.startIndex..., in: lower)) {
         let ord = (lower as NSString).substring(with: m.range(at: 1))
         let day = (lower as NSString).substring(with: m.range(at: 2))
@@ -73,9 +82,6 @@ public func parseRecurrence(_ s: String) -> RecurrenceSpec? {
 
     // 2. Numeric ordinal weekday: "2nd wednesday", "3rd friday", "1st monday", "4th thursday"
     let numOrdinals: [String: Int] = ["1st": 1, "2nd": 2, "3rd": 3, "4th": 4]
-    let numOrdinalWeekdayRegex = try! NSRegularExpression(
-        pattern: #"(1st|2nd|3rd|4th)\s+(\#(weekdayPattern))"#
-    )
     if let m = numOrdinalWeekdayRegex.firstMatch(in: lower, range: NSRange(lower.startIndex..., in: lower)) {
         let ord = (lower as NSString).substring(with: m.range(at: 1))
         let day = (lower as NSString).substring(with: m.range(at: 2))
@@ -85,9 +91,6 @@ public func parseRecurrence(_ s: String) -> RecurrenceSpec? {
 
     // 3. Day of month: "the 15th", "on the 1st", "2nd of the month", "on the 22nd", etc.
     //    Matched after ordinal weekday checks so "2nd wednesday" is never treated as day 2.
-    let dayOfMonthRegex = try! NSRegularExpression(
-        pattern: #"(?:on\s+)?(?:the\s+)?(\d{1,2})(?:st|nd|rd|th)(?:\s+of\s+(?:the\s+)?month)?"#
-    )
     if let m = dayOfMonthRegex.firstMatch(in: lower, range: NSRange(lower.startIndex..., in: lower)) {
         if let day = Int((lower as NSString).substring(with: m.range(at: 1))), (1 ... 31).contains(day) {
             return RecurrenceSpec(frequency: .monthly, interval: 1, dayOfMonth: day)
@@ -95,7 +98,6 @@ public func parseRecurrence(_ s: String) -> RecurrenceSpec? {
     }
 
     // 4. Interval: "every 2 weeks", "every 3 months", etc.
-    let everyRegex = try! NSRegularExpression(pattern: #"every\s+(\d+)\s+(day|week|month|year)s?"#)
     if let m = everyRegex.firstMatch(in: lower, range: NSRange(lower.startIndex..., in: lower)) {
         let interval = Int((lower as NSString).substring(with: m.range(at: 1))) ?? 1
         let freq: RecurrenceFrequency

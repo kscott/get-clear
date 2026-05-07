@@ -74,7 +74,7 @@ public final class AppleCalendarStore: CalendarStore {
         ev.calendar = targetCal
         ev.isAllDay = item.isAllDay
         ev.startDate = item.startDate
-        ev.endDate = item.endDate ?? Calendar.current.date(byAdding: .hour, value: 1, to: item.startDate)!
+        ev.endDate = item.endDate ?? Calendar.current.date(byAdding: .hour, value: 1, to: item.startDate) ?? item.startDate.addingTimeInterval(3600)
         ev.location = item.location
         ev.notes = item.notes
         ev.url = item.url

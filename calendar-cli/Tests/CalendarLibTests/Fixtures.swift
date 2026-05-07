@@ -27,11 +27,8 @@ func makeEvent(
     attendees: [AttendeeItem] = []
 ) -> EventItem {
     let cal = Calendar.current
-    var base = DateComponents()
-    base.year = 2026
-    base.month = 4
-    base.day = 29 + dayOffset
-    let day = cal.date(from: base)!
+    let day = cal.date(byAdding: .day, value: dayOffset, to: cal.startOfDay(for: Date()))!
+    let base = cal.dateComponents([.year, .month, .day], from: day)
 
     let startDate: Date
     let endDate: Date?

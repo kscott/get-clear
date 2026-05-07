@@ -14,7 +14,7 @@ public func handleAdd(
     }
     let allCals = try await store.fetchCalendars()
     let ids = resolveCalendarIdentifiers(filter: calFilter, calendars: allCals, config: config)
-    if calFilter != nil && (ids?.isEmpty ?? false) { fail("No calendars matched filter '\(calFilter!)'") }
+    if let f = calFilter, ids?.isEmpty ?? false { fail("No calendars matched filter '\(f)'") }
     let first = allCals.first
     let targetId = ids?.first ?? first?.identifier
     let targetCal = targetId.flatMap { id in allCals.first(where: { $0.identifier == id }) } ?? first

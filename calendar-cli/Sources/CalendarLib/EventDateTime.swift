@@ -61,7 +61,7 @@ public func parseEventDateTime(_ input: String, relativeTo now: Date = Date()) -
     }
 
     // Date part = everything before the first time token
-    let firstTimeRange = Range(timeMatches[0].range, in: input)!
+    guard let firstTimeRange = Range(timeMatches[0].range, in: input) else { return nil }
     let datePart = String(input[..<firstTimeRange.lowerBound])
         .replacingOccurrences(of: #"\bat\b"#, with: "", options: .regularExpression)
         .trimmingCharacters(in: .whitespaces)
