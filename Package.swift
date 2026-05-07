@@ -26,7 +26,7 @@ let package = Package(
         ),
         .executableTarget(
             name: "GetClear",
-            dependencies: ["GetClearKit"],
+            dependencies: ["GetClearKit", "AppleEventKitSupport"],
             path: "Sources/GetClear",
             exclude: ["get-clear.entitlements"]
         ),
