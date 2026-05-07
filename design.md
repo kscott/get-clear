@@ -154,6 +154,8 @@ A user should never have to know or care whether this is their first run or thei
 
 ## Command vocabulary
 
+The person this is built for is busy, collaborative, juggling commitments to a lot of people. The vocabulary should feel like theirs — the words they'd use in conversation, not the words a form field would use.
+
 **When a vocabulary choice is uncertain, test it by translating to other languages.** The right word survives translation — its meaning is grounded in human experience, not software convention. A word that only makes sense in English UI context is a word borrowed from the wrong register. `done` and `find` both passed this test; `complete` and `search` did not.
 
 Use the word you'd say to Claude in conversation:
@@ -374,44 +376,6 @@ leaves the codebase in better shape than it found it.
 
 ---
 
-## Suite name: Get Clear
-
-### The name
-
-**Get Clear** — not a state, a movement. The person this is built for isn't already there. They're busy, collaborative, juggling commitments to a lot of people. They want to feel balanced, in control, on top of things. Get Clear is the work of getting there.
-
-The short form is **Clear**. The aspiration is getting clear.
-
----
-
-### The pitch
-
-You're not dropping balls — but you're watching all of them.
-
-Every meeting promised, every email owed, every follow-up you said you'd send. They live in your head, which means they live in the way of everything else. The people you work with deserve better than "I meant to get back to you." So do you.
-
-**Get Clear** is a suite of command-line tools that connects Claude directly to the things you actually use — Calendar, Reminders, Contacts, Mail, Messages. You tell Claude what needs to happen. It handles the machinery. The meeting gets added. The email goes out. The reminder is set. The follow-through is done.
-
-Not a new system to learn. Not another app to check. Just you, Claude, and everything handled.
-
-That's what getting clear feels like.
-
----
-
-### The tools in this context
-
-- **Reminders** — the promises you've made to yourself and others, surfaced and managed
-- **Calendar** — your commitments in time, added and cleared without switching apps
-- **Contacts** — the people at the center of it all, kept current
-- **Mail** — getting the communication out, without the context switch
-- **Messages** — the quick word, sent without breaking flow
-
-Together they cover the full loop: *who* you're working with, *what* you've promised, *when* it's happening, and *how* you're staying in touch.
-
----
-
----
-
 ## Colored dot placement
 
 Every item that belongs to a named container — a calendar, a reminder list — can carry a colored dot (the container's color, rendered as an ANSI-colored bullet). Where the dot lives depends on whether the view is interleaved or grouped.
@@ -450,12 +414,4 @@ Get Clear can collect anonymous usage data to improve the suite — but only wit
 
 **The prompt must be specific.** Something like: *"Share anonymous usage data to help improve Get Clear? This includes command counts, unrecognized commands, and error rates. No reminder titles, event names, contacts, or message content is ever sent. (yes/no)"*
 
----
-
-### Tagline candidates
-
-- *Everything handled.*
-- *All clear.*
-- *Get clear. Stay clear.*
-- *For people with a lot of people counting on them.*
 
