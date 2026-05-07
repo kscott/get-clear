@@ -7,6 +7,7 @@ Read this before closing any issue. Start with the fast checklist — every item
 ## Before closing
 
 - [ ] `swift test` — 0 failures
+- [ ] Test coverage reviewed with Ken — run `swift test --enable-code-coverage` and report results; uncovered lines in Lib targets are a signal, not just a number. Code that resists coverage usually needs to move layers or get a better interface.
 - [ ] `/simplify` run — reuse, quality, and efficiency pass complete; all findings addressed
 - [ ] Boundary files: no `private func` whose signature contains no framework types (`EK*`, `CN*`, `JMAP*`) — see ARCHITECTURE.md
 - [ ] Every new source file has a corresponding test file, committed in the same commit
