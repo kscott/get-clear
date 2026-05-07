@@ -1,8 +1,8 @@
-# CLI Suite — Design Principles
+# Get Clear — Design
 
-Covers: reminders-cli, calendar-cli, contacts-cli, mail-cli, text-cli
+This document is the heart of the project. It captures why the vocabulary is what it is, why the tools are divided the way they are, and what good work looks like here.
 
-All code lives in the monorepo at `~/dev/get-clear/`. This document captures the principles that span the whole suite.
+`ARCHITECTURE.md` captures structural decisions. `CLAUDE.md` captures workflow. This captures ethos.
 
 ---
 
@@ -198,18 +198,6 @@ Things that must be the same in every tool:
 
 ---
 
-## Emoji shortcode expansion *(planned — get-clear #17)*
-
-User-supplied text strings (titles, notes, messages) will support Slack-style shortcodes: `:tada:` → 🎉, `:rocket:` → 🚀. This is a text preprocessing step applied before the string is saved or sent.
-
-The expansion function will live in each `*Lib` so it is testable. The curated set covers the ~150 most common shortcodes (matching GitHub/Slack common usage) — not the full Unicode emoji list. The dictionary is embedded; no runtime dependency.
-
-Scope: applied to any user-supplied free text — event titles, reminder titles, note fields, mail subject/body, SMS message body. Not applied to command keywords, calendar names, list names, or query strings.
-
-**Not yet implemented.** Tracked in get-clear #17.
-
----
-
 ## Don't ship dead code
 
 Stub functions that can't be implemented honestly get deleted, not left in.
@@ -222,60 +210,6 @@ the call site too — don't leave the impression of working logic.
 When features are removed, their supporting code goes with them. `resolveIdentifier()`
 was written for `text list` and `text show`. When those commands were cut, the function
 and its tests were deleted in the same commit.
-
----
-
-## Repo structure: monorepo
-
-All five tools and GetClearKit live in a single monorepo at `~/dev/get-clear/` (#34, completed 2026-04-16). Standalone per-tool repos are archived. One `Package.swift`, one CI run, one place for cross-cutting changes.
-
----
-
-## Development workflow: feature branches
-
-Work one issue at a time on a local feature branch. Merge to main when the issue is complete and all tests pass.
-
-```bash
-git checkout -b issue-36       # start of session
-# ... commits ...
-                               # review DoD, pick nits, add commits until satisfied
-                               # read new files against engineering expectations in design.md
-                               # run /simplify — reuse, quality, efficiency pass; fix before closing
-gh issue close 36              # close the issue before touching main
-git checkout main
-git merge issue-36             # done — main moves in a meaningful unit
-git branch -d issue-36
-```
-
-**Why:** committing directly to main during active work means there's no clean rollback point if something goes wrong mid-issue. A branch makes the completion event explicit — main only moves when the work is done. No PR or remote branch needed; this is local discipline, not process overhead.
-
-**Close before merge, not after.** The issue stays open as long as the branch is live. Review the definition of done, pick any nits, and add commits until fully satisfied — the branch is still there. Close the issue only when nothing is left to fix. Merging to main is the final act, not the decision point.
-
-**Scope:** one branch per going-live issue. Cross-cutting or exploratory work follows the same pattern. Branch names match the issue: `issue-36`, `issue-37`, etc.
-
----
-
-## Architecture: the three-tier model
-
-Every tool has three package targets:
-
-`*Lib` — pure Swift, no framework imports, all domain logic, fully testable without permissions
-`*EventKit` (or equivalent) — framework boundary; owns type conversion and store protocol implementation; pure assignment only, no business logic
-`*CLI` — `main.swift` only; requests permissions, constructs the store, dispatches to handlers, prints output
-
-Tests use **Quick + Nimble** across all repos. Run via `swift test`. No custom harness.
-
-The rule: if it's a decision — which API to call, whether to set a field, how to interpret input — it belongs in Lib. If it's `field = value`, it stays at the boundary. Pure assignment at the boundary is acceptable without tests; conditionals there are a signal that logic has leaked.
-
-### The conversion layer
-
-Framework types (`EKReminder`, `EKEvent`, `CNContact`) are converted to pure value types (`ReminderItem`, `EventItem`, `ContactItem`) at the framework boundary — the moment the framework object is fetched. From that point on, all Lib logic operates on the pure type. The framework is never passed into the Lib.
-
-This is what makes the Lib testable: a `ReminderItem` can be constructed in a test with no EventKit dependency. The conversion is a one-way door — in at the boundary, pure values everywhere else.
-
-The store protocol (`ReminderStore`, `CalendarStore`, etc.) lives in Lib with a `resolve` default extension handling not-found/ambiguous lookup. The Apple-backed implementation (`AppleReminderStore`, etc.) lives in the framework boundary target.
-
-reminders-cli is the complete reference implementation (#147). #140 (calendar), #141 (contacts), and #143 (text) are complete. #142 (mail) remains.
 
 ---
 
