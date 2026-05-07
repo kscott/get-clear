@@ -98,24 +98,29 @@ Output formatting, arg parsing duplication, `describeEKRule`, grouping logic, re
 
 ---
 
-### 7b. Pre-Gmail cleanup — #157, #158
+### 7b. Pre-Gmail foundation — #157, #158, #167, #168, #174
 **Depends on:** #142 ✅
 
-Two issues to close before #61 (Gmail) opens. Gmail extends `MailClient` and the send path — cleaning up layer violations and crash risks now avoids compounding them.
+These must close before #61 (Gmail) opens. The first two clean up existing MailLib issues. The last three establish shared patterns that Gmail must be built on — without them, Gmail handlers look different from JMAP handlers, recipient resolution gets a third implementation, and error handling gets a fourth design.
 
 | Issue | What |
 |---|---|
 | #157 | MailLib: move `FileManager` I/O out of `MailConfiguration`; extract `MailboxIDs` and `ResolvedRecipient` data clumps (DC-5, DC-6) |
 | #158 | Fix four force-unwraps in CalendarLib and RemindersLib: Calendar arithmetic (×2), `try! NSRegularExpression` (×4), force-unwrap after nil check |
+| #167 | Shared `SendAddress` type in ContactKit — Gmail recipient resolution uses the same type as JMAP; without this, Gmail writes the third copy of the resolver |
+| #168 | Shared `HandlerError` protocol — Gmail introduces new error cases (OAuth, rate limiting, quota); without this, Gmail adds a fourth error design |
+| #174 | `HandlerContext` — Gmail needs OAuth credentials and identity selection in every handler; without this, every Gmail handler gets more parameters than its JMAP equivalent |
 
 ---
 
 ### 8. Gmail support — #61
-**Depends on:** #142 ✅, #157, #158
+**Depends on:** #142 ✅, #157, #158, #167, #168, #174
 
 The majority of the target audience is on Gmail. Shipping without it means mail doesn't work for most users on day one. This is a hard launch blocker.
 
 OAuth2 flow, Google Cloud Console app registration, browser consent. `mail setup gmail` triggers OAuth; `mail setup fastmail <token>` stays as-is. README needs two setup paths after this ships.
+
+With #167, #168, #174 in place: Gmail is a new backend implementing shared protocols — not a new set of patterns.
 
 ---
 
@@ -126,7 +131,7 @@ OAuth2 flow, Google Cloud Console app registration, browser consent. `mail setup
 |---|---|---|
 | #53 | `calendar change` | Implementation in CalendarLib alongside EventFormatter and CalendarResolver; pick up #159 (SetupHandler layer violations) alongside this |
 | #80 | Move reminder to list | Remove + add workaround loses note, due date, recurrence — data loss footgun |
-| #68 | Multi-recipient text | Implementation in MessagesClient |
+| #68 | Multi-recipient text | Requires #167 (SendAddress) — TextLib's group expansion should use the shared resolver, not a third implementation |
 
 ---
 
@@ -175,7 +180,12 @@ These are good work but wait until real users are using the tools:
 | mail draft command | mail #18 | Stage without sending |
 | mail find + reply | mail #10, #11 | Completes the mail loop |
 | JMAP session cache | mail #4 | Performance, not correctness |
-| Google Calendar | calendar #12 | Evaluate post-v1 |
+| Google Calendar | #55 | Requires #171 (NamedCollection) first — Google calendars are the same concept as EK calendars; without it, Google Calendar adds a third container type |
+| ResolutionResult | #166 | Coherence work; does not block any backend but reduces duplication across all of them |
+| FieldChanges protocol | #170 | Companion to #53 (calendar change); worth doing alongside it |
+| NamedCollection | #171 | Required before Google Calendar (#55); otherwise GoogleCalendarStore returns a third type for the same concept |
+| Weekday enum | #172 | Companion to #169; post-launch cleanup |
+| CoreData workaround extraction | #173 | Cleanup only; workaround is correct as-is |
 
 ---
 
@@ -193,14 +203,20 @@ These are good work but wait until real users are using the tools:
 ✅ #141    ContactStore protocol + ContactsLib + ValueChange<T>
 ✅ #154    Retrofit RemindersLib FieldChange → ValueChange
 ✅ #140    CalendarStore protocol + CalendarEventKit
-✅ #142  MailClient protocol + MailJMAP
-  #157  MailLib I/O cleanup + DC-5, DC-6    ← pre-#61
-  #158  Force-unwrap / nil-safety fixes      ← pre-#61
-  └── #61  Gmail              ← hard user-facing blocker
+✅ #142    MailClient protocol + MailJMAP
+  #157    MailLib I/O cleanup + DC-5, DC-6       ← pre-#61
+  #158    Force-unwrap / nil-safety fixes         ← pre-#61
+  #167    Shared SendAddress (ContactKit)         ← pre-#61, pre-#68
+  #168    Shared HandlerError protocol            ← pre-#61
+  #174    HandlerContext                          ← pre-#61
+  └── #61  Gmail                                 ← hard user-facing blocker
 
-#53, #80, #68  feature additions (#159 SetupHandler violations alongside #53)
-#40   GetClearKit shared utilities
-#41–45 test coverage per tool
+  #171    NamedCollection (GetClearKit)           ← pre-#55 (Google Calendar)
+
+#53/#159, #80  feature additions
+#68            multi-recipient text (requires #167)
+#40            GetClearKit shared utilities
+#41–45         test coverage per tool
 
 #30   bundle skills     ← independent, work in parallel
 #135  smoke tests       ← independent
@@ -208,4 +224,4 @@ These are good work but wait until real users are using the tools:
 ✅ Phase 2 install validation
 ```
 
-**Minimum to ship:** #142 → #157, #158 → #61 (Gmail) → #53/#159, #80, #68 → #40 → #41–45 → #30 → #135
+**Minimum to ship:** #142 → #157, #158, #167, #168, #174 → #61 (Gmail) → #53/#159, #80, #68 → #40 → #41–45 → #30 → #135

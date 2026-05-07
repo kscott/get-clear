@@ -24,6 +24,16 @@ The canonical handler signature: `func handle*(args: ParsedArgs, store: any *Sto
 
 **`AppleEventKitSupport`** — shared CoreGraphics utilities used by boundary targets that import EventKit. Cannot live in GetClearKit because GetClearKit is pure Foundation and cannot import CoreGraphics. Does not import EventKit itself — only CoreGraphics. The rule for adding here: the function must be framework-adjacent (operating on CoreGraphics or similar types) but contain no EventKit or business logic. Currently: `rgbComponents(from: CGColor?)` and `hexColor(from: CGColor?)`.
 
+### The backend substitution test
+
+A new backend (Gmail, Google Calendar) must be implementable by creating a new boundary target — without changing any handler, formatter, Lib function, or shared type.
+
+If adding a backend requires changing handler signatures, error types, result types, or resolution logic, the shared protocols are not right yet. The test: could you swap `AppleReminderStore` for a hypothetical `GoogleTasksStore` and have every handler in RemindersLib work unchanged? If not, find what's wrong with the abstraction and fix it before the second backend lands.
+
+This is the principle behind the pre-#61 foundation issues. `HandlerContext` (#174), `SendAddress` (#167), and `HandlerError` (#168) are not cleanup — they are the condition under which Gmail is a new implementation of an existing protocol rather than a new set of patterns. The same applies to `NamedCollection` (#171) before Google Calendar (#55): `GoogleCalendarStore` should return `[NamedCollection]` for the same reason `AppleCalendarStore` does.
+
+A backend that is hard to add is a signal that something in Lib owns a decision it should not own, or that a shared type has not been named yet.
+
 ### Making code testable
 
 Everything in `*Lib` should be tested — not just handlers, but parsers, formatters, value types, lookup functions, and any logic with a branch. If it lives in Lib and isn't covered, that's a gap to close, not a known limitation to accept.
