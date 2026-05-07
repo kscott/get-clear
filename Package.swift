@@ -91,6 +91,22 @@ let package = Package(
             linkerSettings: [.linkedFramework("Contacts")]
         ),
 
+        // MARK: - AppleEventKitSupport (shared CoreGraphics utilities for EventKit boundaries)
+
+        .target(
+            name: "AppleEventKitSupport",
+            path: "Sources/AppleEventKitSupport"
+        ),
+        .testTarget(
+            name: "AppleEventKitSupportTests",
+            dependencies: [
+                "AppleEventKitSupport",
+                .product(name: "Quick", package: "Quick"),
+                .product(name: "Nimble", package: "Nimble")
+            ],
+            path: "Tests/AppleEventKitSupportTests"
+        ),
+
         // MARK: - reminders
 
         .target(
@@ -100,7 +116,7 @@ let package = Package(
         ),
         .target(
             name: "RemindersEventKit",
-            dependencies: ["RemindersLib", "GetClearKit"],
+            dependencies: ["RemindersLib", "GetClearKit", "AppleEventKitSupport"],
             path: "reminders-cli/Sources/RemindersEventKit"
         ),
         .executableTarget(
@@ -132,7 +148,7 @@ let package = Package(
         ),
         .target(
             name: "CalendarEventKit",
-            dependencies: ["CalendarLib", "GetClearKit"],
+            dependencies: ["CalendarLib", "GetClearKit", "AppleEventKitSupport"],
             path: "calendar-cli/Sources/CalendarEventKit"
         ),
         .executableTarget(

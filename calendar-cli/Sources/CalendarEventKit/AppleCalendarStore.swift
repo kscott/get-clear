@@ -1,6 +1,7 @@
 // AppleCalendarStore.swift
 // EventKit implementation of CalendarStore. All EKEventStore access lives in this file.
 
+import AppleEventKitSupport
 import CalendarLib
 import EventKit
 import Foundation
@@ -98,7 +99,7 @@ private extension CalendarItem {
         self.init(
             identifier: cal.calendarIdentifier,
             title: cal.title,
-            color: hexColor(cal),
+            color: hexColor(from: cal.cgColor),
             source: cal.source.title,
             isModifiable: cal.allowsContentModifications
         )
@@ -115,7 +116,7 @@ private extension EventItem {
             isAllDay: e.isAllDay,
             calendarTitle: e.calendar.title,
             calendarIdentifier: e.calendar.calendarIdentifier,
-            calendarColor: hexColor(e.calendar),
+            calendarColor: hexColor(from: e.calendar.cgColor),
             location: e.location,
             notes: e.notes,
             url: e.url,
@@ -135,27 +136,4 @@ private extension AttendeeItem {
         }
         self.init(name: name, status: status)
     }
-}
-
-/// Extracts a 6-character uppercase hex string from an EKCalendar's CGColor.
-private func hexColor(_ cal: EKCalendar) -> String? {
-    guard let cg = cal.cgColor else { return nil }
-    let model = cg.colorSpace?.model
-    let components = cg.components ?? []
-    let r: Int
-    let g: Int
-    let b: Int
-    if model == .rgb, components.count >= 3 {
-        r = Int(components[0] * 255)
-        g = Int(components[1] * 255)
-        b = Int(components[2] * 255)
-    } else if model == .monochrome, components.count >= 1 {
-        let w = Int(components[0] * 255)
-        r = w
-        g = w
-        b = w
-    } else {
-        return nil
-    }
-    return String(format: "%02X%02X%02X", r, g, b)
 }
