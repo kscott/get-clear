@@ -12,13 +12,17 @@ Every tool has three package targets. The split is structural, not conventional 
 
 **`*Lib`** — all domain logic. Pure Swift, no system framework imports. Handler functions take protocol types, return `String`, and throw domain errors. Value types, parsing, formatting, lookup decisions, and validation all live here. The rule: if it's a decision — which record to update, how to interpret input, whether a field is valid, what the output should say — it belongs in Lib.
 
+The canonical handler signature: `func handle*(args: ParsedArgs, store: any *Store) throws -> String`. No framework types in the parameter list. No side effects beyond what the store protocol permits. Return value is the output string printed by the CLI.
+
 **Framework boundary** (`*EventKit`, `*Messages`, `*JMAP`, etc.) — imports the system framework and implements the Lib protocol. Its job is type conversion and field assignment. A line of code at the boundary should read like `field = value`, not like a decision. A conditional at the boundary is a signal that logic has leaked from Lib. Pure assignment needs no tests — the field names say what they do.
 
 **Auditing for boundary leakage:** `grep -rn "private func" <boundary-dirs>` surfaces every candidate. The filter: if the function's signature contains no framework types (`EK*`, `CN*`, `JMAP*`, etc.), it has no reason to be at the boundary — it's a pure function that belongs in Lib where it can be tested. Functions whose signatures are entirely `String → String` or `String → Bool` are the clearest offenders.
 
 **`*CLI` / `main.swift`** — requests permissions, constructs the concrete store, dispatches to handler functions, prints output. 30–40 lines. No logic beyond dispatch.
 
-**`GetClearKit`** — shared infrastructure with no tool-specific knowledge: arg parsing, command dispatch, ANSI output, date/range parsing, activity logging, update checking. Check here before writing anything suite-wide — if it's not tool-specific, it probably belongs here or already exists.
+**`GetClearKit`** — shared infrastructure with no tool-specific knowledge. Check here before writing anything suite-wide — if it's not tool-specific, it probably belongs here or already exists. What's in it: `Command` enum + `runCLI` (version/help/unknown dispatch), `parseArgs`/`ParsedArgs` (argument parsing), `parseRange`/`ParsedRange` (date and range parsing), `ValueChange<T>` (suite-wide change type), `ANSI` (colour output), `ActivityLog` (logging sent items), `UpdateChecker` (version check on launch).
+
+**`AppleEventKitSupport`** — shared CoreGraphics utilities used by boundary targets that import EventKit. Cannot live in GetClearKit because GetClearKit is pure Foundation and cannot import CoreGraphics. Does not import EventKit itself — only CoreGraphics. The rule for adding here: the function must be framework-adjacent (operating on CoreGraphics or similar types) but contain no EventKit or business logic. Currently: `rgbComponents(from: CGColor?)` and `hexColor(from: CGColor?)`.
 
 ### Making code testable
 
@@ -37,6 +41,8 @@ When code seems untestable, find the design that makes it testable:
 - **Separate the decision from the side effect.** If logic and I/O are entangled, pull the decision out first (what to write, what message to show), then let something else act on it. The decision is testable; the act doesn't need to be.
 
 The threshold: if exercising a branch requires a permission dialog or a file to exist on disk, the code is in the wrong layer.
+
+**ObjC spec class naming.** Quick registers spec classes via the ObjC runtime with no module prefix. Two spec classes with the same name in different test targets will collide silently — one will not run. All spec classes must be prefixed with their tool or module name: `CalendarRemoveHandlerSpec`, not `RemoveHandlerSpec`. This applies to every test target in the suite.
 
 ---
 
@@ -131,7 +137,7 @@ The threshold: if exercising a branch requires a permission dialog or a file to 
 - `parseRange(trailingArgs:default:) throws -> ParsedRange` added to GetClearKit to eliminate the two-line `dropFirst`+`guard` pattern duplicated across WhatHandlers; RemindersLib `WhatHandler` retrofitted.
 - ObjC class name collision: Quick registers specs via ObjC runtime with no module prefix. All `CalendarLibTests` spec classes are prefixed `Calendar` (e.g. `CalendarRemoveHandlerSpec`) to avoid collision with identically-named classes in `ContactsLibTests`.
 
-**hexColor duplication:** `hexColor(_: EKCalendar) -> String?` (CGColor → 6-char hex) is duplicated between `RemindersEventKit` and `CalendarEventKit`. CGColor requires CoreGraphics, which can't go in pure-Foundation GetClearKit. Accepted as necessary duplication at the framework boundary.
+**hexColor duplication (resolved):** `hexColor` was duplicated between `RemindersEventKit` and `CalendarEventKit` and initially accepted as necessary because CGColor requires CoreGraphics, which can't go in GetClearKit. Later resolved by creating `AppleEventKitSupport` — a shared target that imports CoreGraphics but not EventKit. See 2026-05-06 decision log entry.
 
 **Test coverage:** CalendarLibTests ships with 14 handler spec files + 4 shared/infrastructure specs (CalendarStoreSpec, CalendarResolverSpec, EventFormatterSpec, CalendarWhatHandlerSpec). 987 total suite tests, 0 failures.
 
@@ -151,6 +157,14 @@ The threshold: if exercising a branch requires a permission dialog or a file to 
 
 **Template:** reminders-cli is the reference implementation. #140–143 follow this pattern for the other four tools.
 
+
+### 2026-05-06 — AppleEventKitSupport added for shared CoreGraphics utilities (#164)
+
+**Decision:** New target `AppleEventKitSupport` owns utilities that operate on CoreGraphics types and are needed by multiple EventKit boundary targets. It imports CoreGraphics only — not EventKit, not Foundation. Both `RemindersEventKit` and `CalendarEventKit` depend on it; `GetClear` (which uses CGColor for ANSI terminal output) also depends on it.
+
+**Why:** `hexColor(from: CGColor?)` was duplicated verbatim in `RemindersEventKit` and `CalendarEventKit` with no tests. The duplication was initially accepted because CoreGraphics can't go in the pure-Foundation GetClearKit. The real solution was a fourth shared target with a narrower constraint. The same session revealed that `calendarDot` in `RecapFormatter` and `mimeType(for:)` in `JMAPClient` were also private pure functions at the wrong layer — both moved to their respective Lib targets.
+
+**The pattern this established:** A `private func` in a boundary file whose signature contains no framework types has no reason to be there. It's a pure function that belongs in Lib (or a shared support target) where it can be tested. See "Auditing for boundary leakage" in the layer model section.
 
 ### 2026-04-10 — Business logic extraction made a pre-launch blocker
 
