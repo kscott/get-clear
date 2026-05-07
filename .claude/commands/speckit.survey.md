@@ -31,8 +31,11 @@ Look for:
 - Patterns that repeat across the five tools that a new feature should follow or extend
 - Shared infrastructure (GetClearKit, ContactKit, AppleEventKitSupport) that already handles part of what this feature will need
 - Conventions in naming, file structure, and handler design that the new feature must conform to
+- Concepts that don't have a name yet but probably should — places where introducing a new type or protocol would make the new feature cleaner and also improve what already exists
 
-Do not evaluate risk or plan attachment points — that is Agent 2's job. Report what exists and what conventions apply.
+The most useful thing you can surface is not just what exists, but what wants to exist — an abstraction that the new feature would need and that would also clean up something already there.
+
+Do not evaluate risk or plan attachment points — that is Agent 2's job. Report what exists, what conventions apply, and what new abstractions the design should consider.
 ```
 
 ---

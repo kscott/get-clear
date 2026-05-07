@@ -26,6 +26,9 @@ Your questions:
 - What parameter groups travel together across multiple functions without a struct to hold them?
 - What implicit concepts exist in the code that no type or function is named after?
 - What code lives at the wrong layer — logic in a boundary file, or framework-awareness in a Lib?
+- Where would introducing a new type, protocol, or function make two or more things simpler or remove a seam that currently requires coordination?
+
+The most valuable finding is not a problem — it is an unnamed concept that wants to become a type or protocol. Look for the shape of that thing. What would you call it? What would it own? Who would depend on it?
 
 Do not look for bugs. Do not look for copies of what was recently changed. Look for patterns that suggest something is trying to become a named concept but hasn't been given one yet.
 
