@@ -1,105 +1,40 @@
 # Get Clear — Architecture
 
-This document has three sections: current structure, decision log, and improvement backlog.
-
-**Update this document when:** a structural change is made (new file, new type, extracted function), a significant decision is taken, or something is noticed during work that isn't worth acting on right now. This is the memory across sessions. Keep it current.
+**Update this document when:** a structural decision is made or a significant pattern is established. GitHub issues are the source of truth for work to be done — nothing task-like belongs here.
 
 ---
 
 ## Current structure
 
-### Repositories
-
-Single monorepo at `~/dev/get-clear/` (#34 complete 2026-04-16). All standalone repos archived. Tool source lives under `<tool>-cli/Sources/` subdirectories within the monorepo.
-
-- `Sources/GetClearKit/` — shared suite infrastructure: ANSI, Fail, Flags, DateParser, RangeParser, Commands, ArgParsing, ActivityLog, UpdateChecker, ToolIdentity
-- `Sources/ContactKit/` — pure shared contact types: Contact, ContactField, ContactStore protocol, matchContacts()
-- `Sources/AppleContactKit/` — Apple Contacts boundary: AppleContactStore, toContact(), cleanLabel()
-- `Sources/ContactStoreFactory/` — shared backend factory: makeContactStore(); update here when adding new backends
-- `Sources/GetClear/` — umbrella `get-clear` binary (what, recap, check-update)
-- `reminders-cli/Sources/` — RemindersLib + RemindersCLI
-- `calendar-cli/Sources/` — CalendarLib + CalendarEventKit + CalendarCLI
-- `contacts-cli/Sources/` — ContactsLib + ContactsCLI
-- `mail-cli/Sources/` — MailLib + MailCLI (JMAP/Fastmail; Gmail #61)
-- `text-cli/Sources/` — TextLib + TextMessages + TextCLI (osascript → Messages.app)
-- `Tests/GetClearKitTests/` — Quick/Nimble specs; per-tool coverage open in #41–45
-- `Tests/ContactKitTests/` — cleanLabel and SpyContactStore specs
-
 ### Layer model
 
-Every tool follows the same three-tier model:
+Every tool has three package targets. The split is structural, not conventional — the Swift package graph enforces it. A Lib target that doesn't declare a framework dependency cannot accidentally import one.
 
-```
-*CLI/main.swift     — dispatch only; ~40 lines; no business logic
-*EventKit/ (etc.)   — framework boundary; pure assignment; owns type conversion
-*Lib/               — pure Swift; no framework imports; all domain logic; fully unit-testable
-GetClearKit/        — shared suite utilities; no tool-specific knowledge
-```
+**`*Lib`** — all domain logic. Pure Swift, no system framework imports. Handler functions take protocol types, return `String`, and throw domain errors. Value types, parsing, formatting, lookup decisions, and validation all live here. The rule: if it's a decision — which record to update, how to interpret input, whether a field is valid, what the output should say — it belongs in Lib.
 
-The boundary is enforced by the Swift package structure: `*Lib` targets do not import EventKit, Contacts, Security, or AppKit. Framework access lives exclusively in the framework boundary target.
+**Framework boundary** (`*EventKit`, `*Messages`, `*JMAP`, etc.) — imports the system framework and implements the Lib protocol. Its job is type conversion and field assignment. A line of code at the boundary should read like `field = value`, not like a decision. A conditional at the boundary is a signal that logic has leaked from Lib. Pure assignment needs no tests — the field names say what they do.
 
-**What belongs where:**
-- `*Lib`: all domain logic — parsing, validation, lookup decisions, handler functions, formatting. Everything testable.
-- Framework boundary: pure assignment of domain values to framework fields. No conditionals beyond what the framework API forces (e.g. `addRecurrenceRule` requires non-nil). No business logic.
-- `*CLI/main.swift`: request permissions, construct the store, dispatch to handlers, print output, catch errors.
+**`*CLI` / `main.swift`** — requests permissions, constructs the concrete store, dispatches to handler functions, prints output. 30–40 lines. No logic beyond dispatch.
 
-**The pure boundary rule:** if it's a decision (which API to call, whether to set a field, how to look something up), it belongs in Lib. If it's "field = value," it stays at the boundary. Pure assignment is acceptable without tests — the field names say what they do. Conditionals at the boundary are a signal that logic has leaked.
+**`GetClearKit`** — shared infrastructure with no tool-specific knowledge: arg parsing, command dispatch, ANSI output, date/range parsing, activity logging, update checking. Check here before writing anything suite-wide — if it's not tool-specific, it probably belongs here or already exists.
 
-### GetClearKit (as of 2026-04-10)
+### Making code testable
 
-| File | Job |
-|---|---|
-| `ArgParsing.swift` | `parseArgs` → `ParsedArgs` enum; intercepts --help/-h from any position |
-| `Commands.swift` | `Command` enum (suite-wide command names); `runCLI` dispatch function |
-| `Flags.swift` | `isHelpFlag`, `isVersionFlag` |
-| `ANSI.swift` | Bold/dim/red output; isatty + NO_COLOR detection |
-| `Fail.swift` | `fail()` — red-prefixed error to stderr, exit non-zero |
-| `DateParser.swift` | `ParsedDate`, `parseDate()`, `formatDate()` |
-| `RangeParser.swift` | `ParsedRange`, `parseRange()`, `formatRangeDescription()` |
-| `ActivityLog.swift` | Write timestamped entries to `~/.local/share/get-clear/log/` |
-| `ActivityLogReader.swift` | Read and filter activity log entries |
-| `ActivityLogFormatter.swift` | Format activity log output for `what` and `recap` commands |
-| `ActivityLogEntry.swift` | `ActivityLogEntry` value type |
-| `TimespanFormatter.swift` | Human-readable timespan formatting |
-| `UpdateChecker.swift` | Background version check; hint on stderr at most once per hour |
+Everything in `*Lib` should be tested — not just handlers, but parsers, formatters, value types, lookup functions, and any logic with a branch. If it lives in Lib and isn't covered, that's a gap to close, not a known limitation to accept.
 
-### Tool Lib targets (as of 2026-04-27)
+Handler functions take a protocol (`any *Store`), not a concrete framework type. Tests inject a spy. No permissions, no framework state — just domain types in, strings out.
 
-All five extractions complete (#35–39). Each tool's `main.swift` is ≤60 lines — dispatch only.
+The active discipline is to pull code toward Lib, not to accept what ended up in CLI. If logic is sitting in `main.swift` or at the boundary because it was convenient to write there, the question is what refactor moves it into Lib where it can be tested.
 
-**reminders-cli** — three-tier complete (#147):
-- `RemindersLib`: nine handler functions, `ReminderStore` protocol + `resolve` extension, `ReminderChangeParsing`, `OptionsParsing`, `RecurrenceParsing`, `ReminderFilter`, `ReminderFormatter`, `ReminderGrouping`, `ReminderItem`, `ReminderList`, `ReminderLookup`, `ReminderSorting`, `ReminderHandlerError`, `ReminderHandlerHelpers`, `CalendarDot`
-- `RemindersEventKit` (framework boundary): `AppleReminderStore` (single file; absorbs type conversion, recurrence conversion, change application)
-- `RemindersCLI`: `main.swift`, `StoreFactory`, `Usage`, `Version`
+When code seems untestable, find the design that makes it testable:
 
-**text-cli** — three-tier complete (#143):
-- `TextLib`: `SendHandler`, `OpenHandler`, `WhatHandler`, `MessagesClient`, `PhoneNormalizer`, `TextErrors`, `MessageSender` (protocol + `SendResult`), `TargetResolver` (`resolveTarget`, `requiresContactLookup`), `UsageText`
-- `TextMessages` (boundary): `AppleMessageSender` — delegates resolution to `TargetResolver`, osascript dispatch
-- `TextCLI`: `main.swift`, `StoreFactory`, `Usage`, `Version`
+- **Extract pure functions.** Parsing, validation, formatting, and lookup are pure functions. They don't need a store or a framework — pull them out and spec them directly.
+- **Identify missing value types.** A function that's hard to test is often doing too many things. Name what it's computing, give it a clear initializer, and the caller becomes a thin coordinator over testable pieces.
+- **Watch for data clumps** (Fowler). When the same group of parameters appears together across multiple functions, they're usually a domain concept that hasn't been named yet. The tell: if you removed one item from the group, the others would stop making sense together. The pattern may span more than one method — that's often how you spot it. Extract a struct, name the concept, and it becomes explicit, documentable, and constructable in tests.
+- **Inject I/O as closures.** Interactive flows that call `readLine()` or write files should take those operations as closure parameters — the function stays pure and testable, the CLI or factory layer provides the real implementation.
+- **Separate the decision from the side effect.** If logic and I/O are entangled, pull the decision out first (what to write, what message to show), then let something else act on it. The decision is testable; the act doesn't need to be.
 
-**contacts-cli** — three-tier complete (#141):
-- `ContactsLib`: `OpenHandler`, `WhatHandler`, `ListHandler` (lists/list/export), `FindHandler`, `ShowHandler`, `AddHandler`, `ChangeHandler`, `RenameHandler`, `RemoveHandler`, `ContactChangeParsing`, `ContactFormatter`, `ContactHandlerError`, `UsageText`
-- `AppleContactKit` (framework boundary): `AppleContactStore` — full `ContactStore` protocol; type conversion, change application, CoreData 134092 retry
-- `ContactsCLI`: `main.swift`, `Usage`, `Version`
-
-**calendar-cli** — three-tier complete (#140):
-- `CalendarLib`: fourteen handler functions, `CalendarStore` protocol + `resolve` extension, `CalendarStoreError`, `CalendarHandlerError`, `CalendarResolver`, `EventItem` / `CalendarItem` / `AttendeeItem` pure value types, `EventFormatter` (`calendarDot`, `formatGrouped`, `formatFlat`), `EventDateTime`, `ConfigParser`
-- `CalendarEventKit` (framework boundary): `AppleCalendarStore` — full `CalendarStore` conformance; owns `EKEvent`/`EKCalendar`/`EKParticipant` conversion; `hexColor(_:)` for CGColor → hex
-- `CalendarCLI`: `main.swift` (~40 lines), `Usage`, `Version`
-
-**mail-cli** — three-tier complete (#142):
-- `MailLib`: `MailClient` protocol + `OutboundEmail` + `EmailSummary`, `SendHandler`, `FindHandler`, `WhatHandler`, `OpenHandler`, `SetupHandler` (`selectIdentityEmail`), `RecipientResolver`, `ArgumentParser`, `MailConfiguration`, `MailErrors`, `MailFormatter`
-- `MailJMAP` (framework boundary): `JMAPClient` — `MailClient` conformance over JMAP; `Keychain` — JMAP credential storage (Security framework)
-- `MailClientFactory` — backend selection; `makeMailClient()`, `makeMailClient(token:)`, `loadMailCredential()`, `saveMailCredential()`. Mirrors `ContactStoreFactory` pattern.
-- `MailCLI`: `main.swift` (~30 lines), `SetupCommand` (interactive flow only), `StoreFactory`, `Usage`, `Version`
-
-### Command dispatch (as of 2026-04-10)
-
-`GetClearKit/Commands.swift` defines the `Command` enum (single source of truth for all command names) and `runCLI` (handles version/help/empty/unknown dispatch).
-
-Each tool defines a private `Cmd` enum whose `init?(_ c: Command)` declares the tool's supported subset. The switch in the handler is exhaustive over `Cmd` — compiler enforces completeness.
-
-contacts-cli is the reference implementation (adopted 2026-04-10, commit 37e9a75). Remaining tools tracked in #33.
+The threshold: if exercising a branch requires a permission dialog or a file to exist on disk, the code is in the wrong layer.
 
 ---
 
@@ -229,60 +164,3 @@ contacts-cli is the reference implementation (adopted 2026-04-10, commit 37e9a75
 
 **Why:** Code quality issues went unraised across multiple sessions. The `main.swift` bloat, duplication of the `what` command, and string-literal command names were all visible but never flagged. The disciplines section makes the expectation explicit and durable.
 
----
-
-## Improvement backlog
-
-Items noticed during work that aren't worth stopping for now but must not be forgotten. Add an item here rather than letting it evaporate. Remove items when they become GitHub issues or are resolved.
-
-### CoreData 134092 retry loop (AppleContactStore.update)
-
-Complex stderr suppression and multi-source retry logic for saving contacts across containers. Moved from `main.swift` into `AppleContactStore.update()` during #141. Risk: the pattern is unique in the suite and fragile (two nested store fetch passes, ad-hoc stderr suppression via pipe). No regression protection — `AppleContactKitTests` cannot exercise the real CNContactStore. Warrants a dedicated review and potentially a cleaner interface.
-
-### Audit log via ValueChange<T>
-
-`ValueChange.replaced(from: T, to: T)` carries both sides of every mutation. This makes a complete, structured audit trail trivially derivable — log `(field, from, to, timestamp)` at the handler layer without any additional data collection. Worth wiring up when telemetry is added (#17 / telemetry section in design.md).
-
-### `--draft` flag in mail-cli
-
-`design.md` already flags this: "The `--draft` flag in mail is the current exception to audit next." Flags are wrong per the design principles. Needs a proper command name or removal.
-
-### ~~Async/await inconsistency across tools~~ — resolved
-
-All five tools migrated to async/await in #139 (2026-04-22). DispatchSemaphore removed. UpdateChecker ownership moved into `runCLI` in the same migration.
-
-### ~~`TestRunner` duplicated across all five test files~~ — resolved
-
-All six test suites migrated to Quick + Nimble (2026-04-11). Custom TestRunner removed from all repos.
-
-### ~~UpdateChecker tail duplicated in every tool~~ — resolved
-
-Moved into `runCLI` in GetClearKit as part of #139 (2026-04-22).
-
-### Test suite is regression coverage — close the gap via SpecKit
-
-The existing Quick/Nimble specs were written after (or alongside) extractions from `main.swift`. Tests written this way never fail on first run — they're designed to pass. They catch regressions but didn't drive design: interfaces were frozen before tests were written.
-
-The extraction work in #35–39, #139, and #144 couldn't avoid this; the interface was inherited. But new features have no such excuse.
-
-**SpecKit creates the right conditions for genuine TDD:** the plan step defines interface contracts (inputs, outputs) before any implementation code exists. The correct workflow for new features is: plan defines the interface → write failing specs against that interface → `/speckit.implement` makes them pass. A spec that's never been red is not a spec — it's a description of code that already exists.
-
-### `hexColor` duplication between RemindersEventKit and CalendarEventKit
-
-`hexColor(_: EKCalendar) -> String?` (CGColor → 6-char uppercase hex) is copied in both boundary targets. Consolidation would require either a shared `*EventKit` utility target (increases package complexity) or moving the helper to a file that imports CoreGraphics. Neither is worth it now; note here so it's not forgotten if a third EK boundary target is added.
-
-### WhatHandler double-computes range string
-
-`WhatHandler.swift` in both calendar-cli and reminders-cli reconstructs the range string from args manually after calling `parseRange(trailingArgs:default:)`, which does the same join internally. `ParsedRange` doesn't carry the original string, so the duplication is unavoidable without adding a `rangeStr: String` field to `ParsedRange`. Worth doing if a third tool's WhatHandler has the same pattern — at that point add the field and retrofit all three.
-
-### `calendar monday` bare-range shorthands not supported
-
-`calendar list monday` works; `calendar monday` falls through to `usage()`. The original `DefaultCommand` was dead code (runCLI exits for unknown command strings before the handler ever ran). Supporting bare-range shorthands would require either a post-unknown-command hook in `runCLI` or a different dispatch strategy. File as a separate issue if the UX gap becomes a complaint.
-
-### ContactKit cleanup — #153
-
-Four items filed during #143 review: (1) wrong module name in `ContactStoreSpec` header (says GetClearKit, should say ContactKit); (2) `SpyContactStoreSpec` uses pre-async-migration `waitUntil` + `Task` pattern — should use `AsyncSpec`; (3) `ContactStore.swift` has two jobs (protocol + `matchContacts`) — split into separate files; (4) `AppleContactStore.contacts()` blocks the cooperative thread pool — should use `withCheckedThrowingContinuation` + `DispatchQueue`.
-
-### ~~reminders-cli FieldChange<T> retrofit to ValueChange<T>~~ — resolved (#154)
-
-`FieldChange<T>` deleted from `ReminderChangeParsing.swift`. All fields in `ReminderChanges` now use `ValueChange<T>`. `parseReminderChanges` signature changed from `existingDue: DateComponents?` to `existingItem: ReminderItem` — the full item carries proper `from:` values for `.replaced`. Optional fields produce `.added(T)` when nil, `.replaced(from: existing, to: new)` when set. Priority and list (always present) always produce `.replaced`. Boundary (`applyChanges`) updated to `switch` with `.added`/`.replaced` binding.
