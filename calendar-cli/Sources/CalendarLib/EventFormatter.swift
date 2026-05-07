@@ -48,14 +48,6 @@ public func formatEventTime(_ date: Date) -> String {
     timeFormatter.string(from: date)
 }
 
-public func calendarDot(hex: String?, ansiEnabled: Bool = ANSI.enabled) -> String {
-    guard ansiEnabled, let hex, hex.count == 6 else { return "  " }
-    guard let r = UInt8(hex.prefix(2), radix: 16),
-          let g = UInt8(hex.dropFirst(2).prefix(2), radix: 16),
-          let b = UInt8(hex.dropFirst(4).prefix(2), radix: 16) else { return "  " }
-    return "\u{001B}[38;2;\(r);\(g);\(b)m●\u{001B}[0m "
-}
-
 // MARK: - eventLine
 
 public func eventLine(for event: EventItem) -> String {

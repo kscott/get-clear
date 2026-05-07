@@ -15,13 +15,6 @@ private let keysToFetch: [CNKeyDescriptor] = [
     CNContactPhoneNumbersKey as CNKeyDescriptor
 ]
 
-func cleanLabel(_ raw: String) -> String {
-    var s = raw
-    if s.hasPrefix("_$!<") { s = String(s.dropFirst(4)) }
-    if s.hasSuffix(">!$_") { s = String(s.dropLast(4)) }
-    return s.lowercased()
-}
-
 func toContact(_ c: CNContact) -> Contact {
     Contact(
         identifier: c.identifier,

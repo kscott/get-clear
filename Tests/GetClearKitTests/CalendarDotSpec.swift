@@ -1,8 +1,8 @@
 // CalendarDotSpec.swift
 
+import GetClearKit
 import Nimble
 import Quick
-import RemindersLib
 
 final class CalendarDotSpec: QuickSpec {
     override class func spec() {
