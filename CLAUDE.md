@@ -4,11 +4,12 @@
 
 Read these files every session, without exception:
 
-- `design.md` — product principles, command vocabulary, architecture rules
-- `ARCHITECTURE.md` — current structure, decision log, improvement backlog
+- `design.md` — product principles and command vocabulary; the ethos of the project
+- `review.md` — engineering disciplines; read before closing any issue
+- `ARCHITECTURE.md` — current structure and decision log
 - `.specify/memory/constitution.md` — project constitution; principles that govern all decisions
 
-Do not write a line of code until you have read all three. The engineering disciplines in `design.md` are inviolable. The improvement backlog in `ARCHITECTURE.md` is the memory across sessions.
+Do not write a line of code until you have read all four. The engineering disciplines in `review.md` are inviolable.
 
 ## New features require SpecKit — no exceptions
 
@@ -52,7 +53,7 @@ Everything lives in this monorepo (migration #34 complete). Tool source lives un
 
 ## Development workflow
 
-One issue at a time on a local feature branch. See `design.md` for full rationale.
+One issue at a time on a local feature branch.
 
 ```bash
 git checkout -b issue-37       # start
