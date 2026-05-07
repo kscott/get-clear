@@ -98,8 +98,20 @@ Output formatting, arg parsing duplication, `describeEKRule`, grouping logic, re
 
 ---
 
+### 7b. Pre-Gmail cleanup — #157, #158
+**Depends on:** #142 ✅
+
+Two issues to close before #61 (Gmail) opens. Gmail extends `MailClient` and the send path — cleaning up layer violations and crash risks now avoids compounding them.
+
+| Issue | What |
+|---|---|
+| #157 | MailLib: move `FileManager` I/O out of `MailConfiguration`; extract `MailboxIDs` and `ResolvedRecipient` data clumps (DC-5, DC-6) |
+| #158 | Fix four force-unwraps in CalendarLib and RemindersLib: Calendar arithmetic (×2), `try! NSRegularExpression` (×4), force-unwrap after nil check |
+
+---
+
 ### 8. Gmail support — #61
-**Depends on:** #142 ✅ (MailClient protocol makes adding a second backend straightforward)
+**Depends on:** #142 ✅, #157, #158
 
 The majority of the target audience is on Gmail. Shipping without it means mail doesn't work for most users on day one. This is a hard launch blocker.
 
@@ -112,7 +124,7 @@ OAuth2 flow, Google Cloud Console app registration, browser consent. `mail setup
 
 | Issue | Feature | Notes |
 |---|---|---|
-| #53 | `calendar change` | Implementation in CalendarLib alongside EventFormatter and CalendarResolver |
+| #53 | `calendar change` | Implementation in CalendarLib alongside EventFormatter and CalendarResolver; pick up #159 (SetupHandler layer violations) alongside this |
 | #80 | Move reminder to list | Remove + add workaround loses note, due date, recurrence — data loss footgun |
 | #68 | Multi-recipient text | Implementation in MessagesClient |
 
@@ -182,9 +194,11 @@ These are good work but wait until real users are using the tools:
 ✅ #154    Retrofit RemindersLib FieldChange → ValueChange
 ✅ #140    CalendarStore protocol + CalendarEventKit
 ✅ #142  MailClient protocol + MailJMAP
+  #157  MailLib I/O cleanup + DC-5, DC-6    ← pre-#61
+  #158  Force-unwrap / nil-safety fixes      ← pre-#61
   └── #61  Gmail              ← hard user-facing blocker
 
-#53, #80, #68  feature additions (calendar change, move to list, multi-recipient text)
+#53, #80, #68  feature additions (#159 SetupHandler violations alongside #53)
 #40   GetClearKit shared utilities
 #41–45 test coverage per tool
 
@@ -194,4 +208,4 @@ These are good work but wait until real users are using the tools:
 ✅ Phase 2 install validation
 ```
 
-**Minimum to ship:** #142 → #61 (Gmail) → #53, #80, #68 → #40 → #41–45 → #30 → #135
+**Minimum to ship:** #142 → #157, #158 → #61 (Gmail) → #53/#159, #80, #68 → #40 → #41–45 → #30 → #135
