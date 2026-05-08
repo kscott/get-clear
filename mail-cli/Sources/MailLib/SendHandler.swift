@@ -31,7 +31,10 @@ public func handleSend(
         throw MailError.sendFailed("Could not resolve recipient: \(msg.to)")
     }
 
-    let bodyText = resolvedBody(msg.body)
+    let bodyText = msg.body
+    guard !bodyText.isEmpty else {
+        throw MailError.sendFailed("body is empty — use 'body <text>' to provide one")
+    }
     let email = OutboundEmail(from: identity, to: toAddrs, cc: ccAddrs,
                               subject: msg.subject, body: bodyText,
                               attachmentPaths: msg.attachments)
@@ -71,11 +74,3 @@ public func loadGroupMembers(from store: any ContactStore) async throws -> [Stri
     }
 }
 
-/// Reads body text from a file path if the string is a valid path with content;
-/// otherwise treats it as inline text.
-public func resolvedBody(_ raw: String) -> String {
-    guard !raw.isEmpty,
-          let data = FileManager.default.contents(atPath: raw),
-          let content = String(data: data, encoding: .utf8) else { return raw }
-    return content
-}

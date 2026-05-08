@@ -47,6 +47,18 @@ final class ArgumentParserSpec: QuickSpec {
                 it("captures body text to end of args") {
                     expect(parseSendArgs(["alice", "subject", "Hi", "body", "Hello", "there"])?.body) == "Hello there"
                 }
+                it("captures body containing apostrophes when passed as a single token") {
+                    let body = "I wanted you to see it first so you're not caught off guard."
+                    expect(parseSendArgs(["alice", "body", body])?.body) == body
+                }
+                it("captures body containing newlines when passed as a single token") {
+                    let body = "Line one.\nLine two.\nLine three."
+                    expect(parseSendArgs(["alice", "body", body])?.body) == body
+                }
+                it("captures body containing em-dashes and asterisks when passed as a single token") {
+                    let body = "Join us — I can forward details to anyone who's interested.\n*Nursery available."
+                    expect(parseSendArgs(["alice", "body", body])?.body) == body
+                }
             }
 
             context("from keyword") {

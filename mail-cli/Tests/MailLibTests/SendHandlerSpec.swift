@@ -139,19 +139,44 @@ final class MailSendHandlerSpec: AsyncSpec {
             }
         }
 
-        describe("resolvedBody") {
-            it("returns the string as-is when it is not a file path") {
-                expect(resolvedBody("Hello world")) == "Hello world"
+        describe("body content") {
+            context("body with special characters") {
+                it("delivers apostrophes and contractions to the client exactly as-is") {
+                    let client = SpyMailClient()
+                    let body = "I wanted you to see it first so you're not caught off guard, and so you're ready if people reach out."
+                    _ = try await handleSend(args: ["send", "alice@example.com", "body", body],
+                                             config: testConfig, client: client, contactStore: SpyContactStore())
+                    expect(client.sentEmails.first?.body) == body
+                }
+                it("delivers newlines to the client exactly as-is") {
+                    let client = SpyMailClient()
+                    let body = "Line one.\n\nLine two.\n\nLine three."
+                    _ = try await handleSend(args: ["send", "alice@example.com", "body", body],
+                                             config: testConfig, client: client, contactStore: SpyContactStore())
+                    expect(client.sentEmails.first?.body) == body
+                }
+                it("delivers em-dashes and asterisks to the client exactly as-is") {
+                    let client = SpyMailClient()
+                    let body = "Join us — I can forward details to anyone who's interested.\n*Nursery available all morning."
+                    _ = try await handleSend(args: ["send", "alice@example.com", "body", body],
+                                             config: testConfig, client: client, contactStore: SpyContactStore())
+                    expect(client.sentEmails.first?.body) == body
+                }
             }
-            it("returns empty string unchanged") {
-                expect(resolvedBody("")) == ""
-            }
-            it("reads body text from the file when the path exists") {
-                let url = FileManager.default.temporaryDirectory
-                    .appendingPathComponent("mail-test-body.txt")
-                try? "Hello from file".write(to: url, atomically: true, encoding: .utf8)
-                expect(resolvedBody(url.path)) == "Hello from file"
-                try? FileManager.default.removeItem(at: url)
+
+            context("empty body") {
+                it("throws when body is an empty string") {
+                    await expect {
+                        try await handleSend(args: ["send", "alice@example.com", "body", ""],
+                                             config: testConfig, client: SpyMailClient(), contactStore: SpyContactStore())
+                    }.to(throwError())
+                }
+                it("throws when no body is provided") {
+                    await expect {
+                        try await handleSend(args: ["send", "alice@example.com", "subject", "Hi"],
+                                             config: testConfig, client: SpyMailClient(), contactStore: SpyContactStore())
+                    }.to(throwError())
+                }
             }
         }
 
