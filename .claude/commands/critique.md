@@ -17,6 +17,10 @@ Prompt:
 ```
 You are doing a design review of the Get Clear monorepo — five Swift CLI tools (reminders-cli, calendar-cli, contacts-cli, mail-cli, text-cli) plus GetClearKit, ContactKit, and AppleEventKitSupport.
 
+Before surveying any code, read these two files to understand the product's intent and history:
+- /Users/ken/dev/get-clear/design.md
+- /Users/ken/dev/get-clear/ARCHITECTURE.md
+
 Recent work touched these areas: $RECENT_FILES
 
 Do NOT review that work. Do NOT look for things similar to it. Use it only to orient yourself to a corner of the codebase — then step back and survey broadly.
@@ -27,12 +31,13 @@ Your questions:
 - What implicit concepts exist in the code that no type or function is named after?
 - What code lives at the wrong layer — logic in a boundary file, or framework-awareness in a Lib?
 - Where would introducing a new type, protocol, or function make two or more things simpler or remove a seam that currently requires coordination?
+- What does the code still assume about the product's past shape that is no longer true? This shipped as five separate repos before the monorepo migration (#34). Where does the code still act like five separate products? A user installs one PKG and gets one suite — does the code reflect that?
 
-The most valuable finding is not a problem — it is an unnamed concept that wants to become a type or protocol. Look for the shape of that thing. What would you call it? What would it own? Who would depend on it?
+The most valuable finding is not a problem — it is an unnamed concept that wants to become a type or protocol, or a structural assumption the codebase inherited from an earlier form of the product that no longer fits. Look for the shape of that thing. What would you call it? What would it own? Who would depend on it?
 
-Do not look for bugs. Do not look for copies of what was recently changed. Look for patterns that suggest something is trying to become a named concept but hasn't been given one yet.
+Do not look for bugs. Do not look for copies of what was recently changed. Look for patterns that suggest something is trying to become a named concept but hasn't been given one yet, or something that made sense when each tool was its own product but doesn't make sense for a unified suite.
 
-Read broadly. Search across all five tools. Report the most interesting findings — prioritize unexpected connections over obvious ones.
+Read broadly. Search across all five tools. Report the most interesting findings — prioritize unexpected connections and product-structure mismatches over obvious code-level patterns.
 ```
 
 ---
@@ -43,6 +48,10 @@ Prompt:
 
 ```
 You are auditing the framework boundary files and Lib targets in the Get Clear monorepo.
+
+Before surveying any code, read these two files to understand the product's intent and history:
+- /Users/ken/dev/get-clear/design.md
+- /Users/ken/dev/get-clear/ARCHITECTURE.md
 
 Boundary targets to survey: RemindersEventKit, CalendarEventKit, MailJMAP, TextMessages, AppleContactKit, AppleEventKitSupport.
 Lib targets to survey: RemindersLib, CalendarLib, ContactsLib, MailLib, TextLib, ContactKit, GetClearKit.
@@ -71,6 +80,10 @@ Prompt:
 
 ```
 You are surveying the test targets in the Get Clear monorepo to find design signals — not to report a coverage number.
+
+Before surveying any code, read these two files to understand the product's intent and history:
+- /Users/ken/dev/get-clear/design.md
+- /Users/ken/dev/get-clear/ARCHITECTURE.md
 
 Survey all test targets: RemindersLibTests, CalendarLibTests, ContactsLibTests, MailLibTests, TextLibTests, ContactKitTests, GetClearKitTests, AppleEventKitSupportTests.
 

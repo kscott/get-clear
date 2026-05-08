@@ -142,6 +142,20 @@ Four patterns duplicated across all five tools: `what` command (identical in eve
 
 ---
 
+### 10a. Code quality — critique findings — #179, #180, #181, #182
+**Depends on:** monorepo ✅
+
+Surfaced during post-#157 DoD critique. These are pre-launch quality items — the kind of thing a careful reader notices before calling it a release worth being proud of.
+
+| Issue | What |
+|---|---|
+| #179 | Unified config: consolidate ~/.config/calendar-cli/ and ~/.config/mail-cli/ into ~/.config/get-clear/config.toml — one product, one config file |
+| #180 | Move Keychain.swift from MailJMAP boundary to MailClientFactory — Keychain has no JMAP types and should not live in the JMAP target |
+| #181 | ActivityLogFormatter: add test coverage — pure formatting function in a testable target, zero tests, six meaningful branches |
+| #182 | Extract parseGetClearConfig + formatRecap from GetClear executable to GetClearKit — pure logic trapped in untestable layer |
+
+---
+
 ### 11. Test coverage — #41, #42, #43, #44, #45
 **Depends on:** #35–39 ✅ (logic must be in Lib targets before it can be tested)
 
@@ -216,6 +230,7 @@ These are good work but wait until real users are using the tools:
 #53/#159, #80  feature additions
 #68            multi-recipient text (requires #167)
 #40            GetClearKit shared utilities
+#179–182       code quality (critique findings: unified config, Keychain layer, formatter tests, executable extraction)
 #41–45         test coverage per tool
 
 #30   bundle skills     ← independent, work in parallel
@@ -224,4 +239,4 @@ These are good work but wait until real users are using the tools:
 ✅ Phase 2 install validation
 ```
 
-**Minimum to ship:** #142 → #157, #158, #167, #168, #174 → #61 (Gmail) → #53/#159, #80, #68 → #40 → #41–45 → #30 → #135
+**Minimum to ship:** #142 → #157, #158, #167, #168, #174 → #61 (Gmail) → #53/#159, #80, #68 → #40 → #179–182 → #41–45 → #30 → #135
