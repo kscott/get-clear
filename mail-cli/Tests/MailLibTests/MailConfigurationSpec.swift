@@ -7,17 +7,22 @@ import MailLib
 import Nimble
 import Quick
 
+private let wellFormedTOML = """
+default_from = "alice@example.com"
+
+[identities]
+id1 = "alice@example.com|Alice"
+id2 = "bob@example.com|Bob"
+
+[other]
+key = "value"
+"""
+
 final class MailConfigurationSpec: QuickSpec {
     override class func spec() {
         describe("parseConfig") {
             context("a well-formed config") {
-                let toml = """
-                default_from = "alice@example.com"
-                
-                [identities]
-                id1 = "alice@example.com|Ken Scott"
-                id2 = "bob@example.com|Kenneth"
-                """
+                let toml = wellFormedTOML
 
                 it("parses the default_from field") {
                     expect(parseConfig(toml).defaultFrom) == "alice@example.com"
@@ -28,7 +33,7 @@ final class MailConfigurationSpec: QuickSpec {
                 }
 
                 it("parses identity name") {
-                    expect(parseConfig(toml).identities.first?.name) == "Ken Scott"
+                    expect(parseConfig(toml).identities.first?.name) == "Alice"
                 }
 
                 it("parses identity id") {
@@ -102,6 +107,15 @@ final class MailConfigurationSpec: QuickSpec {
                 }
             }
 
+            context("a second section header after [identities]") {
+                it("ignores keys under non-identities sections") {
+                    expect(parseConfig(wellFormedTOML).identities.count) == 2
+                }
+                it("does not treat other-section keys as identities") {
+                    expect(parseConfig(wellFormedTOML).identities.map(\.id)).toNot(contain("key"))
+                }
+            }
+
             context("identity line with too few parts") {
                 let toml = """
                 default_from = "a@b.com"
@@ -117,13 +131,7 @@ final class MailConfigurationSpec: QuickSpec {
         }
 
         describe("MailConfig.identity(for:)") {
-            let config = parseConfig("""
-            default_from = "alice@example.com"
-            
-            [identities]
-            id1 = "alice@example.com|Ken Scott"
-            id2 = "bob@example.com|Kenneth"
-            """)
+            let config = parseConfig(wellFormedTOML)
 
             it("finds identity by exact email") {
                 expect(config.identity(for: "alice@example.com")?.id) == "id1"

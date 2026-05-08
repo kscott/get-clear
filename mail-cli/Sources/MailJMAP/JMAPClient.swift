@@ -46,10 +46,6 @@ private enum MailboxRole {
     static let sent = "sent"
 }
 
-private struct MailboxIDs {
-    let drafts: String
-    let sent: String
-}
 
 // MARK: - JMAPClient
 
@@ -84,14 +80,12 @@ public struct JMAPClient: MailClient {
     // MARK: MailClient — send
 
     public func send(_ email: OutboundEmail) async throws {
-        let blobs = try await uploadAll(email.attachmentPaths)
-        async let draftsTask = findMailboxId(role: MailboxRole.drafts)
-        async let sentTask = findMailboxId(role: MailboxRole.sent)
-        guard let drafts = try await draftsTask else { throw MailError.jmapError("Could not find Drafts mailbox") }
-        guard let sent = try await sentTask else { throw MailError.jmapError("Could not find Sent mailbox") }
-        let mailboxIDs = MailboxIDs(drafts: drafts, sent: sent)
-        let emailId = try await createEmail(email, blobs: blobs, draftsId: mailboxIDs.drafts)
-        try await submitEmail(emailId: emailId, identityId: email.from.id, mailboxIDs: mailboxIDs)
+        async let blobsTask = uploadAll(email.attachmentPaths)
+        let (draftsId, sentId) = try await findSendMailboxIds()
+        let blobs = try await blobsTask
+        let emailId = try await createEmail(email, blobs: blobs, draftsId: draftsId)
+        try await submitEmail(emailId: emailId, identityId: email.from.id,
+                              draftsId: draftsId, sentId: sentId)
     }
 
     public func saveDraft(_ email: OutboundEmail) async throws {
@@ -231,6 +225,21 @@ public struct JMAPClient: MailClient {
 
     // MARK: Private helpers
 
+    private func findSendMailboxIds() async throws -> (drafts: String, sent: String) {
+        let responses = try await post(methodCalls: [
+            ["Mailbox/get", ["accountId": session.accountId, "ids": NSNull()] as [String: Any], "a"]
+        ])
+        let result = try methodResult("Mailbox/get", from: responses)
+        let mailboxes = result["list"] as? [[String: Any]] ?? []
+        let find = { (role: String) -> String? in
+            mailboxes.first(where: { ($0["role"] as? String)?.lowercased() == role })
+                .flatMap { $0["id"] as? String }
+        }
+        guard let drafts = find(MailboxRole.drafts) else { throw MailError.jmapError("Could not find Drafts mailbox") }
+        guard let sent = find(MailboxRole.sent) else { throw MailError.jmapError("Could not find Sent mailbox") }
+        return (drafts: drafts, sent: sent)
+    }
+
     private func uploadAll(_ paths: [String]) async throws -> [JMAPBlob] {
         try await withThrowingTaskGroup(of: JMAPBlob.self) { group in
             for path in paths {
@@ -288,7 +297,9 @@ public struct JMAPClient: MailClient {
         return emailId
     }
 
-    private func submitEmail(emailId: String, identityId: String, mailboxIDs: MailboxIDs) async throws {
+    private func submitEmail(emailId: String, identityId: String,
+                             draftsId: String, sentId: String) async throws
+    {
         let responses = try await post(
             using: ["urn:ietf:params:jmap:core", "urn:ietf:params:jmap:mail",
                     "urn:ietf:params:jmap:submission"],
@@ -299,8 +310,8 @@ public struct JMAPClient: MailClient {
                     "onSuccessUpdateEmail": [
                         "#s1": [
                             "keywords/$draft": NSNull(),
-                            "mailboxIds/\(mailboxIDs.drafts)": NSNull(),
-                            "mailboxIds/\(mailboxIDs.sent)": true
+                            "mailboxIds/\(draftsId)": NSNull(),
+                            "mailboxIds/\(sentId)": true
                         ]
                     ]
                 ] as [String: Any], "0"]

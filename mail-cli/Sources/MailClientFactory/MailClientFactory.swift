@@ -30,10 +30,12 @@ public let configURL: URL = FileManager.default.homeDirectoryForCurrentUser
     .appendingPathComponent(".config/mail-cli/config.toml")
 
 public func loadConfig(from url: URL = configURL) throws -> MailConfig {
-    guard let content = try? String(contentsOf: url, encoding: .utf8) else {
+    do {
+        let content = try String(contentsOf: url, encoding: .utf8)
+        return parseConfig(content)
+    } catch let error as CocoaError where error.code == .fileReadNoSuchFile {
         throw MailError.noConfig
     }
-    return parseConfig(content)
 }
 
 public func saveConfig(_ config: MailConfig, to url: URL = configURL) throws {
