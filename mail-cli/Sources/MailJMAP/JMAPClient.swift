@@ -46,7 +46,6 @@ private enum MailboxRole {
     static let sent = "sent"
 }
 
-
 // MARK: - JMAPClient
 
 /// A JMAP client bound to a single authenticated session.
