@@ -15,9 +15,8 @@ public func handleSend(
         throw MailError.sendFailed("provide a recipient")
     }
 
-    let fromEmail = msg.from ?? config.defaultFrom
-    guard let identity = config.identity(for: fromEmail) else {
-        throw MailError.noMatchingIdentity(fromEmail)
+    guard let identity = config.identity(for: config.defaultFrom) else {
+        throw MailError.noMatchingIdentity(config.defaultFrom)
     }
 
     let allRecipients = [msg.to] + msg.cc

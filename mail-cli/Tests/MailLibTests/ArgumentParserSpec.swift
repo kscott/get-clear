@@ -61,12 +61,6 @@ final class ArgumentParserSpec: QuickSpec {
                 }
             }
 
-            context("from keyword") {
-                it("sets the from field") {
-                    expect(parseSendArgs(["alice", "from", "ken@optikos.net"])?.from) == "ken@optikos.net"
-                }
-            }
-
             context("cc keyword") {
                 it("captures a single cc recipient") {
                     expect(parseSendArgs(["alice", "cc", "bob@example.com"])?.cc.first) == "bob@example.com"
@@ -98,12 +92,10 @@ final class ArgumentParserSpec: QuickSpec {
             }
 
             context("all keywords combined") {
-                let args = ["alice", "cc", "bob", "from", "ken@optikos.net",
-                            "subject", "Meeting", "attach", "/tmp/doc.pdf",
-                            "body", "See attached"]
+                let args = ["alice", "cc", "bob", "subject", "Meeting",
+                            "attach", "/tmp/doc.pdf", "body", "See attached"]
                 it("captures to") { expect(parseSendArgs(args)?.to) == "alice" }
                 it("captures cc") { expect(parseSendArgs(args)?.cc) == ["bob"] }
-                it("captures from") { expect(parseSendArgs(args)?.from) == "ken@optikos.net" }
                 it("captures subject") { expect(parseSendArgs(args)?.subject) == "Meeting" }
                 it("captures attachment") { expect(parseSendArgs(args)?.attachments) == ["/tmp/doc.pdf"] }
                 it("captures body") { expect(parseSendArgs(args)?.body) == "See attached" }

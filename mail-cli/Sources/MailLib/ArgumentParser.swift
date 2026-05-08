@@ -8,18 +8,16 @@ import Foundation
 public struct ComposedMessage {
     public let to: String // unresolved recipient string
     public let cc: [String] // unresolved cc recipient strings
-    public let from: String? // nil → use default identity
     public let subject: String
     public let body: String // raw text; caller handles file-path expansion
     public let attachments: [String]
     public let isDraft: Bool
 
-    public init(to: String, cc: [String], from: String?, subject: String,
+    public init(to: String, cc: [String], subject: String,
                 body: String, attachments: [String], isDraft: Bool)
     {
         self.to = to
         self.cc = cc
-        self.from = from
         self.subject = subject
         self.body = body
         self.attachments = attachments
@@ -27,7 +25,7 @@ public struct ComposedMessage {
     }
 }
 
-private let sendKeywords: Set<String> = ["cc", "from", "subject", "attach", "body"]
+private let sendKeywords: Set<String> = ["cc", "subject", "attach", "body"]
 
 private func isKeyword(_ s: String) -> Bool {
     sendKeywords.contains(s.lowercased())
@@ -58,7 +56,6 @@ public func parseSendArgs(_ args: [String]) -> ComposedMessage? {
 
     // Parse keyword sections
     var cc: [String] = []
-    var from: String?
     var subject = ""
     var body = ""
     var attachments: [String] = []
@@ -79,12 +76,6 @@ public func parseSendArgs(_ args: [String]) -> ComposedMessage? {
                 i += 1
             }
             subject = parts.joined(separator: " ")
-
-        case "from":
-            i += 1
-            if i < tokens.count { from = tokens[i]
-                i += 1
-            }
 
         case "cc":
             // cc captures tokens until next keyword (supports multi-word contact names)
@@ -107,6 +98,6 @@ public func parseSendArgs(_ args: [String]) -> ComposedMessage? {
         }
     }
 
-    return ComposedMessage(to: to, cc: cc, from: from, subject: subject,
+    return ComposedMessage(to: to, cc: cc, subject: subject,
                            body: body, attachments: attachments, isDraft: isDraft)
 }

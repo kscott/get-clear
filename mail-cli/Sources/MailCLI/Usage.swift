@@ -6,7 +6,7 @@ func usage() -> String {
     
     Usage:
       mail setup [token]                   # Store JMAP token, discover identities
-      mail send <to> [cc <cc>] [from <from>] [subject <subject>] [attach <file>] [body <text>] [--draft]
+      mail send <to> [cc <cc>] [subject <subject>] [attach <file>] [body <text>] [--draft]
       mail find <query>                    # Find messages for context before composing
       mail open                            # Open Fastmail in browser
     
