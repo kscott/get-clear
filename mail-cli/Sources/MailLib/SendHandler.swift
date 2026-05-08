@@ -73,4 +73,3 @@ public func loadGroupMembers(from store: any ContactStore) async throws -> [Stri
         return result
     }
 }
-
