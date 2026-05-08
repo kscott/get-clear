@@ -46,6 +46,11 @@ private enum MailboxRole {
     static let sent = "sent"
 }
 
+private struct MailboxIDs {
+    let drafts: String
+    let sent: String
+}
+
 // MARK: - JMAPClient
 
 /// A JMAP client bound to a single authenticated session.
@@ -82,11 +87,11 @@ public struct JMAPClient: MailClient {
         let blobs = try await uploadAll(email.attachmentPaths)
         async let draftsTask = findMailboxId(role: MailboxRole.drafts)
         async let sentTask = findMailboxId(role: MailboxRole.sent)
-        guard let draftsId = try await draftsTask else { throw MailError.jmapError("Could not find Drafts mailbox") }
-        guard let sentId = try await sentTask else { throw MailError.jmapError("Could not find Sent mailbox") }
-        let emailId = try await createEmail(email, blobs: blobs, draftsId: draftsId)
-        try await submitEmail(emailId: emailId, identityId: email.from.id,
-                              draftsId: draftsId, sentId: sentId)
+        guard let drafts = try await draftsTask else { throw MailError.jmapError("Could not find Drafts mailbox") }
+        guard let sent = try await sentTask else { throw MailError.jmapError("Could not find Sent mailbox") }
+        let mailboxIDs = MailboxIDs(drafts: drafts, sent: sent)
+        let emailId = try await createEmail(email, blobs: blobs, draftsId: mailboxIDs.drafts)
+        try await submitEmail(emailId: emailId, identityId: email.from.id, mailboxIDs: mailboxIDs)
     }
 
     public func saveDraft(_ email: OutboundEmail) async throws {
@@ -283,9 +288,7 @@ public struct JMAPClient: MailClient {
         return emailId
     }
 
-    private func submitEmail(emailId: String, identityId: String,
-                             draftsId: String, sentId: String) async throws
-    {
+    private func submitEmail(emailId: String, identityId: String, mailboxIDs: MailboxIDs) async throws {
         let responses = try await post(
             using: ["urn:ietf:params:jmap:core", "urn:ietf:params:jmap:mail",
                     "urn:ietf:params:jmap:submission"],
@@ -296,8 +299,8 @@ public struct JMAPClient: MailClient {
                     "onSuccessUpdateEmail": [
                         "#s1": [
                             "keywords/$draft": NSNull(),
-                            "mailboxIds/\(draftsId)": NSNull(),
-                            "mailboxIds/\(sentId)": true
+                            "mailboxIds/\(mailboxIDs.drafts)": NSNull(),
+                            "mailboxIds/\(mailboxIDs.sent)": true
                         ]
                     ]
                 ] as [String: Any], "0"]

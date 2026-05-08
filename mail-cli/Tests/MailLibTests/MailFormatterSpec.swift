@@ -11,18 +11,18 @@ final class MailFormatterSpec: QuickSpec {
     override class func spec() {
         describe("formatAddress") {
             it("formats name and email together") {
-                let addr: [String: Any] = ["name": "Ken Scott", "email": "ken@optikos.net"]
-                expect(formatAddress(addr)) == "Ken Scott <ken@optikos.net>"
+                let addr: [String: Any] = ["name": "Alice", "email": "alice@example.com"]
+                expect(formatAddress(addr)) == "Alice <alice@example.com>"
             }
 
             it("returns just the email when name is empty") {
-                let addr: [String: Any] = ["name": "", "email": "ken@optikos.net"]
-                expect(formatAddress(addr)) == "ken@optikos.net"
+                let addr: [String: Any] = ["name": "", "email": "alice@example.com"]
+                expect(formatAddress(addr)) == "alice@example.com"
             }
 
             it("returns just the email when name is missing") {
-                let addr: [String: Any] = ["email": "ken@optikos.net"]
-                expect(formatAddress(addr)) == "ken@optikos.net"
+                let addr: [String: Any] = ["email": "alice@example.com"]
+                expect(formatAddress(addr)) == "alice@example.com"
             }
         }
 

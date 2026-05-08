@@ -10,9 +10,9 @@ public func handleSend(args: [String], sender: any MessageSender) async throws -
     let result = try await sender.send(to: query, message: message)
     try? ActivityLog.write(tool: "text", cmd: "send",
                            desc: "\(result.displayName): \(message)", container: nil)
-    return formatSendConfirmation(name: result.displayName, address: result.address)
+    return formatSendConfirmation(result)
 }
 
-public func formatSendConfirmation(name: String, address: String) -> String {
-    "Sent to \(ANSI.bold(name)) \(ANSI.dim("(\(address))"))"
+public func formatSendConfirmation(_ result: SendResult) -> String {
+    "Sent to \(ANSI.bold(result.displayName)) \(ANSI.dim("(\(result.address))"))"
 }

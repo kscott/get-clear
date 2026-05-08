@@ -44,9 +44,6 @@ public struct MailConfig {
     }
 }
 
-public let configURL: URL = FileManager.default.homeDirectoryForCurrentUser
-    .appendingPathComponent(".config/mail-cli/config.toml")
-
 public func parseConfig(_ content: String) -> MailConfig {
     var defaultFrom = ""
     var identities: [MailIdentity] = []
@@ -85,14 +82,7 @@ public func parseConfig(_ content: String) -> MailConfig {
     return MailConfig(defaultFrom: defaultFrom, identities: identities, webAppURL: webAppURL)
 }
 
-public func loadConfig(from url: URL = configURL) throws -> MailConfig {
-    guard let content = try? String(contentsOf: url, encoding: .utf8) else {
-        throw MailError.noConfig
-    }
-    return parseConfig(content)
-}
-
-public func saveConfig(_ config: MailConfig, to url: URL = configURL) throws {
+public func serializeConfig(_ config: MailConfig) -> String {
     var lines = [
         "default_from = \"\(config.defaultFrom)\"",
         "web_app_url = \"\(config.webAppURL.absoluteString)\"",
@@ -103,8 +93,5 @@ public func saveConfig(_ config: MailConfig, to url: URL = configURL) throws {
     for id in config.identities {
         lines.append("\(id.id) = \"\(id.email)|\(id.name)\"")
     }
-    let content = lines.joined(separator: "\n") + "\n"
-    try FileManager.default.createDirectory(at: url.deletingLastPathComponent(),
-                                            withIntermediateDirectories: true)
-    try content.write(to: url, atomically: true, encoding: .utf8)
+    return lines.joined(separator: "\n") + "\n"
 }

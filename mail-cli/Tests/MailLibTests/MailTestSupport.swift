@@ -32,9 +32,9 @@ final class SpyMailClient: MailClient {
     }
 }
 
-let testIdentity = MailIdentity(id: "id1", email: "ken@optikos.net", name: "Ken Scott")
+let testIdentity = MailIdentity(id: "id1", email: "alice@example.com", name: "Alice")
 
 let testConfig = MailConfig(
-    defaultFrom: "ken@optikos.net",
+    defaultFrom: "alice@example.com",
     identities: [testIdentity]
 )
