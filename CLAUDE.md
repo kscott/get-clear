@@ -86,19 +86,9 @@ cp .build/release/<tool>-bin ~/.local/bin/<tool>
 | `pkg/resources/welcome.html` | PKG installer welcome page |
 | `pkg/resources/conclusion.html` | PKG installer conclusion page |
 
-## Active go-live blockers
+## Go-live blockers
 
-All of these must be complete before public release. See `going-live.md` for full detail.
-
-Done: #33 (Command enum), #34 (monorepo), #35–39 (business logic extraction), #139 (async/await), #144 (reminders second-pass), #150 (shared contact resolution), #147 (reminders three-tier), #143 (text three-tier), #141 (contacts three-tier), #154 (RemindersLib ValueChange retrofit), #140 (calendar three-tier), #142 (mail three-tier)
-
-Remaining, in priority order:
-- **#61** — Gmail support (hard launch blocker; depends on MailClient #142)
-- **#53, #80, #68** — Feature additions: `calendar change`, move reminder to list, multi-recipient text
-- **#40** — GetClearKit shared utilities (what command, multi-match, field updates, error type)
-- **#41–45** — Test coverage for each tool's Lib targets
-- **#30** — Bundle Claude Code skills with PKG/curl installer (independent)
-- **#135** — Smoke tests: --version and --help for all five binaries
+See `going-live.md` — it is the authoritative source. Read it when asked "what's next" or before starting any new issue.
 
 ## Versioning
 

@@ -116,7 +116,7 @@ These must close before #61 (Gmail) opens. The first two clean up existing MailL
 ### 8. Gmail support — #61
 **Depends on:** #142 ✅, #157, #158, #167, #168, #174
 
-The majority of the target audience is on Gmail. Shipping without it means mail doesn't work for most users on day one. This is a hard launch blocker.
+Not a launch blocker — shipping JMAP-only at launch, Gmail post-launch. See "Not blocking launch" section.
 
 OAuth2 flow, Google Cloud Console app registration, browser consent. `mail setup gmail` triggers OAuth; `mail setup fastmail <token>` stays as-is. README needs two setup paths after this ships.
 
@@ -194,6 +194,7 @@ These are good work but wait until real users are using the tools:
 | mail draft command | mail #18 | Stage without sending |
 | mail find + reply | mail #10, #11 | Completes the mail loop |
 | JMAP session cache | mail #4 | Performance, not correctness |
+| Gmail | #61 | Shipping JMAP-only at launch; Gmail post-launch. Depends on #158, #167, #168, #174 (pre-Gmail foundation — ship those for code quality regardless) |
 | Google Calendar | #55 | Requires #171 (NamedCollection) first — Google calendars are the same concept as EK calendars; without it, Google Calendar adds a third container type |
 | ResolutionResult | #166 | Coherence work; does not block any backend but reduces duplication across all of them |
 | FieldChanges protocol | #170 | Companion to #53 (calendar change); worth doing alongside it |
@@ -218,12 +219,12 @@ These are good work but wait until real users are using the tools:
 ✅ #154    Retrofit RemindersLib FieldChange → ValueChange
 ✅ #140    CalendarStore protocol + CalendarEventKit
 ✅ #142    MailClient protocol + MailJMAP
-  #157    MailLib I/O cleanup + DC-5, DC-6       ← pre-#61
-  #158    Force-unwrap / nil-safety fixes         ← pre-#61
-  #167    Shared SendAddress (ContactKit)         ← pre-#61, pre-#68
-  #168    Shared HandlerError protocol            ← pre-#61
-  #174    HandlerContext                          ← pre-#61
-  └── #61  Gmail                                 ← hard user-facing blocker
+✅ #157    MailLib I/O cleanup + DC-5, DC-6
+  #158    Force-unwrap / nil-safety fixes         ← code quality
+  #167    Shared SendAddress (ContactKit)         ← code quality, pre-#68
+  #168    Shared HandlerError protocol            ← code quality
+  #174    HandlerContext                          ← code quality
+  (→ #61  Gmail — post-launch)
 
   #171    NamedCollection (GetClearKit)           ← pre-#55 (Google Calendar)
 
@@ -239,4 +240,4 @@ These are good work but wait until real users are using the tools:
 ✅ Phase 2 install validation
 ```
 
-**Minimum to ship:** #142 → #157, #158, #167, #168, #174 → #61 (Gmail) → #53/#159, #80, #68 → #40 → #179–182 → #41–45 → #30 → #135
+**Minimum to ship:** #158, #167, #168, #174 (code quality) → #53/#159, #80, #68 → #40 → #179–182 → #41–45 → #30 → #135
