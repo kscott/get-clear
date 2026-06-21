@@ -6,7 +6,7 @@ import GetClearKit
 import MailClientFactory
 import MailLib
 
-func handleSetup(args: [String], client: any MailClient) async throws {
+func handleSetup(args: [String]) async throws {
     let token: String
     if args.count > 1 {
         token = args[1]
@@ -21,6 +21,7 @@ func handleSetup(args: [String], client: any MailClient) async throws {
         token = t
     }
 
+    let client = try await makeMailClient(token: token)
     print("Fetching identities...")
     let identities = try await client.fetchIdentities()
 

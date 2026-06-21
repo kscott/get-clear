@@ -19,10 +19,14 @@ await runCLI(args: args, identity: identity, usage: usage) { command, args in
         return
     }
 
+    if command == .setup {
+        try await handleSetup(args: args)
+        return
+    }
+
     let client = try await makeMailClient()
 
     switch command {
-    case .setup: try await handleSetup(args: args, client: client)
     case .find: try await print(handleFind(args: args, client: client))
     case .send:
         let store = await makeStore()
