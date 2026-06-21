@@ -46,7 +46,7 @@ jobs:
           security set-key-partition-list -S apple-tool:,apple: -s -k "" $KEYCHAIN
 
       - name: Build all binaries
-        run: swift build -c release
+        run: swift build -c release --arch arm64
 
       - name: Sign binaries
         run: |
