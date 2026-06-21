@@ -80,7 +80,7 @@ jobs:
 
       - name: Build component package
         run: |
-          pkgbuild \
+          arch -arm64 pkgbuild \
             --root payload \
             --scripts pkg/scripts \
             --identifier com.kenscott.get-clear \
@@ -90,7 +90,7 @@ jobs:
 
       - name: Build distribution package
         run: |
-          productbuild \
+          arch -arm64 productbuild \
             --distribution pkg/distribution.xml \
             --resources pkg/resources \
             --package-path . \
