@@ -1,5 +1,11 @@
 #!/usr/bin/env bash
 
+# LOCAL PATCH (get-clear): sed/tr calls replaced with pure bash parameter
+# expansion. This repo's environment blocks `sed` for automated tooling, so the
+# upstream SpecKit script could not run. Behavior is unchanged. Requires bash 4+
+# (${var,,}, ${var//[...]/}) which /usr/bin/env bash provides here.
+# If SpecKit is ever updated from source, re-apply this patch.
+
 set -e
 
 JSON_MODE=false
@@ -117,7 +123,10 @@ get_highest_from_branches() {
     if [ -n "$branches" ]; then
         while IFS= read -r branch; do
             # Clean branch name: remove leading markers and remote prefixes
-            clean_branch=$(echo "$branch" | sed 's/^[* ]*//; s|^remotes/[^/]*/||')
+            # (pure bash — no sed; see header note)
+            clean_branch="${branch#\* }"                                          # drop "* " current marker
+            clean_branch="${clean_branch#"${clean_branch%%[![:space:]]*}"}"        # drop leading indent
+            clean_branch="${clean_branch#remotes/*/}"                             # drop remotes/<remote>/
             
             # Extract feature number if branch matches pattern ###-*
             if echo "$clean_branch" | grep -q '^[0-9]\{3\}-'; then
@@ -156,10 +165,13 @@ check_existing_branches() {
     echo $((max_num + 1))
 }
 
-# Function to clean and format a branch name
+# Function to clean and format a branch name (pure bash — no sed/tr; see header note)
 clean_branch_name() {
-    local name="$1"
-    echo "$name" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/-/g' | sed 's/-\+/-/g' | sed 's/^-//' | sed 's/-$//'
+    local name="${1,,}"                                   # lowercase
+    name="${name//[^a-z0-9]/-}"                           # non-alphanumeric -> hyphen
+    while [[ "$name" == *--* ]]; do name="${name//--/-}"; done   # collapse runs
+    name="${name#-}"; name="${name%-}"                    # trim leading/trailing hyphen
+    printf '%s\n' "$name"
 }
 
 # Resolve repository root. Prefer git information when available, but fall back
@@ -192,8 +204,9 @@ generate_branch_name() {
     # Common stop words to filter out
     local stop_words="^(i|a|an|the|to|for|of|in|on|at|by|with|from|is|are|was|were|be|been|being|have|has|had|do|does|did|will|would|should|could|can|may|might|must|shall|this|that|these|those|my|your|our|their|want|need|add|get|set)$"
     
-    # Convert to lowercase and split into words
-    local clean_name=$(echo "$description" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/ /g')
+    # Convert to lowercase and split into words (pure bash — no sed/tr; see header note)
+    local clean_name="${description,,}"
+    clean_name="${clean_name//[^a-z0-9]/ }"
     
     # Filter words: remove stop words and words shorter than 3 chars (unless they're uppercase acronyms in original)
     local meaningful_words=()
@@ -228,8 +241,18 @@ generate_branch_name() {
         echo "$result"
     else
         # Fallback to original logic if no meaningful words found
-        local cleaned=$(clean_branch_name "$description")
-        echo "$cleaned" | tr '-' '\n' | grep -v '^$' | head -3 | tr '\n' '-' | sed 's/-$//'
+        # (pure bash — take the first 3 non-empty hyphen-separated segments)
+        local cleaned parts out=() count=0 p joined
+        cleaned=$(clean_branch_name "$description")
+        IFS='-' read -ra parts <<< "$cleaned"
+        for p in "${parts[@]}"; do
+            [ -z "$p" ] && continue
+            out+=("$p")
+            count=$((count + 1))
+            [ $count -ge 3 ] && break
+        done
+        joined=$(IFS='-'; echo "${out[*]}")
+        printf '%s\n' "$joined"
     fi
 }
 
@@ -267,9 +290,9 @@ if [ ${#BRANCH_NAME} -gt $MAX_BRANCH_LENGTH ]; then
     MAX_SUFFIX_LENGTH=$((MAX_BRANCH_LENGTH - 4))
     
     # Truncate suffix at word boundary if possible
-    TRUNCATED_SUFFIX=$(echo "$BRANCH_SUFFIX" | cut -c1-$MAX_SUFFIX_LENGTH)
+    TRUNCATED_SUFFIX="${BRANCH_SUFFIX:0:$MAX_SUFFIX_LENGTH}"
     # Remove trailing hyphen if truncation created one
-    TRUNCATED_SUFFIX=$(echo "$TRUNCATED_SUFFIX" | sed 's/-$//')
+    TRUNCATED_SUFFIX="${TRUNCATED_SUFFIX%-}"
     
     ORIGINAL_BRANCH_NAME="$BRANCH_NAME"
     BRANCH_NAME="${FEATURE_NUM}-${TRUNCATED_SUFFIX}"
