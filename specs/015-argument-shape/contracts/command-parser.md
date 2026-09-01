@@ -1,7 +1,5 @@
 # Contract — `parseCommand` (GetClearKit)
 
-The public interface the shared parser exposes to every tool.
-
 ```swift
 // Sources/GetClearKit/CommandArguments.swift
 
@@ -11,14 +9,26 @@ public struct Keyword: Sendable, Equatable {
     public init(_ canonical: String, aliases: [String] = [])
 }
 
+public struct Identifier: Sendable, Equatable {
+    public let name: String
+    public let required: Bool
+    public init(_ name: String, required: Bool = true)
+}
+
+public enum LeadingRegion: Sendable, Equatable {
+    case none
+    case bareDate
+    case freeText(String)
+}
+
 public struct CommandShape: Sendable {
-    public let identifiers: [String]
-    public let acceptsBareDate: Bool
+    public let identifiers: [Identifier]
+    public let leading: LeadingRegion
     public let keywords: [Keyword]
     public let trailingTextKeyword: String?
     public init(
-        identifiers: [String] = [],
-        acceptsBareDate: Bool = false,
+        identifiers: [Identifier] = [],
+        leading: LeadingRegion = .none,
         keywords: [Keyword] = [],
         trailingTextKeyword: String? = nil
     )
@@ -27,6 +37,7 @@ public struct CommandShape: Sendable {
 public struct ParsedCommand: Equatable, Sendable {
     public let identifiers: [String]
     public let bareDate: String?
+    public let freeText: String?
     public let values: [String: String]
     public let trailingText: String?
 }
@@ -38,32 +49,47 @@ public enum ArgumentError: Error, LocalizedError, Equatable {
     case missingValue(keyword: String)
     case duplicateKeyword(String)
     case dateGivenTwice
-    public var errorDescription: String? { /* see data-model.md message shapes */ }
+    public var errorDescription: String? { /* see data-model.md */ }
 }
 
-/// Parse `tokens` (argv after the command name) into a `ParsedCommand`, per `shape`.
-/// Quotes are already resolved by the shell; this operates on the token array only.
+/// Parse argv-after-the-command-name into a `ParsedCommand`, per `shape`.
+/// Quotes are already resolved by the shell — this works on the token array only.
 public func parseCommand(_ tokens: [String], shape: CommandShape) throws -> ParsedCommand
 ```
+
+## Algorithm
+
+1. **Identifiers.** For each `Identifier` in order: if the next token exists and is not a keyword, consume it (exactly one token). If it is required and the next token is missing or is a keyword → `missingIdentifier(name:)`. Optional and unavailable → skip.
+2. **Leading region.** Collect tokens up to the first keyword (or `trailingTextKeyword`):
+   - `.none` + any collected → `unexpectedTokens(collected)`. (Catches `reminders remove "X" Bills`, `reminders list Household Bills`, `reminders open junk`.)
+   - `.bareDate` + collected → drop a leading `due`/`date`/`on`, join → `bareDate`.
+   - `.freeText` + collected → join → `freeText`. Nothing collected → `freeText == nil`.
+3. **Keyword pairs** until `trailingTextKeyword` or end:
+   - not a known keyword/alias → `unknownKeyword`.
+   - no value (end, or next token is a keyword) → `missingValue`.
+   - canonical already seen → `duplicateKeyword`.
+   - value = tokens up to the next keyword / `trailingTextKeyword` / end, space-joined.
+4. `trailingTextKeyword` token → remaining tokens joined → `trailingText`; stop.
+5. `bareDate != nil` **and** `due`/`date` keyword also seen → `dateGivenTwice`.
 
 ## Behavioral contract
 
 | Given | Then |
 |---|---|
-| `tokens.count < shape.identifiers.count` | throws `missingIdentifier(name:)` for the first missing one |
-| tokens after the identifiers, before any keyword, `acceptsBareDate == true` | joined (minus a leading `due`/`date`/`on`) → `bareDate` |
-| same, `acceptsBareDate == false`, region non-empty | throws `unexpectedTokens(region)` |
-| a token where a keyword is expected, not matching any `canonical` or `alias` | throws `unknownKeyword(token)` |
-| a keyword with no value (end of tokens, or next token is a keyword) | throws `missingValue(keyword: canonical)` |
-| the same keyword (by canonical) twice | throws `duplicateKeyword(canonical)` |
-| `bareDate` produced **and** `due`/`date` keyword present | throws `dateGivenTwice` |
-| token equal to `trailingTextKeyword` | remaining tokens joined → `trailingText`; parsing stops |
-| keyword values are multi-token | joined with a single space, up to the next keyword / trailing-text keyword / end |
-| the same command, keywords reordered | equal `ParsedCommand` |
-| the same command, every token separately quoted vs not | equal `ParsedCommand` |
+| a required identifier's token is missing or is a keyword | `missingIdentifier(name:)` |
+| an identifier token that contains a space (already one token — was quoted) | consumed whole, no error |
+| two-plus tokens where one identifier + `.none` expected | `unexpectedTokens` with a "quote it" hint |
+| `.bareDate` region present | `bareDate`; `due`/`date`/`on` prefix stripped |
+| `.freeText` region present / absent | `freeText` / `nil` |
+| unknown token where a keyword is expected | `unknownKeyword` |
+| keyword with no value | `missingValue` |
+| same keyword twice | `duplicateKeyword` |
+| `bareDate` + `due` keyword | `dateGivenTwice` |
+| `trailingTextKeyword` seen | rest joined → `trailingText`; later keywords are literal |
+| keywords reordered | equal `ParsedCommand` |
+| every token quoted vs none | equal `ParsedCommand` |
 
 ## Non-goals
 
-- No knowledge of dates, priorities, recurrence, URLs, or list existence — those are the tool's job on the returned strings.
-- No `--flag` handling — the suite has none beyond `--help` / `--version`, dispatched earlier by `parseArgs`.
-- Phase 1 does not model an optional leading *filter* positional (needed by `reminders list`) or a from-position-0 trailing text (needed by `reminders find`). Follow-up in research.md R4.
+- No dates, priorities, recurrence, URLs, list existence, or sort-order validity — the tool's job on the returned strings.
+- No `--flag` handling — dispatched earlier by `parseArgs`.

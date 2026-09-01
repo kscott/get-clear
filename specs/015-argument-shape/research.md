@@ -18,35 +18,30 @@ All open questions from the spec checklist, resolved.
 
 ## R2 — What does the per-command descriptor look like?
 
-**Decision**: `CommandShape` with four fields:
+**Decision**: `CommandShape` with four fields; see `contracts/command-parser.md` and `data-model.md` for the exact types.
 
 ```swift
 public struct CommandShape {
-    public let identifiers: [String]        // names of the leading quoted positionals; [] / ["title"] / ["title", "new title"]
-    public let acceptsBareDate: Bool        // is there a bare date slot right after the identifiers?
+    public let identifiers: [Identifier]    // one-token positionals; Identifier has a name + required flag
+    public let leading: LeadingRegion       // .none | .bareDate | .freeText(String) — what the pre-keyword tokens mean
     public let keywords: [Keyword]          // recognized keywords, order-independent
-    public let trailingTextKeyword: String? // e.g. "note" — captures to end of line, must be last
-}
-
-public struct Keyword {
-    public let canonical: String            // "list", "priority", "due"
-    public let aliases: [String]            // ["date"], ["repeats", "repeating", "repeated"]
+    public let trailingTextKeyword: String? // "note" — captures to end of line
 }
 ```
 
-**Rationale**: These four axes are exactly what varies across the suite's commands (confirmed by reading all reminders handlers + the calendar/contacts/mail/text usage texts):
-- number of leading identifiers: 0 (`find`), 1 (`add`/`change`/`remove`/`done`/`show`, and contacts/mail/text sends), 2 (`rename`)
-- a bare date slot: `add` / `change` only
-- a keyword set that differs per command
-- one optional "rest of line" field: `note` (reminders), `body` (mail), `message` (text)
+**The design took three iterations with Ken:**
 
-Everything else — quoting invariance, order-independence, error detection — is uniform and lives in `parseCommand`, not the descriptor.
+1. Started as a flat struct with `identifiers: [String]` + `acceptsBareDate: Bool`.
+2. `reminders list "Household Bills"` exposed that `list` needs an **optional** identifier (0-or-1) → `Identifier` gained a `required` flag.
+3. `reminders list Household Bills` (unquoted) and `reminders find pick up milk` exposed two different notions of "tokens before the first keyword": one is a **name** you must quote (`list`'s filter), the other is genuine **free text** you never quote (`find`'s query). The bare date is a third. → collapsed all three into `LeadingRegion`.
 
-**`due` / `date` are modeled as an ordinary keyword** (`Keyword(canonical: "due", aliases: ["date"])`), *plus* the parser strips a leading `due` / `date` / `on` filler from the bare-date region. The "date given two ways" error (FR-011) fires when the bare region produced a date **and** the `due` keyword also appears.
+**The naming rule Ken locked**: an identifier is exactly one token, quoted if it has a space — no "greedy up to the first keyword." A stray token is `unexpectedTokens` with a "quote it?" hint. Free text (`find`'s query) is the rest of the tail, no quotes. This keeps one rule: *you quote names; you don't quote queries.*
+
+**`due` / `date`** are an ordinary keyword (`Keyword("due", aliases: ["date"])`) *plus* a leading `due` / `date` / `on` filler the parser strips from the `.bareDate` region. `dateGivenTwice` (FR-011) fires when the bare region produced a date **and** the `due` keyword also appeared.
 
 **Alternatives considered**:
-- *A grammar / parser-combinator* — over-built for "identifier, optional bare date, keyword-value pairs, trailing text". The four-field struct is legible and every tool author can read it.
-- *Positional slots beyond the identifier* (e.g. an ordered `[list, date]`) — rejected; the whole feature is about removing fragile positionals. Only the single bare date survives, because "`add "X" march 1`" is how people talk.
+- *A grammar / parser-combinator* — over-built for "identifiers, one leading region, keyword-value pairs, trailing text". The struct is legible; every tool author reads it at a glance.
+- *`.freeText` for `what` too* — rejected: `what` is leaving RemindersLib via #40 (and possibly leaving entirely, #197). Only `find` uses `.freeText` in Phase 1, but it's suite-wide (every tool has `find`), so the case earns its place.
 
 ---
 
@@ -62,15 +57,21 @@ Everything else — quoting invariance, order-independence, error detection — 
 
 ## R4 — Which commands get wired in Phase 1?
 
-**Decision**: `add`, `change`, `rename`, `remove`, `done`, `show`. `list`, `find`, `what` keep their current parsing.
+**Decision (locked with Ken)**: `add`, `change`, `rename`, `remove`, `done`, `show`, `list`, `find` — every reminders command that takes an argument the user could get wrong. `what`, `lists`, `open` do not get a shape.
 
-**Rationale**:
-- The six are the FR-008 set ("commands that specify a target list") plus `show`, which shares the exact `title [list]` shape and the same resolve-the-wrong-record risk.
-- `list` has an optional leading *filter* that is neither an identifier nor a date, plus a `by <order>` keyword — the descriptor does not model an optional non-identifier leading positional, and `list` is read-only so it carries no silent-write risk.
-- `find` is pure rest-of-line (`args.dropFirst().joined`). Modeling it needs a "trailing text from position 0, no keyword" mode the descriptor doesn't have.
-- `what` is range parsing via `parseRange`, a separate concern.
+**The line**: a command goes through `parseCommand` if it names a record and/or carries keywords — i.e. if there is argument structure to validate and a silent-failure path today. That is the eight above.
 
-**Follow-up (not a Phase 1 blocker)**: extend `CommandShape` with an optional leading-filter slot and a "trailing text from start" mode so `list` and `find` can adopt the parser too. Fold into a Phase 2 issue or a small cleanup after #192–195.
+- `add` / `change` — 1 identifier, bare date, keywords, `note` tail
+- `rename` — 2 identifiers, `list` keyword
+- `remove` / `done` / `show` — 1 identifier, `list` keyword
+- `list` — 1 **optional** identifier (the filter), `by` keyword
+- `find` — no identifier, `.freeText("query")` — the query is the whole tail
+
+**`what` is excluded** — its argument handling (`parseRange` on a range string) is being lifted into `GetClearKit.runWhatCommand` by #40, out of RemindersLib, and #197 questions whether tool-level `what` should exist at all. Spec 015 leaves it alone; whichever of #40 / #197 lands decides its parsing.
+
+**`lists` / `open` are excluded** — they take no arguments. A `CommandShape` of "nothing" is ceremony. Instead each handler gets a one-line guard (`guard args.count == 1 else { throw ReminderHandlerError("… takes no arguments") }`) so `reminders open junk` errors (FR-005) without a degenerate shape.
+
+This is not a partial migration — it is every command the parser is *for*. `find` proves `.freeText` is a real suite-wide mode (every tool has `find`), not a one-command curiosity.
 
 ---
 
@@ -96,30 +97,29 @@ Everything else — quoting invariance, order-independence, error detection — 
 
 ## R7 — `design.md` section text and the constitution entry
 
-**Decision**: draft text lives in `contracts/doc-argument-shape.md`; the constitution gets a condensed mirror. Both land in Step 9.
+**Decision**: draft text is in `contracts/doc-argument-shape.md`; the constitution gets a condensed mirror. Both land in Step 8.
 
-**Shape of the `design.md` section** (`## Argument shape`, sits near "Conversational design"):
-- the three-sentence rule
-- the quoting rule ("quote every name; quoting any value is safe; double quotes; single-quote a literal `"` or `$`")
-- the one trailing-free-text exception, stated as deliberate
-- worked before/after examples (from the spec's US tables)
-- a short "why `list` is a keyword" note tied to the silent-failure it removes
+**`design.md` section** (`## Argument shape`, near "Conversational design"): the three-sentence rule; the quoting rule (quote every name; quoting any value is safe; double quotes; single-quote a literal `"` or `$`; the trailing free-text field never needs quotes); the trailing-text exception stated as deliberate; worked before/after examples; a "why `list` is a keyword" note tied to the silent failure it removes.
 
-**Constitution entry** (a new `## Argument shape` rule): the one-paragraph version — identifier first, one bare-or-`due` date, keyword-value pairs any order, one trailing free-text field last; unrecognized tokens are errors; the parser is shared and lives in GetClearKit.
+**Constitution entry** (`## Argument shape`): one paragraph — identifier first (one token, quoted if spaced), one bare-or-`due` date not both, keyword-value pairs any order, one trailing free-text field last; unrecognized tokens are errors; the shared parser lives in GetClearKit.
 
 ---
 
 ## R8 — Regression surface: what currently-valid commands change?
 
-From reading the handlers and their specs:
+From reading every handler and its spec:
 
 | Today | After | Note |
 |---|---|---|
-| `reminders add "X" Bills` (Bills exists) | `reminders add "X" list Bills` | bare positional list removed |
-| `reminders remove "X" Bills` | `reminders remove "X" list Bills` | `remove`/`done`/`show`/`rename` took a bare `args[N]` list |
+| `reminders add "X" Bills` (Bills exists) | `reminders add "X" list Bills` | bare positional list removed (add/change) |
+| `reminders remove "X" Bills` | `reminders remove "X" list Bills` | `remove`/`done`/`show` took a bare `args[2]` list; `rename` a bare `args[3]` |
+| `reminders list Bills` | `reminders list "Bills"` (works) / `reminders list Household Bills` → error | filter is a one-token identifier now |
+| `reminders list by garbage` → sorts by due | error `unknown sort: garbage` | `handleList` validates the `by` value (was a silent fallback) |
 | `reminders change "X" priorty high` → silent no-op | error `unrecognized: priorty` | FR-005 |
 | `reminders change "X" priority high due none` → clear dropped | both applied | FR-012 |
+| `reminders open junk` / `reminders lists junk` → ignored | error `… takes no arguments` | FR-005, via the handler guard |
+| `reminders find pick up milk` | unchanged | `.freeText` — quotes optional |
 | `reminders add "X" march 1` | unchanged | bare date kept |
-| `reminders add "X" due friday note buy milk` | unchanged | |
+| `reminders what …` | unchanged | not touched by 015 |
 
-Every doc example and every handler spec that uses the bare positional list must be updated in the same change (SC-006, Step 8/9). No external users exist (pre-launch), so this is a hard cut with no transition (spec Decisions).
+Every doc example and every handler spec using a now-rejected form is updated in the same change (SC-006, Steps 8–9). Pre-launch, so hard cut, no transition (spec Decisions).

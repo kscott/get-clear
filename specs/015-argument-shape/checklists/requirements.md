@@ -42,12 +42,15 @@ Decisions locked with Ken 2026-08-31 (recorded in spec):
 - Date introducer: **`due` / `date` + optional `on` filler**; bare leading date still valid.
 - Parser: **rebuilt properly (FR-021)**, not patched.
 
-Open for `/speckit.plan`:
+Resolved during `/speckit.plan` (see plan.md / research.md / data-model.md):
 
-1. ~~Where the parser lives~~ — **DECIDED: GetClearKit, tool-agnostic, per-tool command-shape descriptor** (FR-022).
-2. The exact `design.md` section text and constitution entry.
-3. How `note`-to-end interacts with a token-stream parser (the free-text tail is the one field that isn't token-delimited).
-4. The SC-006 doc-example review — which files, how tracked.
-5. The shape of the command-shape descriptor: how a tool declares its keywords, its trailing-free-text field, and whether it has a bare-date slot.
+1. **Parser location** — GetClearKit `CommandArguments.swift`, tool-agnostic (FR-022).
+2. **Descriptor shape** — `CommandShape { identifiers: [Identifier], leading: LeadingRegion, keywords: [Keyword], trailingTextKeyword: String? }`. `Identifier` carries a `required` flag (for `list`'s optional filter). `LeadingRegion` = `.none | .bareDate | .freeText(String)` — collapses "bare date", "quoted name", and "free-text query" into one axis. Took three iterations with Ken.
+3. **Naming rule** — an identifier is exactly one token, quoted if spaced. No greedy-to-keyword. Stray token → `unexpectedTokens` + "quote it?" hint. `find`'s query is `.freeText` (whole tail, no quotes).
+4. **Trailing text** — parser stops tokenizing at `trailingTextKeyword`, joins the rest; later keywords are literal.
+5. **Command scope — 8** (locked with Ken): `add`, `change`, `rename`, `remove`, `done`, `show`, `list`, `find`. `what` excluded (leaving RemindersLib via #40; existence questioned by #197). `lists`/`open` — nullary; stray-token guard deferred (needs plumbing, harmless today).
+6. **`design.md` / constitution text** — drafted in `contracts/doc-argument-shape.md`, finalized in Step 8.
+7. **SC-006 doc sweep** — `design.md`, `README.md`, `PROMPTS.md`, `UsageText.swift`; manual pass over every reminders `add|change|rename|remove|done|show|list|find` example (Step 8).
 
-Phase 2 migration issues to file: calendar, contacts, mail, text.
+Phase 2 migration issues filed: #192 calendar, #193 contacts, #194 mail, #195 text.
+Related issues filed this planning pass: #197 (consolidate `what` to `get-clear`).
