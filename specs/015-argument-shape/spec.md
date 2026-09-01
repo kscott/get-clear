@@ -131,7 +131,7 @@ A token that is not the name, a date, a recognized keyword, or a keyword's value
 - **A value contains a double quote or a dollar sign**: the docs direct the person to single-quote that argument. The tool itself sees the resolved token and does nothing special.
 - **The name is a single word that happens to be a keyword** (`reminders add list`): the name is always position 1 and is never scanned for keywords, so this creates a reminder titled "list".
 - **A keyword value is empty because the person quoted an empty string** (`priority ""`): treated as a missing value → error, same as US6 scenario 2.
-- **Claude constructs the line**: the same rule applies; Claude quotes any value containing a space and never relies on bare multi-word positionals. The MCP server (#008) passes structured fields and is unaffected by shell quoting entirely.
+- **Claude constructs the line**: Claude uses the tools through Claude Code skills that shell out to the CLI, so Claude builds the command line and is bound by this rule exactly as a person is — quote any value with a space, never rely on bare multi-word positionals. There is no structured-parameter path that bypasses it (the former MCP server was removed in favor of skills — spec 009). The skill guidance should state the rule.
 - **`due none` given with no other changes**: clears the date (existing behavior, preserved).
 - **An existing command in current documentation examples**: if the shape change would break a documented example, the example is updated in the same change — no example in any shipped doc may show a form the parser rejects.
 
@@ -209,7 +209,7 @@ A token that is not the name, a date, a recognized keyword, or a keyword's value
 - The bare leading date stays because `add "Pay rent" march 1` is how people speak and the date parser is well-bounded.
 - `list` gaining a mandatory keyword is a net simplification: one extra word in the common case buys the removal of the silent-failure path and the name-dependent behavior.
 - The other four tools follow the shape loosely today; Phase 1 leaves their code and usage text untouched. The `design.md` / constitution text is written suite-wide so Phase 2 is "conform to the written rule," not "invent it."
-- Claude's use of the tools is unaffected beyond the shared rule; the MCP server path (#008) passes structured fields, not a shell line.
+- Claude uses the tools through Claude Code skills that shell out to the CLI (the MCP server was removed in favor of skills — spec 009). Claude constructs command lines and follows this rule like any caller; the reminders skill guidance should carry it.
 
 ## Out of Scope
 
