@@ -38,7 +38,7 @@ public struct CommandShape {
 
 **The one rule Ken locked**: every identifier is exactly one token, quoted if it has a space — including a search query. No "greedy up to the first keyword." A stray token is `unexpectedTokens` with a "quote it?" hint. The single value that never needs quoting is the trailing text field (`note` / `body` / `message`) — the exception Ken blessed explicitly ("never needs, but allows, quotes").
 
-**`due` / `date`** are an ordinary keyword (`Keyword("due", aliases: ["date"])`) *plus* a leading `due` / `date` / `on` filler the parser strips from the `.bareDate` region. `dateGivenTwice` (FR-011) fires when the bare region produced a date **and** the `due` keyword also appeared.
+**`due` / `date`** are an ordinary keyword (`Keyword("due", aliases: ["date"])`). `dateGivenTwice` (FR-011) fires when the bare region produced a date **and** the `due` keyword also appeared. *(Post-analyze: the `on` filler is not handled by the argument parser at all — see refinements below.)*
 
 **Alternatives considered**:
 - *A grammar / parser-combinator* — over-built for "identifiers, optional bare date, keyword-value pairs, trailing text". The struct is legible; every tool author reads it at a glance.
@@ -92,7 +92,7 @@ This is not a partial migration — it is every command the parser is *for*.
 
 **Decision**: No logic change expected; add a regression test.
 
-**Rationale**: The bug today is upstream — `due` is stripped as filler off the front of the date field, so when another keyword precedes it (`priority high due none`) the date field is empty and `due none` is swallowed into `priority`'s value. With `due` as a real keyword, `values["due"] = "none"` → `parseOptions(from:)` sets `opts.date = "none"` → `parseReminderChanges` already has a `if opts.date.lowercased() == "none" { due = .cleared }` branch that runs independently of the priority branch. FR-012 is fixed by the parser; `parseReminderChanges` just needs `ChangeCommandSpec` proof (SC-004).
+**Rationale**: The bug today is upstream — `due` is stripped as filler off the front of the date field, so when another keyword precedes it (`priority high due none`) the date field is empty and `due none` is swallowed into `priority`'s value. With `due` as a real keyword, `values["due"] = "none"` → `parseOptions(from:)` sets `opts.date = "none"` → `parseReminderChanges` already has a `if opts.date.lowercased() == "none" { due = .cleared }` branch that runs independently of the priority branch. FR-012 is fixed by the parser; `parseReminderChanges` needs `ChangeCommandSpec` proof (SC-004) *and* the FR-024 change (reject an unknown priority instead of swallowing it — see refinements below).
 
 ---
 
@@ -125,3 +125,14 @@ From reading every handler and its spec:
 | `reminders what …` | unchanged | not touched by 015 |
 
 Every doc example and every handler spec using a now-rejected form is updated in the same change (SC-006, Steps 8–9). Pre-launch, so hard cut, no transition (spec Decisions).
+
+---
+
+## Post-analyze refinements (2026-09-01)
+
+`/speckit.analyze` (second pass) plus review with Ken settled four points the planning pass left loose:
+
+1. **`reminders add list` is an error, not a reminder titled "list".** The keyword check applies to *every* identifier, required or optional — a bare unquoted keyword word is never consumed as a name. `missingIdentifier` names the token and says to quote it. The spec edge case that said otherwise was the defect. Quoting forces it: `reminders add "list"`.
+2. **The `on` filler moves into `DateParser`.** `GetClearKit/DateParser.swift` strips a leading `on` exactly as it already strips a leading `at` before a time. `due on friday` (a `due` keyword whose value is `"on friday"`), `on march 1` (bare), and `march 1` (bare) then resolve identically with zero argument-parser special-casing. FR-013 reworded accordingly.
+3. **FR-024 — a bad value errors, it is not swallowed.** `parsePriority` returning nil, an unknown `by` sort key, and an unparseable date on the `add` path currently drop silently or default. All three now throw an error naming the value, matching how recurrence already behaves. Live "no silent failures" holes, closed here.
+4. **Scope is all eight argument-taking commands** (`add`, `change`, `rename`, `remove`, `done`, `show`, `list`, `find`) — the spec body was tightened from its `add`/`change`-centric wording to match the plan's locked scope. "No half-assed migration" (Ken).

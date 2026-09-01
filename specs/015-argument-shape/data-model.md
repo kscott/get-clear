@@ -6,7 +6,7 @@ Pure value types in `GetClearKit` (`CommandArguments.swift`). `CommandShape` **i
 
 ## The one rule
 
-Every identifier — a title, a new title, a list name, a search query — is **exactly one token**, quoted if it contains a space. No "greedy up to the first keyword." A stray extra token is an error that tells the user to quote. The **only** value that never needs quoting is the trailing text field (`note` / `body` / `message`), which captures the rest of the line — the single exception, blessed explicitly.
+Every identifier — a title, a new title, a list name, a search query — is **exactly one token**, quoted if it contains a space. No "greedy up to the first keyword." A stray extra token is an error that tells the user to quote. A bare unquoted keyword word is never taken as an identifier — `reminders add list` errors; `reminders add "list"` works. The **only** value that never needs quoting is the trailing text field (`note` / `body` / `message`), which captures the rest of the line — the single exception, blessed explicitly.
 
 ---
 
@@ -31,9 +31,11 @@ The meaning of any tokens between the identifiers and the first keyword.
 ```swift
 public enum LeadingRegion: Sendable, Equatable {
     case none        // nothing permitted — a token is an error
-    case bareDate    // add / change — optional date; `due`/`date`/`on` filler stripped; guards "date given two ways"
+    case bareDate    // add / change — optional date, captured verbatim; guards "date given two ways"
 }
 ```
+
+The `.bareDate` region is passed through untouched. `due` / `date` are keywords (they never land here); a leading `on` (`add "X" on march 1`) is left for the shared date parser, which strips it like the existing `at` before a time.
 
 Only `add` and `change` use `.bareDate`. Everything else is `.none`.
 
@@ -71,7 +73,7 @@ Case-insensitive, whole-token matching.
 | Field | Type | Meaning |
 |---|---|---|
 | `identifiers` | `[String]` | One entry per identifier that was present (so `list` yields 0 or 1). |
-| `bareDate` | `String?` | `.bareDate` region minus a leading `due`/`date`/`on`; `nil` if empty or not a `.bareDate` shape. |
+| `bareDate` | `String?` | `.bareDate` region joined verbatim; `nil` if empty or not a `.bareDate` shape. |
 | `values` | `[String: String]` | One entry per keyword that appeared, keyed by canonical, space-joined value. |
 | `trailingText` | `String?` | Everything after `trailingTextKeyword`; `nil` if that keyword did not appear. |
 
@@ -85,12 +87,15 @@ Case-insensitive, whole-token matching.
 
 | Case | Fires when | Message |
 |---|---|---|
-| `missingIdentifier(name:)` | a required identifier has no token (end, or next token is a keyword) | `provide a <name>` |
-| `unexpectedTokens([String])` | tokens in a `.none` leading region — i.e. after the identifiers a non-keyword token appears | `unexpected: <tokens>` — with `— quote it? <command> "<full phrase>"` hint |
+| `missingIdentifier(name:)` | a required identifier has no token at end of input | `provide a <name>` |
+| `missingIdentifier(name:)` | a required identifier is blocked by a keyword word (`add list`) | `provide a <name> — "<token>" is a keyword; quote it ("<token>") to use it as the <name>` |
+| `unexpectedTokens([String])` | tokens in a `.none` leading region — i.e. after the identifiers a non-keyword token appears | `unexpected: <tokens> — if that is part of the <name>, quote it as one argument; otherwise introduce it with a keyword` |
 | `unknownKeyword(String)` | a token where a keyword is expected matches no canonical/alias | `unrecognized: <token>` |
 | `missingValue(keyword:)` | a keyword is last, or immediately followed by another keyword | `<keyword> needs a value` |
 | `duplicateKeyword(String)` | same keyword (by canonical) twice | `<keyword> given twice` |
 | `dateGivenTwice` | `bareDate` produced **and** the `due`/`date` keyword also appeared | `date given two ways — use a bare date or due, not both` |
+
+The `unexpectedTokens` and keyword-blocked `missingIdentifier` messages are the generic forms the tool-agnostic parser produces from the shape alone (it knows the identifier name and the keyword set). It does not guess which keyword the stray tokens belong to.
 
 Reminders handlers wrap: `catch let e as ArgumentError { throw ReminderHandlerError(e.errorDescription ?? "invalid arguments") }`.
 
@@ -135,5 +140,10 @@ Keywords: `list` / `priority` / `url` no aliases; `repeat` → `repeats`/`repeat
 
 ## Handler consumption
 
-- `list` — `filter = parsed.identifiers.first`; `order` from `parsed.values["by"]`; `handleList` rejects an unknown sort (tightening — was a silent fallback to `.due`)
+- `list` — `filter = parsed.identifiers.first`; `order` from `parsed.values["by"]`; `handleList` rejects an unknown sort value with an error naming it (FR-024 — was a silent fallback to `.due`)
 - `find` — `query = parsed.identifiers[0]` (required, so always present); `reminders find` → `missingIdentifier(name: "query")` (replaces the current handler-level `"provide a search query"` check)
+- `add` / `change` — `parseReminderChanges` / the add path reject an unrecognized `priority` value with an error naming it (FR-024 — `parsePriority` currently returns `nil` and the change is silently skipped). Recurrence already errors this way.
+
+## Shared date parser — the `on` filler (FR-013)
+
+`GetClearKit/DateParser.swift` gains a leading-`on` strip, mirroring its existing leading-`at` strip for times: `parseDate("on march 1") == parseDate("march 1")`, `parseDate("on friday") == parseDate("friday")`. This is the whole of the `on` handling — the argument parser passes date strings through untouched, so `due on friday` (keyword value `"on friday"`), `on march 1` (bare), and `march 1` (bare) all resolve identically.

@@ -62,7 +62,8 @@ public func handleRemove(args: [String], store: any ReminderStore) async throws 
 let parsed = try parseCommand(Array(args.dropFirst()), shape: ReminderCommandShapes.add)
 let title  = parsed.identifiers[0]
 let opts   = parseOptions(from: parsed)   // ParsedOptions { date, recurrence, priority, url, list, note }
-// parseDate(opts.date), parseRecurrence(opts.recurrence), parsePriority(opts.priority) — all unchanged
+// parseDate / parseRecurrence / parsePriority — but a non-empty value each REJECTS with an error
+// naming it (FR-024), rather than the old `?? nil` / `?? 0` silent fallback.
 ```
 
 ## 4. list / find

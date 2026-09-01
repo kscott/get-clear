@@ -5,7 +5,7 @@
 
 ## Summary
 
-Introduce one shared command-line argument parser in GetClearKit — pure, tokens-in / typed-struct-out, driven by a per-command **CommandShape** descriptor — and wire **eight** reminders commands to it: `add`, `change`, `rename`, `remove`, `done`, `show`, `list`, `find` (every command that takes an argument the user could get wrong). This replaces the reminders tool's join-everything-then-regex-split parser, which silently drops a bare multi-word list name and treats `due` as filler rather than a keyword. `list` becomes a keyword; every identifier becomes exactly one token (quoted if spaced); `due` / `date` become real keywords with an optional `on` filler and a bare-leading-date form mutually exclusive with the keyword form; unknown tokens, missing keyword values, duplicate keywords, and a stray token where a quoted name belongs all become errors. `lists` / `open` get a one-line no-argument guard. `what` is untouched (leaving RemindersLib via #40; existence questioned by #197). The rule is written into `design.md` and the constitution suite-wide; the other four tools adopt the parser in Phase 2 (#192–195).
+Introduce one shared command-line argument parser in GetClearKit — pure, tokens-in / typed-struct-out, driven by a per-command **CommandShape** descriptor — and wire **eight** reminders commands to it: `add`, `change`, `rename`, `remove`, `done`, `show`, `list`, `find` (every command that takes an argument the user could get wrong). This replaces the reminders tool's join-everything-then-regex-split parser, which silently drops a bare multi-word list name and treats `due` as filler rather than a keyword. `list` becomes a keyword; every identifier becomes exactly one token (quoted if spaced) and a bare keyword word is never taken as a name; `due` / `date` become real keywords, mutually exclusive with the bare-leading-date form; the `on` filler (`due on friday`) moves into the shared `DateParser` alongside the existing `at`; unknown tokens, missing keyword values, duplicate keywords, a stray token where a quoted name belongs, and a value that fails its field's validation (bad priority, bad sort key, unparseable date — currently swallowed) all become errors. `lists` / `open` get a one-line no-argument guard. `what` is untouched (leaving RemindersLib via #40; existence questioned by #197). The rule is written into `design.md` and the constitution suite-wide; the other four tools adopt the parser in Phase 2 (#192–195).
 
 ## Technical Context
 
@@ -27,7 +27,7 @@ Introduce one shared command-line argument parser in GetClearKit — pure, token
 |------|--------|-------|
 | Tools handle what they can | ✓ PASS | Parser fails clearly with a named cause; never passes a mangled command through as a silent no-op |
 | No flags | ✓ PASS | None added; the feature is about positional/keyword structure. `list` becomes a keyword instead of a fragile bare positional |
-| No silent failures | ✓ PASS | This is the feature — FR-005/006/007 turn every malformed command into a stderr error + non-zero exit |
+| No silent failures | ✓ PASS | This is the feature — FR-005/006/007 turn every malformed command into a stderr error + non-zero exit; FR-024 closes the existing swallow-a-bad-priority / swallow-a-bad-sort / swallow-a-bad-add-date holes |
 | Stdout / stderr split | ✓ PASS | Argument errors travel the existing thrown-error → `fail()` path to stderr |
 | Add and remove ship together | ✓ N/A | No new commands |
 | Read-only commands never write | ✓ PASS | `list` / `find` gain stricter parsing but stay read-only; `what` untouched |
@@ -64,11 +64,13 @@ Sources/GetClearKit/
   CommandArguments.swift          NEW  — Identifier, Keyword, LeadingRegion, CommandShape,
                                          ParsedCommand, ArgumentError,
                                          parseCommand(_ tokens:[String], shape:CommandShape) throws -> ParsedCommand
+  DateParser.swift                UPDATE — strip a leading `on` (mirrors the leading `at`); FR-013
 
 Tests/GetClearKitTests/
-  CommandArgumentsSpec.swift      NEW  — identifiers (required/optional), each LeadingRegion,
-                                         keyword order-independence, trailing text, quoting invariance,
-                                         every ArgumentError case
+  CommandArgumentsSpec.swift      NEW  — identifiers (required/optional, keyword-word blocked),
+                                         each LeadingRegion, keyword order-independence, trailing text,
+                                         quoting invariance, every ArgumentError case
+  DateParserSpec.swift            UPDATE — leading `on` before a date / weekday / date+time
 
 reminders-cli/Sources/RemindersLib/
   ReminderCommandShapes.swift     NEW  — a CommandShape for add, change, rename, remove, done,
@@ -76,7 +78,8 @@ reminders-cli/Sources/RemindersLib/
   OptionsParsing.swift            UPDATE — delete parseOptions(String) + splitListAndOptions;
                                            add parseOptions(from: ParsedCommand) -> ParsedOptions;
                                            ParsedOptions kept as the domain DTO
-  AddHandler.swift                UPDATE — parse via shape; list from the `list` keyword only
+  AddHandler.swift                UPDATE — parse via shape; list from the `list` keyword only;
+                                           reject an unknown priority / unparseable date (FR-024)
   ChangeHandler.swift             UPDATE — parse via shape
   RenameHandler.swift             UPDATE — two identifiers + `list` keyword (was args[3])
   RemoveHandler.swift             UPDATE — title + `list` keyword (was args[2])
@@ -86,18 +89,21 @@ reminders-cli/Sources/RemindersLib/
                                            reject an unknown sort value (was a silent fallback)
   FindHandler.swift               UPDATE — query from `parsed.identifiers[0]` (required identifier;
                                            `reminders find` → missingIdentifier replaces the local check)
-  ReminderChangeParsing.swift     UPDATE — verify only; `due none` + other changes both apply (FR-012),
-                                           fixed upstream by the `due` keyword
+  ReminderChangeParsing.swift     UPDATE — `due none` + other changes both apply (FR-012), fixed
+                                           upstream by the `due` keyword; reject an unknown priority
+                                           value instead of swallowing it (FR-024)
   UsageText.swift                 UPDATE — shared notation; `list <name>`; three-sentence rule; quoting note
 
 reminders-cli/Tests/RemindersLibTests/
   ReminderCommandShapesSpec.swift NEW  — each shape parses its documented forms, rejects the malformed
   OptionsParsingSpec.swift        UPDATE — rewrite against parseOptions(from:)
-  AddHandlerSpec.swift            UPDATE — `list` keyword; unknown-token / dupe-keyword errors
+  AddHandlerSpec.swift            UPDATE — `list` keyword; unknown-token / dupe-keyword / bad-priority /
+                                           unparseable-date errors
   ChangeHandlerSpec.swift         UPDATE
-  ChangeCommandSpec.swift         UPDATE — `priority high due none` applies both (FR-012 / SC-004)
+  ChangeCommandSpec.swift         UPDATE — `priority high due none` applies both (FR-012 / SC-004);
+                                           `priority urgent note "…"` errors, note not applied (FR-024)
   RenameHandlerSpec.swift         UPDATE
-  RemoveHandlerSpec.swift         UPDATE
+  RemoveHandlerSpec.swift         UPDATE — `list` keyword; unknown list → error, nothing removed (FR-009)
   DoneHandlerSpec.swift           UPDATE
   ShowHandlerSpec.swift           UPDATE
   ListHandlerSpec.swift           UPDATE — filter as identifier; unknown-sort error
@@ -131,19 +137,19 @@ Dependency order: parser + tests, then shapes, then handlers, then docs.
 
 Pure types + one function. Full contract in `contracts/command-parser.md`; types in `data-model.md`. Algorithm:
 
-1. **Identifiers** — for each `Identifier` in order: consume one token if the next token exists and is not a keyword; required + unavailable → `missingIdentifier(name:)`; optional + unavailable → skip.
+1. **Identifiers** — for each `Identifier` in order: consume one token if the next token exists and is not a keyword word (this check applies to required and optional identifiers alike); required + blocked/unavailable → `missingIdentifier(name:)` (carrying the blocking token + "quote it" hint when a keyword word blocked it); optional + blocked/unavailable → skip.
 2. **Leading region** — collect tokens up to the first keyword (or `trailingTextKeyword`):
    - `.none` + non-empty → `unexpectedTokens` + a "quote it?" hint. Catches `remove "X" Bills`, `find pick up milk`, `list Household Bills`.
-   - `.bareDate` + non-empty → strip a leading `due`/`date`/`on`, join → `bareDate`.
+   - `.bareDate` + non-empty → join verbatim → `bareDate`. No filler stripping (`due`/`date` are keywords; a leading `on` is the date parser's job).
 3. **Keyword pairs** to `trailingTextKeyword` / end: unknown → `unknownKeyword`; no value → `missingValue`; repeat canonical → `duplicateKeyword`; value = tokens to next keyword / trailing-text / end.
 4. `trailingTextKeyword` → rest joined → `trailingText`; stop.
 5. `bareDate != nil` **and** `due`/`date` keyword seen → `dateGivenTwice`.
 
-Quotes never reach this function (argv is tokenized) → fully-quoted ≡ minimally-quoted (FR-002).
+Quotes never reach this function (argv is tokenized) → fully-quoted ≡ minimally-quoted (FR-002). Value validation (priority, sort key, date parseability) is the handler's job, not the parser's — but the handler MUST error on a bad value, not swallow it (FR-024).
 
 ### Step 2 — GetClearKitTests: `CommandArgumentsSpec.swift`
 
-`describe("parseCommand")`, one assertion per `it`: required vs optional identifiers; `.none` rejects a stray token, `.bareDate` strips `due`/`date`/`on` filler; keyword order-independence (two permutations → equal `ParsedCommand`); trailing text captured to end incl. later keywords; fully-quoted ≡ minimal; one `it` per `ArgumentError` case.
+`describe("parseCommand")`, one assertion per `it`: required vs optional identifiers; a required identifier blocked by a keyword word → `missingIdentifier`; an optional identifier skips a leading keyword word; `.none` rejects a stray token; `.bareDate` captured verbatim; keyword order-independence (two permutations → equal `ParsedCommand`); trailing text captured to end incl. later keywords; fully-quoted ≡ minimal; one `it` per `ArgumentError` case. Separately, `DateParserSpec` covers the leading `on`.
 
 ### Step 3 — RemindersLib: `ReminderCommandShapes.swift`
 
@@ -151,7 +157,7 @@ Eight `CommandShape` values. Table in `data-model.md`; accepted/rejected forms i
 
 ### Step 4 — RemindersLibTests: `ReminderCommandShapesSpec.swift`
 
-Per shape: parses its canonical usage-text example; parses a reordered-keyword variant identically; rejects a bare word where a quoted name belongs; rejects a duplicate keyword. Plus a shape-self-validation spec (unique canonicals, ≤1 optional identifier and it is last, `trailingTextKeyword` not in `keywords`).
+Per shape: parses its canonical usage-text example; parses a reordered-keyword variant identically; rejects a duplicate keyword; rejects a bare keyword word where the name belongs. For `.none` shapes a stray word after the name → `unexpectedTokens`; for `.bareDate` shapes the stray phrase lands in `bareDate` (and fails downstream date parsing — asserted at the handler level). Plus a shape-self-validation spec (unique canonicals, ≤1 optional identifier and it is last, `trailingTextKeyword` not in `keywords`).
 
 ### Step 5 — RemindersLib: `OptionsParsing.swift`
 
@@ -164,6 +170,7 @@ Each: build its shape, call `parseCommand(Array(args.dropFirst()), shape:)`, `ca
 - `add` / `change`: `title = parsed.identifiers[0]`; `opts = parseOptions(from: parsed)`.
 - `rename`: `identifiers[0]`, `identifiers[1]`, list from `values["list"]`.
 - `remove` / `done` / `show`: `identifiers[0]`, list from `values["list"]`.
+- `add` / `change`: also reject an unknown `priority` value and (on `add`) an unparseable `due` — currently swallowed (FR-024).
 - `list`: `filter = parsed.identifiers.first`; `order` from `values["by"]` — `handleList` throws on an unknown sort instead of falling back to `.due`.
 - `find`: `query = parsed.identifiers[0]` (required — always present, or the parser already threw `missingIdentifier`). The handler's local `guard args.count > 1` check is removed.
 - `lists` / `open`: add the no-argument guard.
@@ -171,7 +178,7 @@ Each: build its shape, call `parseCommand(Array(args.dropFirst()), shape:)`, `ca
 
 ### Step 7 — RemindersLib: `UsageText.swift`
 
-Shared notation: `<name>` quoted identifier, `keyword <value>`, `note "…"` last (shown quoted, per FR-016 — one visible pattern), `list "<name>"` (no bare `[list]`), the three-sentence rule and the one-line quoting note in full (SC-001). Decide whether `what` gets a usage line (currently absent) — default: leave absent, it's mid-move per #40/#197.
+Shared notation: `<name>` quoted identifier, `keyword <value>`, `note "…"` last (shown quoted, per FR-016 — one visible pattern), `list "<name>"` (no bare `[list]`), the three-sentence rule and the one-line quoting note in full (SC-001). `what` keeps no usage line (mid-move per #40/#197).
 
 ### Step 8 — Documentation + specs
 

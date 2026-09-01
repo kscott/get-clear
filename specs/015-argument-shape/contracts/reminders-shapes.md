@@ -8,7 +8,7 @@
 
 ## The one rule
 
-Every identifier — a title, a new title, a list name, a search query — is **one token**, quoted if it contains a space. No greedy "up to the first keyword." A stray token after the identifier is an error that tells the user to quote. The trailing text field (`note`) is the only value where quotes are *optional* — but every example below quotes it anyway, so there is one visible pattern: quote every value with a space.
+Every identifier — a title, a new title, a list name, a search query — is **one token**, quoted if it contains a space. No greedy "up to the first keyword." A bare unquoted keyword word (`list`, `by`, `priority`, …) is never consumed as an identifier — `reminders add list` errors; quote it (`reminders add "list"`) to force it. A stray token after the identifier is an error that tells the user to quote — except on `add` / `change`, whose `.bareDate` leading region takes the stray phrase as the date string, so the error surfaces from date parsing instead. The trailing text field (`note`) is the only value where quotes are *optional* — but every example below quotes it anyway, so there is one visible pattern: quote every value with a space.
 
 ---
 
@@ -19,8 +19,8 @@ Parses:
 reminders add "Pay rent"
 reminders add "Pay rent" march 1
 reminders add "Pay rent" due march 1
-reminders add "Pay rent" due on march 1
-reminders add "Pay rent" on march 1
+reminders add "Pay rent" due on march 1                     # "on friday" → date parser strips "on"; same as "march 1"
+reminders add "Pay rent" on march 1                         # same
 reminders add "Pay rent" "march 1" list "Bills" repeat monthly priority high
 reminders add "Pay rent" list "Household Bills" due "next friday" url https://x.com
 reminders add "Call dentist" friday note "ask about the crown"
@@ -28,14 +28,16 @@ reminders add "Call dentist" note ask about the crown       # also parses — no
 reminders change "Pay rent" priority high due none          # both apply (FR-012 / SC-004)
 ```
 
-Rejects:
+Rejects (`add` / `change` use `.bareDate`, so an unquoted phrase in the leading region becomes the date string and fails **date** parsing — a clear error, not a silent drop; it does not produce `unexpectedTokens`):
 ```
-reminders add "Pay rent" Bills march 1          # unexpectedTokens(["Bills","march","1"]) → quote it? add "Bills march 1"
-reminders add Pay rent march 1                  # unexpectedTokens(["rent","march","1"]) → quote it? add "Pay rent march 1"
+reminders add "Pay rent" Bills march 1          # bareDate = "Bills march 1" → date parse fails → "couldn't parse date: Bills march 1"
+reminders add Pay rent march 1                  # title = "Pay", bareDate = "rent march 1" → date parse fails
 reminders add "Pay rent" march 1 due none       # dateGivenTwice
 reminders add "Pay rent" priorty high           # unknownKeyword("priorty")
 reminders add "Pay rent" priority               # missingValue(keyword: "priority")
+reminders add "Pay rent" priority urgent        # parses; handler rejects "urgent" — "unknown priority: urgent" (FR-024)
 reminders add "Pay rent" list A list B          # duplicateKeyword("list")
+reminders add list                              # missingIdentifier(name: "title") — "list" is a keyword; quote it: add "list"
 reminders add                                   # missingIdentifier(name: "title")
 ```
 
@@ -48,8 +50,9 @@ reminders rename "Pay rent" "Pay mortgage" list Bills
 Rejects:
 ```
 reminders rename "Pay rent"                       # missingIdentifier(name: "new title")
-reminders rename "Pay rent" "Pay mortgage" Bills  # unexpectedTokens(["Bills"]) → quote it? rename … list "Bills"
-reminders rename Pay rent Pay mortgage            # "rent" consumed as new title, then unexpectedTokens(["mortgage"])
+reminders rename "Buy milk" list                  # missingIdentifier(name: "new title") — "list" is a keyword; quote it
+reminders rename "Pay rent" "Pay mortgage" Bills  # unexpectedTokens(["Bills"]) — quote as part of a name, or use list "Bills"
+reminders rename Pay rent Pay mortgage            # title = "Pay", new title = "rent", then unexpectedTokens(["Pay","mortgage"])
 ```
 
 ## `remove` / `done` / `show` — `[req "title"]`, `.none`, keywords `[list]`
@@ -62,8 +65,9 @@ reminders show "Buy milk"
 ```
 Rejects:
 ```
-reminders remove "Pay rent" Household Bills       # unexpectedTokens(["Household","Bills"]) → quote it? list "Household Bills"
-reminders remove Pay rent                         # unexpectedTokens(["rent"]) → quote it? remove "Pay rent"
+reminders remove "Pay rent" Household Bills       # unexpectedTokens(["Household","Bills"]) — meant list "Household Bills"
+reminders remove Pay rent                         # title = "Pay", then unexpectedTokens(["rent"]) — quote it: remove "Pay rent"
+reminders remove list                             # missingIdentifier(name: "title") — "list" is a keyword; quote it
 reminders done                                    # missingIdentifier(name: "title")
 ```
 
@@ -77,10 +81,9 @@ reminders list by created
 ```
 Rejects / tightens:
 ```
-reminders list Household Bills                    # unexpectedTokens(["Bills"]) → quote it? list "Household Bills"
+reminders list Household Bills                    # filter = "Household", then unexpectedTokens(["Bills"]) — quote it: list "Household Bills"
 reminders list "Household Bills" extra            # unexpectedTokens(["extra"])
-reminders list by sideways                        # parses; handleList throws "unknown sort: sideways"
-                                                  #   (was a silent fallback to due)
+reminders list by sideways                        # parses; handleList errors "unknown sort: sideways" (FR-024; was a silent fallback to due)
 ```
 
 ## `find` — `[req "query"]`, `.none`, no keywords
@@ -91,7 +94,7 @@ reminders find "pick up dry cleaning"
 ```
 Rejects:
 ```
-reminders find pick up dry cleaning              # unexpectedTokens(["up","dry","cleaning"]) → quote it? find "pick up dry cleaning"
+reminders find pick up dry cleaning              # query = "pick", then unexpectedTokens(["up","dry","cleaning"]) — quote it: find "pick up dry cleaning"
 reminders find                                   # missingIdentifier(name: "query")
 ```
 

@@ -21,7 +21,7 @@ The result is drift. Four tools land in roughly the same place by convention; th
 
 This feature does not invent a new interaction style. It names the shape the suite already mostly follows, records it in `design.md` and the constitution, and brings the reminders tool fully into line — a proper strict parser, not a patch on the current regex split. It is sequenced before #191 (location-alarm vocabulary) and #014 (private-metadata vocabulary) so both add keywords onto a stated rule instead of compounding the drift.
 
-**This is Phase 1.** It covers the rule, the two suite documents, and the reminders tool. Bringing calendar, contacts, mail, and text to the same strict shape is Phase 2 — a separate feature, tracked by a per-tool migration issue each. Those four tools already follow the shape loosely; Phase 1 does not touch their parsers or usage text beyond what the rule's ratification in `design.md` implies.
+**This is Phase 1.** It covers the rule, the two suite documents, and the reminders tool — all eight of its argument-taking commands (`add`, `change`, `rename`, `remove`, `done`, `show`, `list`, `find`), not just `add` / `change`. Bringing calendar, contacts, mail, and text to the same strict shape is Phase 2 — a separate feature, tracked by a per-tool migration issue each. Those four tools already follow the shape loosely; Phase 1 does not touch their parsers or usage text beyond what the rule's ratification in `design.md` implies.
 
 ---
 
@@ -31,11 +31,11 @@ The actors are the **person** typing commands at a terminal and **Claude** const
 
 ### User Story 1 — One rule predicts every command (Priority: P1)
 
-A person reads a short rule (three sentences) and, from that alone, can correctly form any add/change command in the reminders tool — including where multi-word values go and whether they need quoting. The rule is written to generalize to all five tools (Phase 2), but Phase 1 proves it on reminders.
+A person reads a short rule (three sentences) and, from that alone, can correctly form any of the reminders tool's eight argument-taking commands — `add`, `change`, `rename`, `remove`, `done`, `show`, `list`, `find` — including where multi-word values go and whether they need quoting. The rule is written to generalize to all five tools (Phase 2), but Phase 1 proves it on the full reminders command set.
 
 **Why this priority**: This is the whole point. The value is a single mental model that transfers across the suite, so the person never has to remember per-tool argument order.
 
-**Independent Test**: Give someone the three-sentence rule and the command list from `--help`. Ask them to write ten commands covering multi-word names, lists, dates, multiple keywords, and a trailing note. Every command they write parses correctly.
+**Independent Test**: Give someone the three-sentence rule and the command list from `--help`. Ask them to write ten commands across `add`, `change`, `rename`, `remove`, `list`, and `find`, covering multi-word names, lists, dates, multiple keywords, and a trailing note. Every command they write parses correctly.
 
 **Acceptance Scenarios**:
 
@@ -58,6 +58,7 @@ To put a reminder in a list, the person names the list with the `list` keyword. 
 1. **Given** a list "House Stuff" exists, **When** the person runs `reminders add "Pay rent" list "House Stuff" march 1`, **Then** the reminder is created in "House Stuff" with that due date.
 2. **Given** no list named "House Stuff", **When** the person runs `reminders add "Pay rent" list "House Stuff"`, **Then** the tool fails with a message naming the unknown list and creates nothing.
 3. **Given** any input, **When** a bare word appears where a list used to be accepted positionally (`reminders add "Pay rent" Bills march 1`), **Then** "Bills march 1" is interpreted as the date, fails to parse as a date, and the tool errors — it does not silently create a dateless reminder.
+4. **Given** a reminder in "House Stuff", **When** the person runs `reminders remove "Pay rent" list "House Stuff"`, **Then** it is removed from that list — `remove`, `done`, `show`, and `rename` all take the target list through the `list` keyword, never a bare positional.
 
 ---
 
@@ -74,7 +75,7 @@ The due date can be given as a bare value right after the name, or introduced an
 1. **Given** a reminder with a due date and a priority, **When** the person runs `reminders change "Pay rent" priority high due none`, **Then** the priority is set to high AND the due date is cleared.
 2. **Given** any reminder, **When** the person runs `reminders add "Pay rent" due friday` or `reminders add "Pay rent" friday`, **Then** both produce the same reminder due Friday.
 3. **Given** any reminder, **When** the person runs `reminders change "Pay rent" march 1 due none`, **Then** the tool fails with "date given two ways" and makes no change.
-4. **Given** a bare leading date, **When** the person prefixes it with `due` or `date` (`reminders add "X" date "next friday"`), **Then** the prefix is accepted and stripped.
+4. **Given** a date, **When** the person introduces it with the `due` or `date` keyword (`reminders add "X" date "next friday"`), **Then** the keyword is recognized and the date is applied — identically to the bare form.
 
 ---
 
@@ -129,8 +130,8 @@ A token that is not the name, a date, a recognized keyword, or a keyword's value
 ### Edge Cases
 
 - **A value contains a double quote or a dollar sign**: the docs direct the person to single-quote that argument. The tool itself sees the resolved token and does nothing special.
-- **The name is a single word that happens to be a keyword** (`reminders add list`): the name is always position 1 and is never scanned for keywords, so this creates a reminder titled "list".
-- **A keyword value is empty because the person quoted an empty string** (`priority ""`): treated as a missing value → error, same as US6 scenario 2.
+- **The name is a single unquoted word that happens to be a keyword** (`reminders add list`): the parser will not consume a bare keyword word as an identifier, so this errors (`provide a title — quote it: add "list"`). Quoting forces it: `reminders add "list"` creates a reminder titled "list". A bare non-keyword word after a quoted name is still `unexpectedTokens` (US2 scenario 3).
+- **A keyword value is empty or is not a known value for its field** (`priority ""`, `priority urgent`, `list … by sideways`): the field rejects it with an error naming the value. It is never silently ignored (see FR-024).
 - **Claude constructs the line**: Claude uses the tools through Claude Code skills that shell out to the CLI, so Claude builds the command line and is bound by this rule exactly as a person is — quote any value with a space, never rely on bare multi-word positionals. There is no structured-parameter path that bypasses it (the former MCP server was removed in favor of skills — spec 009). The skill guidance should state the rule.
 - **`due none` given with no other changes**: clears the date (existing behavior, preserved).
 - **An existing command in current documentation examples**: if the shape change would break a documented example, the example is updated in the same change — no example in any shipped doc may show a form the parser rejects.
@@ -156,7 +157,15 @@ A token that is not the name, a date, a recognized keyword, or a keyword's value
 - **FR-010**: `due` and `date` MUST be recognized keywords that can appear anywhere in the command, with the same effect as a bare leading date. `due none` MUST clear the due date regardless of position and regardless of other changes in the same command.
 - **FR-011**: A command that specifies the date both as a bare leading value and via the `due` / `date` keyword MUST produce a "date given two ways" error and make no change.
 - **FR-012**: `reminders change` MUST apply a `due none` clear together with any other field changes in the same command. (Fixes the current defect where `priority high due none` drops the clear.)
-- **FR-013**: The date introducer accepts an optional trailing `on`: `due`, `date`, `due on`, `date on`, and a bare leading `on` all introduce a date value (`add "X" due on friday`, `add "X" on march 1`). The filler word is stripped before date parsing. A bare leading date with no introducer is still valid (`add "X" march 1`).
+- **FR-013**: `due` / `date` are the date-introducing keywords; a bare leading date needs no introducer (`add "X" march 1`). The word `on` is an optional filler accepted before any date value — after `due` / `date` (`add "X" due on friday`) or bare (`add "X" on march 1`). `on` is handled by the shared date parser itself (like the existing `at` before a time), so it is valid anywhere a date string is accepted and the argument parser does not special-case it.
+- **FR-023**: The shared parser MUST govern all eight of the reminders tool's argument-taking commands: `add`, `change`, `rename`, `remove`, `done`, `show`, `list`, `find`. Their shapes:
+  - `add` / `change` — one quoted title; optional bare-or-`due`/`date` date; keywords `list`, `priority`, `url`, `repeat`, `due`; trailing `note`.
+  - `rename` — two quoted identifiers (current title, new title); keyword `list`. No bare positional list (was `args[3]`).
+  - `remove` / `done` / `show` — one quoted title; keyword `list`. No bare positional list.
+  - `list` — optional quoted list filter; keyword `by` (sort). No bare multi-word filter.
+  - `find` — one required quoted query. `reminders find` with no query MUST error `provide a query`.
+  `what` (mid-migration under #40 / #197) and the no-argument `lists` / `open` are the only argument-taking-adjacent commands excluded; a stray-token guard on `lists` / `open` is a deferred follow-up.
+- **FR-024**: A value the tool cannot interpret MUST produce an error naming the value and MUST NOT be silently ignored, dropped, or defaulted. This covers `priority` (`high` / `medium` / `low` / `none`), the `list` sort keyword `by` (`due` / `priority` / `title` / `created`), and an unparseable date on `add` (`reminders add "X" blurgh` errors — US2 scenario 3). Recurrence already errors this way; `priority`, sort order, and the `add`-path date currently drop or default silently — a "no silent failures" defect this feature closes.
 
 ### Functional Requirements — Documentation
 
@@ -175,8 +184,8 @@ A token that is not the name, a date, a recognized keyword, or a keyword's value
 
 ### Key Entities
 
-- **Identifier**: The primary field a record is found and referred to by — a reminder's title, a contact's name, a message recipient. Always position 1. Quoted if it contains spaces. Never scanned for keywords.
-- **Bare date**: An optional due date given immediately after the identifier. The one permitted bare positional besides the identifier. May carry an optional `due` / `date` / `on` filler prefix. Distinct from the `due` keyword (FR-010), which can appear anywhere.
+- **Identifier**: A field a record is found and referred to by — a reminder's title, a new title (`rename`), a list filter (`list`), a search query (`find`). One or more leading one-token positionals (`rename` has two). Quoted if it contains spaces. A bare unquoted word that matches a recognized keyword is not consumed as an identifier — quote it to force it (`add "list"`).
+- **Bare date**: An optional due date given immediately after the identifier — the one permitted bare positional besides the identifier. May start with `on` (`on march 1`), which the date parser tolerates. Equivalent to, and mutually exclusive with, the `due` / `date` keyword (FR-010, FR-011), which can appear anywhere.
 - **Keyword**: A recognized word that introduces exactly one following value (which may itself be multi-word, running to the next keyword or the trailing free-text field). Order-independent.
 - **Trailing free-text field**: `note` / `body` / `message`. Captures everything after the keyword to end of line. Comes last. Never needs quotes; allows them.
 - **Argument shape**: The composition of a command line from the four element types above. Defined suite-wide in `design.md` and the constitution; enforced in the reminders parser in Phase 1, in the other four tools in Phase 2.
@@ -188,8 +197,8 @@ A token that is not the name, a date, a recognized keyword, or a keyword's value
 ### Measurable Outcomes
 
 - **SC-001**: The argument shape rule fits in three sentences and is printed in full in the reminders usage text and in `design.md`.
-- **SC-002**: From the three-sentence rule plus the command list, a person forms ten varied reminders commands (multi-word names, lists, reordered keywords, `due` in different positions, trailing note) and 100% parse as intended.
-- **SC-003**: Zero silent failures in reminders argument parsing: every malformed command (unknown token, missing keyword value, unknown list, date given twice, duplicate keyword) produces a stderr message and a non-zero exit.
+- **SC-002**: From the three-sentence rule plus the command list, a person forms ten varied reminders commands spanning `add`, `change`, `rename`, `remove`, `list`, and `find` (multi-word names, lists, reordered keywords, `due` in different positions, trailing note) and 100% parse as intended.
+- **SC-003**: Zero silent failures in reminders argument parsing: every malformed command (unknown token, missing keyword value, unknown keyword value such as a bad priority or sort key, unparseable date, unknown list, date given twice, duplicate keyword) produces a stderr message and a non-zero exit.
 - **SC-004**: `reminders change "X" priority high due none` applies both changes — verified by re-reading the reminder.
 - **SC-005**: A fully-quoted reminders command line and its minimally-quoted equivalent produce byte-identical output for every command in the reminders usage examples.
 - **SC-006**: Someone reviews every reminders command shown as an example anywhere in the repo docs (`design.md`, `README.md`, `PROMPTS.md`, the usage text) and confirms each one is still valid under the new rule — no example teaches a form the parser now rejects.
@@ -198,16 +207,18 @@ A token that is not the name, a date, a recognized keyword, or a keyword's value
 
 ## Decisions locked (2026-08-31, with Ken)
 
+- **Full command set.** The shared parser governs all eight argument-taking reminders commands (`add`, `change`, `rename`, `remove`, `done`, `show`, `list`, `find`), not just `add` / `change`. The accepted/rejected-form tables in `contracts/reminders-shapes.md` were built to prove every one fits the single rule. `what` and the no-argument `lists` / `open` are the only exclusions.
+- **`list` sort stays `by`.** `reminders list … by priority` — `by` becomes a formal keyword of the `list` shape (it is an informal token today). An unrecognized sort value now errors instead of silently falling back to due-date order (FR-024).
 - **List keyword: `list` only.** No `in`, no `to`, no `in list`. `in` collides with relative-date phrasing ("in 3 days"); `list` matches the `list` / `lists` commands and never appears in a date.
 - **Keep the bare leading date** (`add "X" march 1`). The date-as-required-keyword option was rejected.
 - **Scope split:** Phase 1 (this feature) = the rule + `design.md` + constitution + the reminders parser and usage text, built properly. Phase 2 = calendar, contacts, mail, text, one migration issue each.
 - **Hard cut.** No transitional acceptance of the old bare-list form. It errors immediately. Get Clear is pre-launch; there is no deprecation debt worth carrying.
-- **`due` / `date` both accepted**, plus an optional `on` filler.
+- **`due` / `date` both accepted** as keywords. The optional `on` filler (`due on friday`, `on march 1`) is handled inside the shared date parser, not the argument parser (post-analyze refinement, 2026-09-01).
 - **The parser lives in GetClearKit.** It is built tool-agnostic — parameterized by a per-tool command-shape descriptor (its keyword set, which field is the trailing free-text one, whether it has a bare-date slot) — because all five tools will share it (Phase 1 reminders, Phase 2 the rest). Consistent with the constitution's "GetClearKit first."
 
 ## Assumptions
 
-- The reminders parser is rebuilt as a real tokens-to-fields parser (FR-021), not patched. This is expected to touch `OptionsParsing.swift`, `ReminderChangeParsing.swift`, `AddHandler`, `ChangeHandler`, and their specs, and may relocate logic to a shared home per "GetClearKit first."
+- The reminders parser is rebuilt as a real tokens-to-fields parser (FR-021) living in GetClearKit, not patched. This is expected to touch `OptionsParsing.swift`, `ReminderChangeParsing.swift`, all eight command handlers (`Add`, `Change`, `Rename`, `Remove`, `Done`, `Show`, `List`, `Find`), `UsageText.swift`, `DateParser.swift` (the `on` filler), and their specs.
 - The bare leading date stays because `add "Pay rent" march 1` is how people speak and the date parser is well-bounded.
 - `list` gaining a mandatory keyword is a net simplification: one extra word in the common case buys the removal of the silent-failure path and the name-dependent behavior.
 - The other four tools follow the shape loosely today; Phase 1 leaves their code and usage text untouched. The `design.md` / constitution text is written suite-wide so Phase 2 is "conform to the written rule," not "invent it."
@@ -217,6 +228,6 @@ A token that is not the name, a date, a recognized keyword, or a keyword's value
 
 - Calendar, contacts, mail, text parser or usage-text changes — Phase 2, one issue each (FR-019).
 - The `--draft` flag violation in mail (tracked separately).
-- Any new command or new keyword. This feature defines the shape; #191 and #014 add vocabulary within it.
+- Any new *verb*. This feature defines the shape and formalizes the keyword layer the reminders commands already use (`list`, `priority`, `url`, `repeat`, `due` / `date`, `by`, `note`); it adds no new command. #191 and #014 add vocabulary within the shape.
 - Changing identifier-resolution or fuzzy-matching behavior. Only the *shape* of the line and the *quoting* rule are in scope.
 - Localization of keywords.

@@ -57,14 +57,18 @@ public func parseCommand(_ tokens: [String], shape: CommandShape) throws -> Pars
 
 ## The one rule
 
-Every identifier is exactly one token, quoted by the person if it has a space. There is no "greedy up to the first keyword." A stray token where an identifier ends is `unexpectedTokens` — with a "quote it?" hint. The **only** value that does not need quoting is the trailing text field (`note`), which captures the rest of the line.
+Every identifier is exactly one token, quoted by the person if it has a space. There is no "greedy up to the first keyword." A bare keyword word is never consumed as an identifier (`reminders add list` → `missingIdentifier`, quote to force). In a `.none` leading region a stray token is `unexpectedTokens` with a "quote it?" hint; in a `.bareDate` region it becomes the date string (and fails date parsing downstream if it is not one). The **only** value that does not need quoting is the trailing text field (`note`), which captures the rest of the line.
 
 ## Algorithm
 
-1. **Identifiers.** For each `Identifier` in order: if the next token exists and is not a keyword, consume exactly one token. If it is `required` and the next token is missing or is a keyword → `missingIdentifier(name:)`. Optional and unavailable → skip.
+1. **Identifiers.** For each `Identifier` in order: if the next token exists and is not a recognized keyword word, consume exactly one token. Otherwise:
+   - `required` → `missingIdentifier(name:)`. When the blocker is a keyword word (`reminders add list`, `reminders rename "Buy milk" list`), the message names it and tells the user to quote: `provide a <name> — "<token>" is a keyword; quote it ("<token>") to use it as the <name>`. When nothing remains at all: `provide a <name>`.
+   - optional → skip (leave the token for keyword parsing — `reminders list by created`).
+
+   The keyword check applies uniformly to required and optional identifiers: a bare unquoted keyword word is never silently taken as a name. Quoting forces it (`reminders add "list"`).
 2. **Leading region.** Collect tokens up to the first keyword (or `trailingTextKeyword`):
    - `.none` + any collected → `unexpectedTokens(collected)`. Catches `reminders remove "X" Bills`, `reminders find pick up milk`, `reminders list Household Bills`.
-   - `.bareDate` + collected → drop a leading `due`/`date`/`on`, join → `bareDate`.
+   - `.bareDate` + collected → join → `bareDate`, verbatim. No filler stripping here: `due` / `date` are keywords and never reach this region, and a leading `on` (`add "X" on march 1`) is left for the date parser, which tolerates it.
 3. **Keyword pairs** until `trailingTextKeyword` or end:
    - not a known keyword/alias → `unknownKeyword`.
    - no value (end, or next token is a keyword) → `missingValue`.
@@ -77,10 +81,11 @@ Every identifier is exactly one token, quoted by the person if it has a space. T
 
 | Given | Then |
 |---|---|
-| a required identifier's token is missing or is a keyword | `missingIdentifier(name:)` |
+| a required identifier's token is missing | `missingIdentifier(name:)` — `provide a <name>` |
+| a required identifier is blocked by a keyword word (`add list`) | `missingIdentifier(name:)` — names the token, tells the user to quote it |
 | an identifier token containing a space (was quoted → one token) | consumed whole |
 | extra token(s) after the identifiers with `.none` leading | `unexpectedTokens` + "quote it?" hint |
-| `.bareDate` region present | `bareDate`; `due`/`date`/`on` prefix stripped |
+| `.bareDate` region present | `bareDate` captured verbatim; a leading `on` is left for the date parser |
 | unknown token where a keyword is expected | `unknownKeyword` |
 | keyword with no value | `missingValue` |
 | same keyword twice | `duplicateKeyword` |
@@ -91,5 +96,5 @@ Every identifier is exactly one token, quoted by the person if it has a space. T
 
 ## Non-goals
 
-- No dates, priorities, recurrence, URLs, list existence, or sort-order validity — the tool's job on the returned strings.
+- No dates, priorities, recurrence, URLs, list existence, or sort-order validity — the tool validates the returned strings against its known values and MUST error (not silently drop) on an unrecognized one (FR-024).
 - No `--flag` handling — dispatched earlier by `parseArgs`.
