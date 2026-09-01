@@ -44,9 +44,10 @@ Decisions locked with Ken 2026-08-31 (recorded in spec):
 
 Open for `/speckit.plan`:
 
-1. Where the parser lives — shared in GetClearKit vs RemindersLib (constitution "GetClearKit first" applies; Phase 2 wants to reuse it).
+1. ~~Where the parser lives~~ — **DECIDED: GetClearKit, tool-agnostic, per-tool command-shape descriptor** (FR-022).
 2. The exact `design.md` section text and constitution entry.
 3. How `note`-to-end interacts with a token-stream parser (the free-text tail is the one field that isn't token-delimited).
 4. The SC-006 doc-example review — which files, how tracked.
+5. The shape of the command-shape descriptor: how a tool declares its keywords, its trailing-free-text field, and whether it has a bare-date slot.
 
 Phase 2 migration issues to file: calendar, contacts, mail, text.

@@ -170,7 +170,8 @@ A token that is not the name, a date, a recognized keyword, or a keyword's value
 - **FR-018**: Phase 1 changes the **reminders** tool's parser and usage text only. Calendar, contacts, mail, and text are not modified in this feature.
 - **FR-019**: A migration issue is filed for each of calendar (#192), contacts (#193), mail (#194), and text (#195): audit the parser against FR-001..FR-013, apply the strictness requirements (FR-005..FR-007), bring the usage text into the shared notation, fix stale doc examples. Phase 2.
 - **FR-020**: The `--draft` flag in mail is a separate known violation tracked elsewhere and is out of scope.
-- **FR-021**: The reminders parser MUST be built as a proper argument parser (tokens → typed fields with explicit validation), not as additional passes over the current join-and-regex-split. "If we are going to be strict, support it explicitly and properly." Whether the parser lives in a shared location or in RemindersLib is a plan decision, subject to the constitution's "GetClearKit first" rule.
+- **FR-021**: The parser MUST be built as a proper argument parser (tokens → typed fields with explicit validation), not as additional passes over the current join-and-regex-split. "If we are going to be strict, support it explicitly and properly."
+- **FR-022**: The parser MUST live in GetClearKit and be tool-agnostic, driven by a per-tool command-shape descriptor. Phase 1 wires reminders to it; Phase 2 (#192–195) wires the other four. The reminders handlers and `RemindersLib` consume typed fields from it, not raw token strings.
 
 ### Key Entities
 
@@ -202,6 +203,7 @@ A token that is not the name, a date, a recognized keyword, or a keyword's value
 - **Scope split:** Phase 1 (this feature) = the rule + `design.md` + constitution + the reminders parser and usage text, built properly. Phase 2 = calendar, contacts, mail, text, one migration issue each.
 - **Hard cut.** No transitional acceptance of the old bare-list form. It errors immediately. Get Clear is pre-launch; there is no deprecation debt worth carrying.
 - **`due` / `date` both accepted**, plus an optional `on` filler.
+- **The parser lives in GetClearKit.** It is built tool-agnostic — parameterized by a per-tool command-shape descriptor (its keyword set, which field is the trailing free-text one, whether it has a bare-date slot) — because all five tools will share it (Phase 1 reminders, Phase 2 the rest). Consistent with the constitution's "GetClearKit first."
 
 ## Assumptions
 
