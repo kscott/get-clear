@@ -1,5 +1,10 @@
 #!/usr/bin/env bash
 
+# LOCAL PATCH (get-clear): sed calls replaced with pure bash parameter expansion
+# and Bash regex. This repo's environment blocks `sed` for automated tooling.
+# Behavior is unchanged. Requires bash 4+ (provided by /usr/bin/env bash here).
+# If SpecKit is ever updated from source, re-apply this patch.
+#
 # Update agent context files with information from plan.md
 #
 # This script maintains AI agent context files by parsing feature specifications 
@@ -167,13 +172,17 @@ validate_environment() {
 extract_plan_field() {
     local field_pattern="$1"
     local plan_file="$2"
-    
-    grep "^\*\*${field_pattern}\*\*: " "$plan_file" 2>/dev/null | \
-        head -1 | \
-        sed "s|^\*\*${field_pattern}\*\*: ||" | \
-        sed 's/^[ \t]*//;s/[ \t]*$//' | \
-        grep -v "NEEDS CLARIFICATION" | \
-        grep -v "^N/A$" || echo ""
+    local line value
+
+    # pure bash — no sed; see header note
+    line=$(grep "^\*\*${field_pattern}\*\*: " "$plan_file" 2>/dev/null | head -1)
+    [[ -z "$line" ]] && { echo ""; return; }
+    value="${line#"**${field_pattern}**: "}"                 # strip the "**Field**: " prefix literally
+    value="${value#"${value%%[![:space:]]*}"}"               # ltrim whitespace
+    value="${value%"${value##*[![:space:]]}"}"               # rtrim whitespace
+    [[ "$value" == *"NEEDS CLARIFICATION"* ]] && { echo ""; return; }
+    [[ "$value" == "N/A" ]] && { echo ""; return; }
+    echo "$value"
 }
 
 parse_plan_data() {
@@ -311,12 +320,11 @@ create_new_agent_file() {
     local language_conventions
     language_conventions=$(get_language_conventions "$NEW_LANG")
     
-    # Perform substitutions with error checking using safer approach
-    # Escape special characters for sed by using a different delimiter or escaping
-    local escaped_lang=$(printf '%s\n' "$NEW_LANG" | sed 's/[\[\.*^$()+{}|]/\\&/g')
-    local escaped_framework=$(printf '%s\n' "$NEW_FRAMEWORK" | sed 's/[\[\.*^$()+{}|]/\\&/g')
-    local escaped_branch=$(printf '%s\n' "$CURRENT_BRANCH" | sed 's/[\[\.*^$()+{}|]/\\&/g')
-    
+    # pure bash string replacement below — no sed, so no regex escaping needed
+    local escaped_lang="$NEW_LANG"
+    local escaped_framework="$NEW_FRAMEWORK"
+    local escaped_branch="$CURRENT_BRANCH"
+
     # Build technology stack and recent change strings conditionally
     local tech_stack
     if [[ -n "$escaped_lang" && -n "$escaped_framework" ]]; then
@@ -340,30 +348,22 @@ create_new_agent_file() {
         recent_change="- $escaped_branch: Added"
     fi
 
-    local substitutions=(
-        "s|\[PROJECT NAME\]|$project_name|"
-        "s|\[DATE\]|$current_date|"
-        "s|\[EXTRACTED FROM ALL PLAN.MD FILES\]|$tech_stack|"
-        "s|\[ACTUAL STRUCTURE FROM PLANS\]|$project_structure|g"
-        "s|\[ONLY COMMANDS FOR ACTIVE TECHNOLOGIES\]|$commands|"
-        "s|\[LANGUAGE-SPECIFIC, ONLY FOR LANGUAGES IN USE\]|$language_conventions|"
-        "s|\[LAST 3 FEATURES AND WHAT THEY ADDED\]|$recent_change|"
-    )
-    
-    for substitution in "${substitutions[@]}"; do
-        if ! sed -i.bak -e "$substitution" "$temp_file"; then
-            log_error "Failed to perform substitution: $substitution"
-            rm -f "$temp_file" "$temp_file.bak"
-            return 1
-        fi
-    done
-    
-    # Convert \n sequences to actual newlines
-    newline=$(printf '\n')
-    sed -i.bak2 "s/\\\\n/${newline}/g" "$temp_file"
-
-    # Clean up backup files
-    rm -f "$temp_file.bak" "$temp_file.bak2"
+    # pure bash placeholder replacement — no sed; see header note
+    local content
+    content=$(<"$temp_file")
+    content="${content//"[PROJECT NAME]"/$project_name}"
+    content="${content//"[DATE]"/$current_date}"
+    content="${content//"[EXTRACTED FROM ALL PLAN.MD FILES]"/$tech_stack}"
+    content="${content//"[ACTUAL STRUCTURE FROM PLANS]"/$project_structure}"
+    content="${content//"[ONLY COMMANDS FOR ACTIVE TECHNOLOGIES]"/$commands}"
+    content="${content//"[LANGUAGE-SPECIFIC, ONLY FOR LANGUAGES IN USE]"/$language_conventions}"
+    content="${content//"[LAST 3 FEATURES AND WHAT THEY ADDED]"/$recent_change}"
+    content="${content//\\n/$'\n'}"          # convert literal \n sequences to newlines
+    if ! printf '%s\n' "$content" > "$temp_file"; then
+        log_error "Failed to write substituted agent file"
+        rm -f "$temp_file"
+        return 1
+    fi
 
     # Prepend Cursor frontmatter for .mdc files so rules are auto-included
     if [[ "$target_file" == *.mdc ]]; then
@@ -482,9 +482,13 @@ update_existing_agent_file() {
             continue
         fi
         
-        # Update timestamp
+        # Update timestamp (pure bash — replace the first ISO date on the line)
         if [[ "$line" =~ (\*\*)?Last\ updated(\*\*)?:.*[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9] ]]; then
-            echo "$line" | sed "s/[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]/$current_date/" >> "$temp_file"
+            if [[ "$line" =~ [0-9]{4}-[0-9]{2}-[0-9]{2} ]]; then
+                printf '%s\n' "${line/${BASH_REMATCH[0]}/$current_date}" >> "$temp_file"
+            else
+                echo "$line" >> "$temp_file"
+            fi
         else
             echo "$line" >> "$temp_file"
         fi
