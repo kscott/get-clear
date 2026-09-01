@@ -84,7 +84,8 @@ reminders-cli/Sources/RemindersLib/
   ShowHandler.swift               UPDATE — title + `list` keyword
   ListHandler.swift               UPDATE — filter from optional identifier; `by` keyword;
                                            reject an unknown sort value (was a silent fallback)
-  FindHandler.swift               UPDATE — query from `parsed.freeText`
+  FindHandler.swift               UPDATE — query from `parsed.identifiers[0]` (required identifier;
+                                           `reminders find` → missingIdentifier replaces the local check)
   ReminderChangeParsing.swift     UPDATE — verify only; `due none` + other changes both apply (FR-012),
                                            fixed upstream by the `due` keyword
   UsageText.swift                 UPDATE — shared notation; `list <name>`; three-sentence rule; quoting note
@@ -100,7 +101,7 @@ reminders-cli/Tests/RemindersLibTests/
   DoneHandlerSpec.swift           UPDATE
   ShowHandlerSpec.swift           UPDATE
   ListHandlerSpec.swift           UPDATE — filter as identifier; unknown-sort error
-  FindHandlerSpec.swift           UPDATE — freeText query; empty → "provide a search query"
+  FindHandlerSpec.swift           UPDATE — quoted-query identifier; `reminders find` → missingIdentifier
 
 design.md                         UPDATE — new "## Argument shape" section (FR-014)
 .specify/memory/constitution.md   UPDATE — new rule entry (FR-015)
@@ -120,7 +121,7 @@ Package.swift                     NO CHANGE — GetClearKit ⇄ RemindersLib dep
 - `what` — its arg handling is being lifted into `GetClearKit.runWhatCommand` by #40, and #197 questions whether tool-level `what` should exist. Untouched here.
 - `lists` / `open` — take no arguments. Their handlers (`handleLists(store:)`, `handleOpen(opener:)`) don't currently receive the args array, and `.open` is dispatched before the command switch. Rejecting `reminders open junk` would need args plumbed into those handlers or a nullary check in `runCLI` — deferred as a small follow-up. Current behavior (extra tokens ignored) is harmless; this is not a silent *wrong* action.
 
-This is every command the parser is *for*. `find` (in every tool) makes `LeadingRegion.freeText` a real suite-wide mode, not a one-command curiosity.
+This is every command the parser is *for*. One rule — an identifier is one token, quoted if spaced — with the sole exception of the trailing text field (`note`).
 
 ## Implementation Sequence
 
@@ -132,9 +133,8 @@ Pure types + one function. Full contract in `contracts/command-parser.md`; types
 
 1. **Identifiers** — for each `Identifier` in order: consume one token if the next token exists and is not a keyword; required + unavailable → `missingIdentifier(name:)`; optional + unavailable → skip.
 2. **Leading region** — collect tokens up to the first keyword (or `trailingTextKeyword`):
-   - `.none` + non-empty → `unexpectedTokens` (with a "quote it?" hint when the command names a record). Catches `remove "X" Bills`, `list Household Bills`, `open junk`.
+   - `.none` + non-empty → `unexpectedTokens` + a "quote it?" hint. Catches `remove "X" Bills`, `find pick up milk`, `list Household Bills`.
    - `.bareDate` + non-empty → strip a leading `due`/`date`/`on`, join → `bareDate`.
-   - `.freeText` + non-empty → join → `freeText`.
 3. **Keyword pairs** to `trailingTextKeyword` / end: unknown → `unknownKeyword`; no value → `missingValue`; repeat canonical → `duplicateKeyword`; value = tokens to next keyword / trailing-text / end.
 4. `trailingTextKeyword` → rest joined → `trailingText`; stop.
 5. `bareDate != nil` **and** `due`/`date` keyword seen → `dateGivenTwice`.
@@ -143,7 +143,7 @@ Quotes never reach this function (argv is tokenized) → fully-quoted ≡ minima
 
 ### Step 2 — GetClearKitTests: `CommandArgumentsSpec.swift`
 
-`describe("parseCommand")`, one assertion per `it`: required vs optional identifiers; each `LeadingRegion` (`.none` rejects, `.bareDate` strips filler, `.freeText` joins); keyword order-independence (two permutations → equal `ParsedCommand`); trailing text captured to end incl. later keywords; fully-quoted ≡ minimal; one `it` per `ArgumentError` case.
+`describe("parseCommand")`, one assertion per `it`: required vs optional identifiers; `.none` rejects a stray token, `.bareDate` strips `due`/`date`/`on` filler; keyword order-independence (two permutations → equal `ParsedCommand`); trailing text captured to end incl. later keywords; fully-quoted ≡ minimal; one `it` per `ArgumentError` case.
 
 ### Step 3 — RemindersLib: `ReminderCommandShapes.swift`
 
@@ -151,7 +151,7 @@ Eight `CommandShape` values. Table in `data-model.md`; accepted/rejected forms i
 
 ### Step 4 — RemindersLibTests: `ReminderCommandShapesSpec.swift`
 
-Per shape: parses its canonical usage-text example; parses a reordered-keyword variant identically; rejects a bare word where a quoted name belongs; rejects a duplicate keyword. Plus a shape-self-validation spec (unique canonicals, ≤1 optional identifier last, `.freeText` not with `trailingTextKeyword`).
+Per shape: parses its canonical usage-text example; parses a reordered-keyword variant identically; rejects a bare word where a quoted name belongs; rejects a duplicate keyword. Plus a shape-self-validation spec (unique canonicals, ≤1 optional identifier and it is last, `trailingTextKeyword` not in `keywords`).
 
 ### Step 5 — RemindersLib: `OptionsParsing.swift`
 
@@ -165,7 +165,7 @@ Each: build its shape, call `parseCommand(Array(args.dropFirst()), shape:)`, `ca
 - `rename`: `identifiers[0]`, `identifiers[1]`, list from `values["list"]`.
 - `remove` / `done` / `show`: `identifiers[0]`, list from `values["list"]`.
 - `list`: `filter = parsed.identifiers.first`; `order` from `values["by"]` — `handleList` throws on an unknown sort instead of falling back to `.due`.
-- `find`: `query = parsed.freeText`; `nil` → existing "provide a search query".
+- `find`: `query = parsed.identifiers[0]` (required — always present, or the parser already threw `missingIdentifier`). The handler's local `guard args.count > 1` check is removed.
 - `lists` / `open`: add the no-argument guard.
 - `resolvedList(named:)` unchanged — still throws "List not found" (FR-009).
 

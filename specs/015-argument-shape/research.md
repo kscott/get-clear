@@ -23,25 +23,26 @@ All open questions from the spec checklist, resolved.
 ```swift
 public struct CommandShape {
     public let identifiers: [Identifier]    // one-token positionals; Identifier has a name + required flag
-    public let leading: LeadingRegion       // .none | .bareDate | .freeText(String) — what the pre-keyword tokens mean
+    public let leading: LeadingRegion       // .none | .bareDate — what the pre-keyword tokens mean
     public let keywords: [Keyword]          // recognized keywords, order-independent
     public let trailingTextKeyword: String? // "note" — captures to end of line
 }
 ```
 
-**The design took three iterations with Ken:**
+**The design took four iterations with Ken:**
 
-1. Started as a flat struct with `identifiers: [String]` + `acceptsBareDate: Bool`.
-2. `reminders list "Household Bills"` exposed that `list` needs an **optional** identifier (0-or-1) → `Identifier` gained a `required` flag.
-3. `reminders list Household Bills` (unquoted) and `reminders find pick up milk` exposed two different notions of "tokens before the first keyword": one is a **name** you must quote (`list`'s filter), the other is genuine **free text** you never quote (`find`'s query). The bare date is a third. → collapsed all three into `LeadingRegion`.
+1. Flat struct with `identifiers: [String]` + `acceptsBareDate: Bool`.
+2. `reminders list "Household Bills"` → `list` needs an **optional** identifier → `Identifier` gained a `required` flag.
+3. Tried a `.subject` / `.freeText` leading mode for `find`/`what` so multi-word queries wouldn't need quotes.
+4. Ken rejected that — "identifier is one token, add quotes otherwise" — as the same over-flexibility he'd rejected for `remove`. `find`'s query is a plain required identifier: `reminders find "pick up milk"`. `.freeText` deleted. `LeadingRegion` is now just `.none | .bareDate`.
 
-**The naming rule Ken locked**: an identifier is exactly one token, quoted if it has a space — no "greedy up to the first keyword." A stray token is `unexpectedTokens` with a "quote it?" hint. Free text (`find`'s query) is the rest of the tail, no quotes. This keeps one rule: *you quote names; you don't quote queries.*
+**The one rule Ken locked**: every identifier is exactly one token, quoted if it has a space — including a search query. No "greedy up to the first keyword." A stray token is `unexpectedTokens` with a "quote it?" hint. The single value that never needs quoting is the trailing text field (`note` / `body` / `message`) — the exception Ken blessed explicitly ("never needs, but allows, quotes").
 
 **`due` / `date`** are an ordinary keyword (`Keyword("due", aliases: ["date"])`) *plus* a leading `due` / `date` / `on` filler the parser strips from the `.bareDate` region. `dateGivenTwice` (FR-011) fires when the bare region produced a date **and** the `due` keyword also appeared.
 
 **Alternatives considered**:
-- *A grammar / parser-combinator* — over-built for "identifiers, one leading region, keyword-value pairs, trailing text". The struct is legible; every tool author reads it at a glance.
-- *`.freeText` for `what` too* — rejected: `what` is leaving RemindersLib via #40 (and possibly leaving entirely, #197). Only `find` uses `.freeText` in Phase 1, but it's suite-wide (every tool has `find`), so the case earns its place.
+- *A grammar / parser-combinator* — over-built for "identifiers, optional bare date, keyword-value pairs, trailing text". The struct is legible; every tool author reads it at a glance.
+- *A free-text leading mode* — see iteration 3–4 above. Rejected. Keeping `find`'s query as a quoted identifier means one rule with no carve-outs but the trailing field.
 
 ---
 
@@ -65,13 +66,13 @@ public struct CommandShape {
 - `rename` — 2 identifiers, `list` keyword
 - `remove` / `done` / `show` — 1 identifier, `list` keyword
 - `list` — 1 **optional** identifier (the filter), `by` keyword
-- `find` — no identifier, `.freeText("query")` — the query is the whole tail
+- `find` — 1 required identifier (the query, quoted if multi-word), no keywords
 
 **`what` is excluded** — its argument handling (`parseRange` on a range string) is being lifted into `GetClearKit.runWhatCommand` by #40, out of RemindersLib, and #197 questions whether tool-level `what` should exist at all. Spec 015 leaves it alone; whichever of #40 / #197 lands decides its parsing.
 
-**`lists` / `open` are excluded** — they take no arguments. A `CommandShape` of "nothing" is ceremony. Instead each handler gets a one-line guard (`guard args.count == 1 else { throw ReminderHandlerError("… takes no arguments") }`) so `reminders open junk` errors (FR-005) without a degenerate shape.
+**`lists` / `open` are excluded** — they take no arguments, and their handlers don't receive the args array (`.open` dispatches before the command switch). A stray-token guard needs plumbing outside this feature's scope — deferred. Extra tokens are ignored today (harmless — not a silent *wrong* action).
 
-This is not a partial migration — it is every command the parser is *for*. `find` proves `.freeText` is a real suite-wide mode (every tool has `find`), not a one-command curiosity.
+This is not a partial migration — it is every command the parser is *for*.
 
 ---
 
@@ -115,10 +116,11 @@ From reading every handler and its spec:
 | `reminders remove "X" Bills` | `reminders remove "X" list Bills` | `remove`/`done`/`show` took a bare `args[2]` list; `rename` a bare `args[3]` |
 | `reminders list Bills` | `reminders list "Bills"` (works) / `reminders list Household Bills` → error | filter is a one-token identifier now |
 | `reminders list by garbage` → sorts by due | error `unknown sort: garbage` | `handleList` validates the `by` value (was a silent fallback) |
+| `reminders find pick up milk` | `reminders find "pick up milk"` | query is a one-token identifier — multi-word must be quoted |
+| `reminders find` → "provide a search query" | `missingIdentifier(name: "query")` | same effect, now from the parser |
 | `reminders change "X" priorty high` → silent no-op | error `unrecognized: priorty` | FR-005 |
 | `reminders change "X" priority high due none` → clear dropped | both applied | FR-012 |
-| `reminders open junk` / `reminders lists junk` → ignored | error `… takes no arguments` | FR-005, via the handler guard |
-| `reminders find pick up milk` | unchanged | `.freeText` — quotes optional |
+| `reminders open junk` / `reminders lists junk` → ignored | still ignored | guard deferred (harmless) |
 | `reminders add "X" march 1` | unchanged | bare date kept |
 | `reminders what …` | unchanged | not touched by 015 |
 

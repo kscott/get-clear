@@ -10,15 +10,14 @@ public struct Keyword: Sendable, Equatable {
 }
 
 public struct Identifier: Sendable, Equatable {
-    public let name: String
+    public let name: String       // for error messages: "title", "new title", "list", "query"
     public let required: Bool
     public init(_ name: String, required: Bool = true)
 }
 
 public enum LeadingRegion: Sendable, Equatable {
-    case none
-    case bareDate
-    case freeText(String)
+    case none        // no tokens permitted between the identifiers and the first keyword
+    case bareDate    // add / change — optional date; `due`/`date`/`on` filler stripped; guards "date given two ways"
 }
 
 public struct CommandShape: Sendable {
@@ -35,10 +34,9 @@ public struct CommandShape: Sendable {
 }
 
 public struct ParsedCommand: Equatable, Sendable {
-    public let identifiers: [String]
+    public let identifiers: [String]     // one entry per identifier that was present (optional ones may be absent)
     public let bareDate: String?
-    public let freeText: String?
-    public let values: [String: String]
+    public let values: [String: String]  // keyed by keyword canonical
     public let trailingText: String?
 }
 
@@ -57,30 +55,32 @@ public enum ArgumentError: Error, LocalizedError, Equatable {
 public func parseCommand(_ tokens: [String], shape: CommandShape) throws -> ParsedCommand
 ```
 
+## The one rule
+
+Every identifier is exactly one token, quoted by the person if it has a space. There is no "greedy up to the first keyword." A stray token where an identifier ends is `unexpectedTokens` — with a "quote it?" hint. The **only** value that does not need quoting is the trailing text field (`note`), which captures the rest of the line.
+
 ## Algorithm
 
-1. **Identifiers.** For each `Identifier` in order: if the next token exists and is not a keyword, consume it (exactly one token). If it is required and the next token is missing or is a keyword → `missingIdentifier(name:)`. Optional and unavailable → skip.
+1. **Identifiers.** For each `Identifier` in order: if the next token exists and is not a keyword, consume exactly one token. If it is `required` and the next token is missing or is a keyword → `missingIdentifier(name:)`. Optional and unavailable → skip.
 2. **Leading region.** Collect tokens up to the first keyword (or `trailingTextKeyword`):
-   - `.none` + any collected → `unexpectedTokens(collected)`. (Catches `reminders remove "X" Bills`, `reminders list Household Bills`, `reminders open junk`.)
+   - `.none` + any collected → `unexpectedTokens(collected)`. Catches `reminders remove "X" Bills`, `reminders find pick up milk`, `reminders list Household Bills`.
    - `.bareDate` + collected → drop a leading `due`/`date`/`on`, join → `bareDate`.
-   - `.freeText` + collected → join → `freeText`. Nothing collected → `freeText == nil`.
 3. **Keyword pairs** until `trailingTextKeyword` or end:
    - not a known keyword/alias → `unknownKeyword`.
    - no value (end, or next token is a keyword) → `missingValue`.
    - canonical already seen → `duplicateKeyword`.
    - value = tokens up to the next keyword / `trailingTextKeyword` / end, space-joined.
 4. `trailingTextKeyword` token → remaining tokens joined → `trailingText`; stop.
-5. `bareDate != nil` **and** `due`/`date` keyword also seen → `dateGivenTwice`.
+5. `bareDate != nil` **and** the `due`/`date` keyword also seen → `dateGivenTwice`.
 
 ## Behavioral contract
 
 | Given | Then |
 |---|---|
 | a required identifier's token is missing or is a keyword | `missingIdentifier(name:)` |
-| an identifier token that contains a space (already one token — was quoted) | consumed whole, no error |
-| two-plus tokens where one identifier + `.none` expected | `unexpectedTokens` with a "quote it" hint |
+| an identifier token containing a space (was quoted → one token) | consumed whole |
+| extra token(s) after the identifiers with `.none` leading | `unexpectedTokens` + "quote it?" hint |
 | `.bareDate` region present | `bareDate`; `due`/`date`/`on` prefix stripped |
-| `.freeText` region present / absent | `freeText` / `nil` |
 | unknown token where a keyword is expected | `unknownKeyword` |
 | keyword with no value | `missingValue` |
 | same keyword twice | `duplicateKeyword` |

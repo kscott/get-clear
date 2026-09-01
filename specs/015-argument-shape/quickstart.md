@@ -31,7 +31,7 @@ enum ReminderCommandShapes {
     )
 
     static let find = CommandShape(
-        leading: .freeText("query")
+        identifiers: [Identifier("query")]
     )
     // rename: identifiers [Identifier("title"), Identifier("new title")], keywords [Keyword("list")]
 }
@@ -72,10 +72,8 @@ let opts   = parseOptions(from: parsed)   // ParsedOptions { date, recurrence, p
 let filter = parsed.identifiers.first                       // nil → all lists
 let order  = try sortOrder(from: parsed.values["by"])       // throws on an unknown value (was silent → .due)
 
-// handleFind
-guard let query = parsed.freeText else {
-    throw ReminderHandlerError("provide a search query")
-}
+// handleFind — query is a required identifier, so it is always present here
+let query = parsed.identifiers[0]      // `reminders find` already threw missingIdentifier(name: "query")
 ```
 
 ## 5. Test the shape

@@ -45,9 +45,10 @@ Decisions locked with Ken 2026-08-31 (recorded in spec):
 Resolved during `/speckit.plan` (see plan.md / research.md / data-model.md):
 
 1. **Parser location** — GetClearKit `CommandArguments.swift`, tool-agnostic (FR-022).
-2. **Descriptor shape** — `CommandShape { identifiers: [Identifier], leading: LeadingRegion, keywords: [Keyword], trailingTextKeyword: String? }`. `Identifier` carries a `required` flag (for `list`'s optional filter). `LeadingRegion` = `.none | .bareDate | .freeText(String)` — collapses "bare date", "quoted name", and "free-text query" into one axis. Took three iterations with Ken.
-3. **Naming rule** — an identifier is exactly one token, quoted if spaced. No greedy-to-keyword. Stray token → `unexpectedTokens` + "quote it?" hint. `find`'s query is `.freeText` (whole tail, no quotes).
+2. **Descriptor shape** — `CommandShape { identifiers: [Identifier], leading: LeadingRegion, keywords: [Keyword], trailingTextKeyword: String? }`. `Identifier` carries a `required` flag (for `list`'s optional filter). `LeadingRegion` = `.none | .bareDate` only. Took four iterations with Ken (a `.freeText` mode for `find`/`what` was tried and rejected — see #4).
+3. **Naming rule** — an identifier is exactly one token, quoted if spaced — including a search query (`reminders find "pick up milk"`). No greedy-to-keyword. Stray token → `unexpectedTokens` + "quote it?" hint. The **only** unquoted-OK value is the trailing text field (`note`), the exception Ken blessed.
 4. **Trailing text** — parser stops tokenizing at `trailingTextKeyword`, joins the rest; later keywords are literal.
+4. **`.freeText` tried, rejected** — a leading free-text mode so `find pick up milk` wouldn't need quotes; Ken called it the same over-flexibility he'd rejected for `remove`. `find`'s query is a plain required identifier.
 5. **Command scope — 8** (locked with Ken): `add`, `change`, `rename`, `remove`, `done`, `show`, `list`, `find`. `what` excluded (leaving RemindersLib via #40; existence questioned by #197). `lists`/`open` — nullary; stray-token guard deferred (needs plumbing, harmless today).
 6. **`design.md` / constitution text** — drafted in `contracts/doc-argument-shape.md`, finalized in Step 8.
 7. **SC-006 doc sweep** — `design.md`, `README.md`, `PROMPTS.md`, `UsageText.swift`; manual pass over every reminders `add|change|rename|remove|done|show|list|find` example (Step 8).

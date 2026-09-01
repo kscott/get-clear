@@ -6,9 +6,9 @@
 
 `list`, `priority`, `url`, `repeat` (+ `repeats`/`repeating`/`repeated`), `due` (+ `date`), `by`. `note` is the trailing-text keyword on `add`/`change`.
 
-## The naming rule
+## The one rule
 
-Every identifier — a title, a new title, a list name — is **one token**, quoted if it contains a space. No greedy "up to the first keyword." A stray token after the identifier is an error that tells the user to quote. `find`'s query is free text (the rest of the tail), not an identifier — no quotes required.
+Every identifier — a title, a new title, a list name, a search query — is **one token**, quoted if it contains a space. No greedy "up to the first keyword." A stray token after the identifier is an error that tells the user to quote. The only value that never needs quoting is the trailing text field (`note`).
 
 ---
 
@@ -84,14 +84,17 @@ reminders list by sideways                        # parses; handleList throws "u
                                                   #   (was a silent fallback to due)
 ```
 
-## `find` — `[]`, `.freeText("query")`, no keywords
+## `find` — `[req "query"]`, `.none`, no keywords
 
 ```
 reminders find dentist
-reminders find pick up dry cleaning
-reminders find "pick up dry cleaning"            # identical
+reminders find "pick up dry cleaning"
 ```
-`freeText` is the whole tail. Empty (`reminders find`) → `freeText == nil` → `handleFind` throws `"provide a search query"` (unchanged).
+Rejects:
+```
+reminders find pick up dry cleaning              # unexpectedTokens(["up","dry","cleaning"]) → quote it? find "pick up dry cleaning"
+reminders find                                   # missingIdentifier(name: "query")
+```
 
 ---
 
