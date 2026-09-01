@@ -1,3 +1,15 @@
+# Pinned to the SwiftFormat version below. Newer releases add default rules that
+# flag the codebase's existing deliberate style (see the --disable entries).
+# Revisit tracked in GitHub #196 — unpin, adopt current defaults, bulk-reformat once.
+--minversion 0.62.1
+
+# Rules opted out because they conflict with established style, and a whitespace-only
+# reformat now would churn every open branch. wrapIfStatementBodies/wrapIfExpressionBodies
+# are cosmetic (one-line `if x { return }` is fine here); preferForLoop is a
+# forEach→for rewrite we don't want forced. wrapMultilineStatementBraces stays ON —
+# it enforces the brace-on-own-line style the codebase already uses.
+--disable wrapIfStatementBodies,wrapIfExpressionBodies,preferForLoop
+
 --indent 4
 --allman false
 --semicolons never
