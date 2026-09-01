@@ -7,8 +7,8 @@
 ## Content Quality
 
 - [x] No implementation details (languages, frameworks, APIs)
-  - Names `parseOptions` behavior descriptively (join-then-split, "consume to end of line") only where it is the defect being fixed. No Swift, no target names, no parser design — those are plan.md.
-- [x] Focused on user value and business needs — one predictable mental model across five tools
+  - Describes the current `parseOptions` behavior (join-then-split, consume-to-end) only where it is the defect being fixed. FR-021 asserts "a real parser, not a patch" as a requirement without prescribing the design.
+- [x] Focused on user value and business needs — one predictable mental model
 - [x] Written for non-technical stakeholders
 - [x] All mandatory sections completed
 
@@ -20,23 +20,33 @@
 - [x] Success criteria are technology-agnostic
 - [x] All acceptance scenarios are defined
 - [x] Edge cases are identified
-- [x] Scope is clearly bounded — Out of Scope names `--draft`, new vocabulary, matching behavior
+- [x] Scope is clearly bounded — Phase 1 = reminders + docs; Phase 2 = other four tools
 - [x] Dependencies and assumptions identified
 
 ## Feature Readiness
 
 - [x] All functional requirements have clear acceptance criteria
-- [x] User scenarios cover primary flows (form a command, list assignment, date field, trailing text, usage texts, error on junk)
+- [x] User scenarios cover primary flows
 - [x] Feature meets measurable outcomes defined in Success Criteria
 - [x] No implementation details leak into specification
 
 ## Notes
 
-- Confirmed with Ken 2026-08-31: `list` keyword required; `due` allowed but not required with a date; note/body/message never needs but allows quotes; double quotes are the documented default.
-- Sequencing: lands before #191 (location-alarm vocabulary) and #014 (private-metadata vocabulary).
-- Behavioral parsing changes are confined to the reminders tool (FR-008..FR-013) plus the suite-wide "unrecognized token is an error" tightening (FR-005..FR-007). Contacts/mail/text/calendar are audit-and-document only unless the tightening surfaces a token they currently absorb.
-- Open for `/speckit.plan`:
-  1. Whether the reminders parser stays join-then-regex-split or moves to token-stream parsing to support FR-005..FR-007 cleanly.
-  2. Where the shared shape logic lives (GetClearKit vs per-tool) — the constitution's "GetClearKit first" rule applies.
-  3. The exact `design.md` section and constitution entry text.
-  4. The doc-example extraction check for SC-007.
+Decisions locked with Ken 2026-08-31 (recorded in spec):
+
+- List keyword: **`list` only**.
+- Bare leading date: **kept**.
+- Scope: **Phase 1 = reminders + design.md + constitution; Phase 2 = calendar/contacts/mail/text, one issue each**.
+- Strictness (FR-005..FR-007): **reminders only in Phase 1**, other tools in their Phase 2 issues.
+- Old bare-list form: **hard cut**, errors immediately.
+- Date introducer: **`due` / `date` + optional `on` filler**; bare leading date still valid.
+- Parser: **rebuilt properly (FR-021)**, not patched.
+
+Open for `/speckit.plan`:
+
+1. Where the parser lives — shared in GetClearKit vs RemindersLib (constitution "GetClearKit first" applies; Phase 2 wants to reuse it).
+2. The exact `design.md` section text and constitution entry.
+3. How `note`-to-end interacts with a token-stream parser (the free-text tail is the one field that isn't token-delimited).
+4. The SC-006 doc-example review — which files, how tracked.
+
+Phase 2 migration issues to file: calendar, contacts, mail, text.

@@ -19,7 +19,9 @@ The result is drift. Four tools land in roughly the same place by convention; th
 - **A bare multi-word list name is silently dropped.** `reminders add "Pay rent" "House Stuff" march 1` — when "House Stuff" is not already an existing list — treats `House Stuff march 1` as the due date, fails to parse it, and creates the reminder with no due date in the default list. No error. This violates the constitution's "no silent failures."
 - **`due` is not a real keyword.** It is a filler word stripped from the front of the date field. So `reminders change "Pay rent" priority high due none` silently drops the due-clear: `due none` is swallowed into the priority value, `priority` fails to parse, and nothing happens.
 
-This feature does not invent a new interaction style. It names the shape the suite already mostly follows, records it in `design.md` and the constitution, brings every tool's usage text into line, and fixes the reminders defects. It is sequenced before #191 (location-alarm vocabulary) and #014 (private-metadata vocabulary) so both add keywords onto a stated rule instead of compounding the drift.
+This feature does not invent a new interaction style. It names the shape the suite already mostly follows, records it in `design.md` and the constitution, and brings the reminders tool fully into line — a proper strict parser, not a patch on the current regex split. It is sequenced before #191 (location-alarm vocabulary) and #014 (private-metadata vocabulary) so both add keywords onto a stated rule instead of compounding the drift.
+
+**This is Phase 1.** It covers the rule, the two suite documents, and the reminders tool. Bringing calendar, contacts, mail, and text to the same strict shape is Phase 2 — a separate feature, tracked by a per-tool migration issue each. Those four tools already follow the shape loosely; Phase 1 does not touch their parsers or usage text beyond what the rule's ratification in `design.md` implies.
 
 ---
 
@@ -29,7 +31,7 @@ The actors are the **person** typing commands at a terminal and **Claude** const
 
 ### User Story 1 — One rule predicts every command (Priority: P1)
 
-A person reads a short rule (three sentences) and, from that alone, can correctly form any add/change/find/send/remove command in any of the five tools — including where multi-word values go and whether they need quoting.
+A person reads a short rule (three sentences) and, from that alone, can correctly form any add/change command in the reminders tool — including where multi-word values go and whether they need quoting. The rule is written to generalize to all five tools (Phase 2), but Phase 1 proves it on reminders.
 
 **Why this priority**: This is the whole point. The value is a single mental model that transfers across the suite, so the person never has to remember per-tool argument order.
 
@@ -154,28 +156,29 @@ A token that is not the name, a date, a recognized keyword, or a keyword's value
 - **FR-010**: `due` and `date` MUST be recognized keywords that can appear anywhere in the command, with the same effect as a bare leading date. `due none` MUST clear the due date regardless of position and regardless of other changes in the same command.
 - **FR-011**: A command that specifies the date both as a bare leading value and via the `due` / `date` keyword MUST produce a "date given two ways" error and make no change.
 - **FR-012**: `reminders change` MUST apply a `due none` clear together with any other field changes in the same command. (Fixes the current defect where `priority high due none` drops the clear.)
-- **FR-013**: A bare leading date value MAY be prefixed with `due` or `date` as optional filler, which is stripped before date parsing. (Existing behavior, preserved and now explicit.)
+- **FR-013**: The date introducer accepts an optional trailing `on`: `due`, `date`, `due on`, `date on`, and a bare leading `on` all introduce a date value (`add "X" due on friday`, `add "X" on march 1`). The filler word is stripped before date parsing. A bare leading date with no introducer is still valid (`add "X" march 1`).
 
 ### Functional Requirements — Documentation
 
-- **FR-014**: `design.md` MUST gain a section stating the argument shape rule, the quoting rule, and the single trailing-free-text exception, with worked examples.
+- **FR-014**: `design.md` MUST gain a section stating the argument shape rule, the quoting rule, and the single trailing-free-text exception, with worked examples. This is written suite-wide, not reminders-only.
 - **FR-015**: The suite constitution MUST gain a rule entry for the argument shape, consistent with `design.md` (per the constitution's own "when this document conflicts with design.md, update both").
-- **FR-016**: Every tool's `--help` / usage output MUST present commands in the shared notation: `<name>` for the quoted identifier, `keyword <value>` for keyword-introduced values, the trailing free-text field shown last, and the one-line quoting note. No tool may show a bare positional other than `<name>` and an optional date.
-- **FR-017**: No example in any shipped document (`design.md`, `README.md`, usage texts, `PROMPTS.md`) may show an argument form the parser rejects after this change.
+- **FR-016**: The reminders `--help` / usage output MUST present its commands in the shared notation: `<name>` for the quoted identifier, `keyword <value>` for keyword-introduced values, the trailing free-text field last, and the one-line quoting note. `list` MUST be shown as `list <name>`, not a bare `[list]` positional.
+- **FR-017**: No example in a shipped document that shows a **reminders** command (`design.md`, `README.md`, `PROMPTS.md`, the reminders usage text) may show an argument form the reminders parser rejects after this change. Examples for the other four tools are addressed in their Phase 2 issues.
 
-### Functional Requirements — Scope of tool changes
+### Functional Requirements — Scope
 
-- **FR-018**: Tools already conforming to the shape (contacts, mail, text: identifier + `keyword value` pairs + trailing free text) MUST be audited against the rule and their usage text brought into the shared notation, but their parsing behavior is not expected to change.
-- **FR-019**: The calendar tool's `add` (identifier + bare date/time) already conforms; its usage text MUST be brought into the shared notation. Any future `calendar change` (#53) MUST follow this rule.
-- **FR-020**: The `--draft` flag in mail is a separate known violation tracked elsewhere and is out of scope for this feature.
+- **FR-018**: Phase 1 changes the **reminders** tool's parser and usage text only. Calendar, contacts, mail, and text are not modified in this feature.
+- **FR-019**: A migration issue is filed for each of calendar (#192), contacts (#193), mail (#194), and text (#195): audit the parser against FR-001..FR-013, apply the strictness requirements (FR-005..FR-007), bring the usage text into the shared notation, fix stale doc examples. Phase 2.
+- **FR-020**: The `--draft` flag in mail is a separate known violation tracked elsewhere and is out of scope.
+- **FR-021**: The reminders parser MUST be built as a proper argument parser (tokens → typed fields with explicit validation), not as additional passes over the current join-and-regex-split. "If we are going to be strict, support it explicitly and properly." Whether the parser lives in a shared location or in RemindersLib is a plan decision, subject to the constitution's "GetClearKit first" rule.
 
 ### Key Entities
 
 - **Identifier**: The primary field a record is found and referred to by — a reminder's title, a contact's name, a message recipient. Always position 1. Quoted if it contains spaces. Never scanned for keywords.
-- **Bare date**: An optional due date given immediately after the identifier with no keyword. The one permitted bare positional besides the identifier. May carry an optional `due` / `date` prefix.
+- **Bare date**: An optional due date given immediately after the identifier. The one permitted bare positional besides the identifier. May carry an optional `due` / `date` / `on` filler prefix. Distinct from the `due` keyword (FR-010), which can appear anywhere.
 - **Keyword**: A recognized word that introduces exactly one following value (which may itself be multi-word, running to the next keyword or the trailing free-text field). Order-independent.
 - **Trailing free-text field**: `note` / `body` / `message`. Captures everything after the keyword to end of line. Comes last. Never needs quotes; allows them.
-- **Argument shape**: The composition of a command line from the four element types above. Shared across all five tools.
+- **Argument shape**: The composition of a command line from the four element types above. Defined suite-wide in `design.md` and the constitution; enforced in the reminders parser in Phase 1, in the other four tools in Phase 2.
 
 ---
 
@@ -183,26 +186,35 @@ A token that is not the name, a date, a recognized keyword, or a keyword's value
 
 ### Measurable Outcomes
 
-- **SC-001**: The argument shape rule fits in three sentences and is printed in full in each tool's usage text.
-- **SC-002**: From the three-sentence rule plus the command list, a person forms ten varied commands (multi-word names, lists, reordered keywords, trailing note) and 100% parse as intended.
-- **SC-003**: Zero silent failures in argument parsing: every malformed command (unknown token, missing keyword value, unknown list, date given twice, duplicate keyword) produces a stderr message and a non-zero exit.
+- **SC-001**: The argument shape rule fits in three sentences and is printed in full in the reminders usage text and in `design.md`.
+- **SC-002**: From the three-sentence rule plus the command list, a person forms ten varied reminders commands (multi-word names, lists, reordered keywords, `due` in different positions, trailing note) and 100% parse as intended.
+- **SC-003**: Zero silent failures in reminders argument parsing: every malformed command (unknown token, missing keyword value, unknown list, date given twice, duplicate keyword) produces a stderr message and a non-zero exit.
 - **SC-004**: `reminders change "X" priority high due none` applies both changes — verified by re-reading the reminder.
-- **SC-005**: A fully-quoted command line and its minimally-quoted equivalent produce byte-identical output for every command in every tool's usage examples.
-- **SC-006**: All five usage texts use identical notation conventions, verified by side-by-side review.
-- **SC-007**: No shipped document contains an example the parser rejects, verified by extracting every fenced command example and running it (or its dry-run equivalent).
+- **SC-005**: A fully-quoted reminders command line and its minimally-quoted equivalent produce byte-identical output for every command in the reminders usage examples.
+- **SC-006**: Someone reviews every reminders command shown as an example anywhere in the repo docs (`design.md`, `README.md`, `PROMPTS.md`, the usage text) and confirms each one is still valid under the new rule — no example teaches a form the parser now rejects.
 
 ---
 
+## Decisions locked (2026-08-31, with Ken)
+
+- **List keyword: `list` only.** No `in`, no `to`, no `in list`. `in` collides with relative-date phrasing ("in 3 days"); `list` matches the `list` / `lists` commands and never appears in a date.
+- **Keep the bare leading date** (`add "X" march 1`). The date-as-required-keyword option was rejected.
+- **Scope split:** Phase 1 (this feature) = the rule + `design.md` + constitution + the reminders parser and usage text, built properly. Phase 2 = calendar, contacts, mail, text, one migration issue each.
+- **Hard cut.** No transitional acceptance of the old bare-list form. It errors immediately. Get Clear is pre-launch; there is no deprecation debt worth carrying.
+- **`due` / `date` both accepted**, plus an optional `on` filler.
+
 ## Assumptions
 
-- Most of the suite already follows this shape; this feature is primarily ratification plus documentation plus fixing the reminders outlier. The only behavioral parsing changes are in the reminders tool (FR-008 through FR-013) and the suite-wide "unrecognized token is an error" tightening (FR-005 through FR-007), which may surface in other tools if they currently absorb stray tokens.
-- The bare leading date stays as an allowed form because `add "Pay rent" march 1` is how people speak and the date parser is well-bounded. Making the date a required keyword was considered and rejected.
-- `list` gaining a mandatory keyword is a net simplification even though it adds one word to the common case, because it removes the silent-failure path and the name-dependent behavior.
-- This feature does not change how Claude drives the tools beyond the shared rule; the MCP server path (#008) is unaffected because it passes structured fields, not a shell line.
+- The reminders parser is rebuilt as a real tokens-to-fields parser (FR-021), not patched. This is expected to touch `OptionsParsing.swift`, `ReminderChangeParsing.swift`, `AddHandler`, `ChangeHandler`, and their specs, and may relocate logic to a shared home per "GetClearKit first."
+- The bare leading date stays because `add "Pay rent" march 1` is how people speak and the date parser is well-bounded.
+- `list` gaining a mandatory keyword is a net simplification: one extra word in the common case buys the removal of the silent-failure path and the name-dependent behavior.
+- The other four tools follow the shape loosely today; Phase 1 leaves their code and usage text untouched. The `design.md` / constitution text is written suite-wide so Phase 2 is "conform to the written rule," not "invent it."
+- Claude's use of the tools is unaffected beyond the shared rule; the MCP server path (#008) passes structured fields, not a shell line.
 
 ## Out of Scope
 
+- Calendar, contacts, mail, text parser or usage-text changes — Phase 2, one issue each (FR-019).
 - The `--draft` flag violation in mail (tracked separately).
 - Any new command or new keyword. This feature defines the shape; #191 and #014 add vocabulary within it.
-- Changing the identifier-resolution or fuzzy-matching behavior of any tool. Only the *shape* of the line and the *quoting* rule are in scope.
-- Localization of keywords. Keywords remain the English words defined in the constitution's vocabulary table.
+- Changing identifier-resolution or fuzzy-matching behavior. Only the *shape* of the line and the *quoting* rule are in scope.
+- Localization of keywords.
