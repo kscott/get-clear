@@ -8,7 +8,7 @@
 
 ## The one rule
 
-Every identifier — a title, a new title, a list name, a search query — is **one token**, quoted if it contains a space. No greedy "up to the first keyword." A stray token after the identifier is an error that tells the user to quote. The only value that never needs quoting is the trailing text field (`note`).
+Every identifier — a title, a new title, a list name, a search query — is **one token**, quoted if it contains a space. No greedy "up to the first keyword." A stray token after the identifier is an error that tells the user to quote. The trailing text field (`note`) is the only value where quotes are *optional* — but every example below quotes it anyway, so there is one visible pattern: quote every value with a space.
 
 ---
 
@@ -21,11 +21,10 @@ reminders add "Pay rent" march 1
 reminders add "Pay rent" due march 1
 reminders add "Pay rent" due on march 1
 reminders add "Pay rent" on march 1
-reminders add "Pay rent" march 1 list Bills repeat monthly priority high
+reminders add "Pay rent" "march 1" list "Bills" repeat monthly priority high
 reminders add "Pay rent" list "Household Bills" due "next friday" url https://x.com
-reminders add "Call dentist" friday note ask about the crown
-reminders add "Call dentist" note "ask about the crown"
-reminders add "Pay rent" "march 1" "list" "Bills"          # fully quoted, identical
+reminders add "Call dentist" friday note "ask about the crown"
+reminders add "Call dentist" note ask about the crown       # also parses — note quotes are optional; docs quote anyway
 reminders change "Pay rent" priority high due none          # both apply (FR-012 / SC-004)
 ```
 

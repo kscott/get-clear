@@ -80,9 +80,9 @@ The due date can be given as a bare value right after the name, or introduced an
 
 ### User Story 4 — The trailing free-text field is last, and quoting is optional (Priority: P2)
 
-`note` (reminders), `body` (mail), and `message` (text) capture everything after the keyword to the end of the line. They come last. They never need quotes — but quotes are allowed and harmless, and are the way to include a literal `$` or `"` that the shell would otherwise mangle.
+`note` (reminders), `body` (mail), and `message` (text) capture everything after the keyword to the end of the line. They come last. They never need quotes — but quotes are allowed and harmless, and are the way to include a literal `$` or `"` that the shell would otherwise mangle. **Documentation and usage-text examples quote the trailing field anyway**, so a reader sees one pattern: quote every value.
 
-**Why this priority**: This is the one documented exception to "every value is `keyword value`," and it needs to be stated clearly so people know it is deliberate, not an inconsistency.
+**Why this priority**: This is the one documented exception to "every value is `keyword value`," and it needs to be stated clearly so people know it is deliberate, not an inconsistency — while the examples still model the quote-everything habit.
 
 **Independent Test**: Run `reminders add "Call dentist" friday note ask about the crown` (note captured, no quotes), `reminders add "Call dentist" note "ask about the crown"` (identical), and confirm no keyword after `note` is interpreted as a keyword.
 
@@ -162,7 +162,7 @@ A token that is not the name, a date, a recognized keyword, or a keyword's value
 
 - **FR-014**: `design.md` MUST gain a section stating the argument shape rule, the quoting rule, and the single trailing-free-text exception, with worked examples. This is written suite-wide, not reminders-only.
 - **FR-015**: The suite constitution MUST gain a rule entry for the argument shape, consistent with `design.md` (per the constitution's own "when this document conflicts with design.md, update both").
-- **FR-016**: The reminders `--help` / usage output MUST present its commands in the shared notation: `<name>` for the quoted identifier, `keyword <value>` for keyword-introduced values, the trailing free-text field last, and the one-line quoting note. `list` MUST be shown as `list <name>`, not a bare `[list]` positional.
+- **FR-016**: The reminders `--help` / usage output MUST present its commands in the shared notation: `<name>` for the quoted identifier, `keyword <value>` for keyword-introduced values, the trailing free-text field last, and the one-line quoting note. `list` MUST be shown as `list <name>`, not a bare `[list]` positional. Every example value that could contain a space — including the trailing free-text field — MUST be shown quoted.
 - **FR-017**: No example in a shipped document that shows a **reminders** command (`design.md`, `README.md`, `PROMPTS.md`, the reminders usage text) may show an argument form the reminders parser rejects after this change. Examples for the other four tools are addressed in their Phase 2 issues.
 
 ### Functional Requirements — Scope

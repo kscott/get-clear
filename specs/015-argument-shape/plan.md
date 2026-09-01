@@ -171,13 +171,13 @@ Each: build its shape, call `parseCommand(Array(args.dropFirst()), shape:)`, `ca
 
 ### Step 7 — RemindersLib: `UsageText.swift`
 
-Shared notation: `<name>` quoted identifier, `keyword <value>`, `note …` last, `list <name>` (no bare `[list]`), the three-sentence rule and the one-line quoting note in full (SC-001). Decide whether `what` gets a usage line (currently absent) — default: leave absent, it's mid-move per #40/#197.
+Shared notation: `<name>` quoted identifier, `keyword <value>`, `note "…"` last (shown quoted, per FR-016 — one visible pattern), `list "<name>"` (no bare `[list]`), the three-sentence rule and the one-line quoting note in full (SC-001). Decide whether `what` gets a usage line (currently absent) — default: leave absent, it's mid-move per #40/#197.
 
 ### Step 8 — Documentation + specs
 
 - `design.md` `## Argument shape`, `.specify/memory/constitution.md` rule entry — text drafted in `contracts/doc-argument-shape.md`.
 - `ARCHITECTURE.md` decision-log entry: shared parser in GetClearKit, `CommandShape` descriptor, Phase 1 reminders / Phase 2 #192–195.
-- `README.md`, `PROMPTS.md`, `UsageText.swift` — every reminders `add|change|rename|remove|done|show|list|find` example checked against the parser; stale ones fixed (SC-006). `list`/`find` examples now in scope; `what` examples left alone.
+- `README.md`, `PROMPTS.md`, `UsageText.swift` — every reminders `add|change|rename|remove|done|show|list|find` example checked against the parser; stale ones fixed (SC-006). `list`/`find` examples now in scope; `what` examples left alone. **Every value with a space quoted, note/body/message content included** (FR-016).
 - Update the reminders handler specs (Step 6's files) for the `list` keyword and the new error cases; `ChangeCommandSpec` gets the FR-012 case.
 
 ### Step 9 — Agent context + build + test
