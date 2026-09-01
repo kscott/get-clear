@@ -114,3 +114,4 @@ Use `scripts/bump-version <suite-version> [tool:version ...]` to bump. Never edi
 - Swift 5.9 (swift-tools-version: 5.9) + Quick + Nimble (testing)
 - GetClearKit, ContactKit, AppleContactKit, ContactStoreFactory — shared suite and contact layers
 - Contacts framework access via AppleContactKit boundary only; no writes
+- Shared CLI argument parser in GetClearKit (`CommandArguments.swift`, spec 015) — per-command `CommandShape`; tools declare shapes, not parsers
