@@ -37,7 +37,10 @@ public struct ParsedDate {
 }
 
 public func parseDate(_ input: String) -> ParsedDate? {
-    let s = input.lowercased().trimmingCharacters(in: .whitespaces)
+    var s = input.lowercased().trimmingCharacters(in: .whitespaces)
+    if s.hasPrefix("on ") {
+        s = String(s.dropFirst(3)).trimmingCharacters(in: .whitespaces)
+    }
     let cal = Calendar.current
     let now = Date()
     var components = cal.dateComponents([.year, .month, .day, .hour, .minute], from: now)

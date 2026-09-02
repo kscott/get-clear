@@ -1,0 +1,236 @@
+// CommandArguments.swift
+//
+// One shared argument parser for the whole suite, driven by a per-command CommandShape.
+// Pure — tokens in, ParsedCommand out. No Apple framework dependencies.
+//
+// The one rule: every identifier is exactly one token, quoted by the caller if it
+// contains a space. There is no "greedy up to the first keyword." A bare unquoted
+// keyword word is never consumed as an identifier. The only value that does not need
+// quoting is the trailing text field, which captures the rest of the line.
+//
+// See specs/015-argument-shape/contracts/command-parser.md for the full contract.
+
+import Foundation
+
+public struct Identifier: Sendable, Equatable {
+    public let name: String
+    public let required: Bool
+
+    public init(_ name: String, required: Bool = true) {
+        self.name = name
+        self.required = required
+    }
+}
+
+public enum LeadingRegion: Sendable, Equatable {
+    /// No tokens permitted between the identifiers and the first keyword.
+    case none
+    /// Optional date, captured verbatim; guards "date given two ways" against a due/date keyword.
+    case bareDate
+}
+
+public struct Keyword: Sendable, Equatable {
+    public let canonical: String
+    public let aliases: [String]
+
+    public init(_ canonical: String, aliases: [String] = []) {
+        self.canonical = canonical
+        self.aliases = aliases
+    }
+}
+
+public struct CommandShape: Sendable {
+    public let identifiers: [Identifier]
+    public let leading: LeadingRegion
+    public let keywords: [Keyword]
+    public let trailingTextKeyword: String?
+
+    public init(
+        identifiers: [Identifier] = [],
+        leading: LeadingRegion = .none,
+        keywords: [Keyword] = [],
+        trailingTextKeyword: String? = nil
+    ) {
+        self.identifiers = identifiers
+        self.leading = leading
+        self.keywords = keywords
+        self.trailingTextKeyword = trailingTextKeyword
+    }
+}
+
+public struct ParsedCommand: Equatable, Sendable {
+    /// One entry per identifier that was present — optional identifiers may be absent.
+    public let identifiers: [String]
+    public let bareDate: String?
+    /// Keyed by keyword canonical, space-joined value.
+    public let values: [String: String]
+    public let trailingText: String?
+
+    public init(identifiers: [String], bareDate: String?, values: [String: String], trailingText: String?) {
+        self.identifiers = identifiers
+        self.bareDate = bareDate
+        self.values = values
+        self.trailingText = trailingText
+    }
+}
+
+public enum ArgumentError: Error, LocalizedError, Equatable {
+    case missingIdentifier(name: String, blockedBy: String? = nil)
+    case unexpectedTokens([String])
+    case unknownKeyword(String)
+    case missingValue(keyword: String)
+    case duplicateKeyword(String)
+    case dateGivenTwice
+
+    public var errorDescription: String? {
+        switch self {
+        case let .missingIdentifier(name, blockedBy):
+            if let blockedBy {
+                return "provide a \(name) — \"\(blockedBy)\" is a keyword; quote it (\"\(blockedBy)\") to use it as the \(name)"
+            }
+            return "provide a \(name)"
+        case let .unexpectedTokens(tokens):
+            let joined = tokens.joined(separator: " ")
+            return "unexpected: \(joined) — if that is part of the name, quote it as one argument; " +
+                "otherwise introduce it with a keyword"
+        case let .unknownKeyword(token):
+            return "unrecognized: \(token)"
+        case let .missingValue(keyword):
+            return "\(keyword) needs a value"
+        case let .duplicateKeyword(keyword):
+            return "\(keyword) given twice"
+        case .dateGivenTwice:
+            return "date given two ways — use a bare date or due, not both"
+        }
+    }
+}
+
+/// Parse argv-after-the-command-name into a `ParsedCommand`, per `shape`.
+/// Quotes are already resolved by the shell — this works on the token array only.
+public func parseCommand(_ tokens: [String], shape: CommandShape) throws -> ParsedCommand {
+    var remaining = tokens[...]
+    let allKeywordWords = commandKeywordWords(shape)
+
+    func isKeywordWord(_ token: String) -> Bool {
+        allKeywordWords.contains(token.lowercased())
+    }
+
+    // 1. Identifiers.
+    var identifiers: [String] = []
+    for identifier in shape.identifiers {
+        guard let next = remaining.first else {
+            if identifier.required {
+                throw ArgumentError.missingIdentifier(name: identifier.name)
+            }
+            continue
+        }
+        if isKeywordWord(next) {
+            if identifier.required {
+                throw ArgumentError.missingIdentifier(name: identifier.name, blockedBy: next)
+            }
+            continue
+        }
+        identifiers.append(next)
+        remaining = remaining.dropFirst()
+    }
+
+    // 2. Leading region — collect tokens up to the first keyword (or trailingTextKeyword).
+    var leadingTokens: [String] = []
+    while let next = remaining.first, !isKeywordWord(next) {
+        leadingTokens.append(next)
+        remaining = remaining.dropFirst()
+    }
+
+    var bareDate: String?
+    switch shape.leading {
+    case .none:
+        if !leadingTokens.isEmpty {
+            throw ArgumentError.unexpectedTokens(leadingTokens)
+        }
+    case .bareDate:
+        if !leadingTokens.isEmpty {
+            bareDate = leadingTokens.joined(separator: " ")
+        }
+    }
+
+    // 3. Keyword pairs until trailingTextKeyword or end.
+    //
+    // A keyword's value is exactly one token (quoted if it has a space) — the same rule
+    // as an identifier — with one exception: the due/date keyword's value is free-form,
+    // collected greedily like the bareDate region, because it is the same field (FR-013).
+    // This also keeps unknownKeyword reachable: a single-token value collector leaves a
+    // stray trailing word exposed at the top of the next iteration instead of silently
+    // absorbing it into the previous value.
+    var values: [String: String] = [:]
+    var trailingText: String?
+
+    while let token = remaining.first {
+        remaining = remaining.dropFirst()
+        guard let canonical = canonicalKeyword(for: token, in: shape) else {
+            throw ArgumentError.unknownKeyword(token)
+        }
+
+        if canonical == shape.trailingTextKeyword {
+            trailingText = remaining.joined(separator: " ")
+            remaining = remaining[remaining.endIndex...]
+            break
+        }
+
+        if values[canonical] != nil {
+            throw ArgumentError.duplicateKeyword(canonical)
+        }
+
+        var valueTokens: [String] = []
+        if canonical == dateKeywordCanonical {
+            while let next = remaining.first, !isKeywordWord(next) {
+                valueTokens.append(next)
+                remaining = remaining.dropFirst()
+            }
+        } else if let next = remaining.first, !isKeywordWord(next) {
+            valueTokens.append(next)
+            remaining = remaining.dropFirst()
+        }
+        guard !valueTokens.isEmpty else {
+            throw ArgumentError.missingValue(keyword: canonical)
+        }
+        values[canonical] = valueTokens.joined(separator: " ")
+    }
+
+    // 5. A bare date and a due/date keyword can't both be given.
+    if bareDate != nil, values["due"] != nil {
+        throw ArgumentError.dateGivenTwice
+    }
+
+    return ParsedCommand(identifiers: identifiers, bareDate: bareDate, values: values, trailingText: trailingText)
+}
+
+/// The one keyword whose value is free-form multi-token, mirroring the `.bareDate` region —
+/// `due`/`date` names the same field the bare date fills, just introduced explicitly (FR-013).
+private let dateKeywordCanonical = "due"
+
+private func commandKeywordWords(_ shape: CommandShape) -> Set<String> {
+    var words = Set<String>()
+    for keyword in shape.keywords {
+        words.insert(keyword.canonical.lowercased())
+        for alias in keyword.aliases {
+            words.insert(alias.lowercased())
+        }
+    }
+    if let trailingTextKeyword = shape.trailingTextKeyword {
+        words.insert(trailingTextKeyword.lowercased())
+    }
+    return words
+}
+
+private func canonicalKeyword(for token: String, in shape: CommandShape) -> String? {
+    let lower = token.lowercased()
+    if lower == shape.trailingTextKeyword?.lowercased() {
+        return shape.trailingTextKeyword
+    }
+    for keyword in shape.keywords {
+        if keyword.canonical.lowercased() == lower || keyword.aliases.contains(where: { $0.lowercased() == lower }) {
+            return keyword.canonical
+        }
+    }
+    return nil
+}

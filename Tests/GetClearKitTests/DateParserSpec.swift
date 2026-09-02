@@ -374,6 +374,21 @@ struct DateParserTests {
         }
     }
 
+    @Suite("leading 'on' filler")
+    struct LeadingOnFiller {
+        @Test("'on march 1' resolves the same as 'march 1'") func onBeforeMonthDay() {
+            #expect(parseDate("on march 1")?.date == parseDate("march 1")?.date)
+        }
+
+        @Test("'on friday' resolves the same as 'friday'") func onBeforeWeekday() {
+            #expect(parseDate("on friday")?.date == parseDate("friday")?.date)
+        }
+
+        @Test("'on friday at 5pm' resolves the same as 'friday at 5pm'") func onBeforeDateAndTime() {
+            #expect(parseDate("on friday at 5pm")?.date == parseDate("friday at 5pm")?.date)
+        }
+    }
+
     @Suite("invalid input")
     struct InvalidInput {
         @Test("returns nil for unrecognized input") func nilForUnrecognized() {
