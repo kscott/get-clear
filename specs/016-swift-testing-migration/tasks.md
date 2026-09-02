@@ -13,12 +13,14 @@
 
 **Organization**: The spec's user stories are cross-cutting quality attributes, not independent slices. The real unit of independent progress is the **test target** (plan.md's per-target commits). Phases follow that; story labels mark which outcome each task most serves.
 
+**⚠️ PLAN DEVIATION (2026-09-01, commit `7ed56a4`)**: Quick + Nimble were removed from `Package.swift` **entirely** in the toolchain commit, not per-target. Reason: in a Claude session, `swift package resolve` on Quick hits its `Externals/Nimble` submodule → `git-submodule` → the banned `sed`, so keeping `.package(url:)` declared (the plan's R1 strategy) was unworkable. Consequence: **all 80 `*Spec.swift` files stopped compiling at `7ed56a4`**; each Phase-3/4 target restores compilation as it's migrated. T014, T026, and the per-target "remove that target's `.product` entries" steps are **already done** — those tasks reduce to "rewrite the files + verify". `Package.resolved` is already deleted (0 pins).
+
 ---
 
 ## Phase 1: Setup — baseline
 
-- [ ] T001 Confirm `swift build` is green from the repo root (all five binaries link). Record it. Note that `swift test` currently fails to build (`XCTest/XCTest.h` not found) — that is the starting condition, not a regression.
-- [ ] T002 Capture the parity baseline: per test target, count `it(` occurrences and record them in a scratch table for later reconciliation (SC-003). Totals expected: GetClearKitTests 212, ContactKitTests 26, AppleContactKitTests 14, AppleEventKitSupportTests 11, CalendarLibTests 199, ContactsLibTests 60, MailLibTests 154, RemindersLibTests 327, TextLibTests 70 — **1,073** total. Coverage can't be captured locally now (`swift test` is broken); record the last aggregate figures — 1,032 tests / 80.66% line (`cross-tool-review-2026-04-29.md`), RemindersLib 91.4% (`ARCHITECTURE.md:166`) — as the SC-010 reference.
+- [x] T001 Confirm `swift build` is green from the repo root (all five binaries link). Record it. Note that `swift test` currently fails to build (`XCTest/XCTest.h` not found) — that is the starting condition, not a regression.
+- [x] T002 Capture the parity baseline: per test target, count `it(` occurrences and record them in a scratch table for later reconciliation (SC-003). Totals expected: GetClearKitTests 212, ContactKitTests 26, AppleContactKitTests 14, AppleEventKitSupportTests 11, CalendarLibTests 199, ContactsLibTests 60, MailLibTests 154, RemindersLibTests 327, TextLibTests 70 — **1,073** total. Coverage can't be captured locally now (`swift test` is broken); record the last aggregate figures — 1,032 tests / 80.66% line (`cross-tool-review-2026-04-29.md`), RemindersLib 91.4% (`ARCHITECTURE.md:166`) — as the SC-010 reference.
 
 ---
 
@@ -26,9 +28,9 @@
 
 **⚠️ CRITICAL**: `swift-tools-version: 6.0` is the prerequisite for Swift Testing's SwiftPM integration. No file can be migrated until the manifest moves.
 
-- [ ] T003 Update `Package.swift`: line 1 `// swift-tools-version: 5.9` → `// swift-tools-version: 6.0`; add `swiftLanguageModes: [.v5]` as an argument to `Package(...)` (per research.md R5 — package-level, not per-target). Do **not** yet touch `dependencies` or the testTarget dependency lists. `swift build` — green, no new warnings.
-- [ ] T004 Update `.swift-version`: `5.9` → `6.0` (research.md R4).
-- [ ] T005 Run `swiftformat --lint .` over the whole tree with the new `.swift-version` in place. The `--swift-version 6.0` context enables a few dormant rules that touch `Sources/` too. Fix any new finding with a minimal edit or a one-line `.swiftformat` disable; record it in the migration notes. `swiftlint lint --quiet` also clean. (research.md R2)
+- [x] T003 Update `Package.swift`: line 1 `// swift-tools-version: 5.9` → `// swift-tools-version: 6.0`; add `swiftLanguageModes: [.v5]` as an argument to `Package(...)` (per research.md R5 — package-level, not per-target). Do **not** yet touch `dependencies` or the testTarget dependency lists. `swift build` — green, no new warnings.
+- [x] T004 Update `.swift-version`: `5.9` → `6.0` (research.md R4).
+- [x] T005 Run `swiftformat --lint .` over the whole tree with the new `.swift-version` in place. The `--swift-version 6.0` context enables a few dormant rules that touch `Sources/` too. Fix any new finding with a minimal edit or a one-line `.swiftformat` disable; record it in the migration notes. `swiftlint lint --quiet` also clean. (research.md R2)
 - [ ] T006 Determine the local-verification capability: on this CLT-only machine, after the pilot target is migrated (Phase 3), does `swift build --build-tests --target GetClearKitTests` compile in isolation (only `GetClearKit` + `GetClearKitTests` + `Testing`, not the Quick-importing sibling test targets)? Record the answer. If **yes**, each Phase 4 target is locally verifiable as it lands. If **no**, per-target verification is CI-only until Phase 5 removes Quick entirely (T026), and the first full local `swift test` is at T035. (This task is a check, done as part of T015.)
 
 **Checkpoint**: `swift build` green at tools-version 6.0 with Swift 5 language mode; lint/format clean tree-wide.
