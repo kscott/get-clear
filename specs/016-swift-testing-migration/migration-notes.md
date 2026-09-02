@@ -60,6 +60,7 @@ Confirmed: `swift test --filter GetClearKitTests` compiles all 9 test targets, s
 - **Bucket 1 — specific error value**: `#expect(throws: E.case) { … }` (needs `Equatable`; `ReminderChangeError` gains it). (Not in the pilot.)
 - **Force-unwrap of `cal.date(byAdding:…)`** → `try #require(…)` with the `@Test func` marked `throws` — SwiftFormat's `wrapConditionalBodies`/require conversion applied it; kept, it's the better idiom and behaviour-equivalent (clean failure vs crash).
 - **`context` with a single `it`** → still nested as a `@Suite` struct (faithful; the context string carries real information in the test tree).
+- **`expect(try! f())` on a throwing domain function** (TargetResolverSpec) → `@Test func … throws` + `#expect(try f() == …)`. Same as the `cal.date` force-unwrap rule: behaviour-equivalent, clean failure vs crash.
 
 ## The one `Sources/` change
 
@@ -75,7 +76,7 @@ Confirmed: `swift test --filter GetClearKitTests` compiles all 9 test targets, s
 | AppleEventKitSupportTests | 11 | **11** ✓ | none |
 | AppleContactKitTests | 14 | **14** ✓ | none |
 | ContactKitTests | 26 | **26** ✓ | none |
-| TextLibTests | 70 | _ | _ |
+| TextLibTests | 70 | **70** ✓ | none |
 | MailLibTests | 154 | _ | _ |
 | ContactsLibTests | 60 | _ | _ |
 | CalendarLibTests | 199 | _ | _ |
