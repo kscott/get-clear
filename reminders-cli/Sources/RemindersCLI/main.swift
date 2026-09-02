@@ -8,17 +8,17 @@ import RemindersLib
 let args = Array(CommandLine.arguments.dropFirst())
 
 await runCLI(args: args, identity: identity, usage: usage) { command, args in
-    if command == .open {
-        handleOpen(opener: { NSWorkspace.shared.open($0) })
-        return
-    }
-
-    let store = await makeReminderStore()
-
     do {
+        if command == .open {
+            try handleOpen(args: args, opener: { NSWorkspace.shared.open($0) })
+            return
+        }
+
+        let store = await makeReminderStore()
+
         switch command {
         case .what: try await print(handleWhat(args: args))
-        case .lists: try await print(handleLists(store: store))
+        case .lists: try await print(handleLists(args: args, store: store))
         case .list: try await print(handleList(args: args, store: store))
         case .find: try await print(handleFind(args: args, store: store))
         case .show: try await print(handleShow(args: args, store: store))

@@ -211,6 +211,35 @@ struct ReminderCommandShapesTests {
         }
     }
 
+    @Suite("lists / open")
+    struct ListsOpen {
+        @Test("lists parses with no arguments")
+        func listsParsesBare() throws {
+            let parsed = try parseCommand([], shape: ReminderCommandShapes.lists)
+            #expect(parsed.identifiers.isEmpty)
+        }
+
+        @Test("lists a stray token throws unexpectedTokens")
+        func listsStrayTokenThrows() {
+            #expect(throws: ArgumentError.unexpectedTokens(["today"])) {
+                try parseCommand(["today"], shape: ReminderCommandShapes.lists)
+            }
+        }
+
+        @Test("open parses with no arguments")
+        func openParsesBare() throws {
+            let parsed = try parseCommand([], shape: ReminderCommandShapes.open)
+            #expect(parsed.identifiers.isEmpty)
+        }
+
+        @Test("open a stray token throws unexpectedTokens")
+        func openStrayTokenThrows() {
+            #expect(throws: ArgumentError.unexpectedTokens(["app"])) {
+                try parseCommand(["app"], shape: ReminderCommandShapes.open)
+            }
+        }
+    }
+
     @Suite("shape self-validation")
     struct ShapeSelfValidation {
         static let allShapes: [(String, CommandShape)] = [
@@ -221,7 +250,9 @@ struct ReminderCommandShapesTests {
             ("done", ReminderCommandShapes.done),
             ("show", ReminderCommandShapes.show),
             ("list", ReminderCommandShapes.list),
-            ("find", ReminderCommandShapes.find)
+            ("find", ReminderCommandShapes.find),
+            ("lists", ReminderCommandShapes.lists),
+            ("open", ReminderCommandShapes.open)
         ]
 
         @Test("every keyword canonical is unique across canonicals and aliases", arguments: allShapes)
