@@ -74,7 +74,7 @@ Confirmed: `swift test --filter GetClearKitTests` compiles all 9 test targets, s
 | GetClearKitTests | 212 | **212** ✓ | none |
 | AppleEventKitSupportTests | 11 | **11** ✓ | none |
 | AppleContactKitTests | 14 | **14** ✓ | none |
-| ContactKitTests | 26 | _ | _ |
+| ContactKitTests | 26 | **26** ✓ | none |
 | TextLibTests | 70 | _ | _ |
 | MailLibTests | 154 | _ | _ |
 | ContactsLibTests | 60 | _ | _ |
