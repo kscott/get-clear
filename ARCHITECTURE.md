@@ -58,6 +58,16 @@ The threshold: if exercising a branch requires a permission dialog or a file to 
 
 ## Decision log
 
+### 2026-09-02 — Shared command-argument parser (spec 015)
+
+**Decision:** One argument parser for the whole suite — `parseCommand(_:shape:)` in `Sources/GetClearKit/CommandArguments.swift` — driven by a per-command `CommandShape` descriptor (`identifiers`, `leading` region, `keywords`, `trailingTextKeyword`). It replaces reminders' join-everything-then-regex-split `parseOptions`, which silently dropped a bare multi-word list name and treated `due` as filler instead of a keyword. Every identifier is exactly one token, quoted if it has a space — no "greedy up to the first keyword" — with a keyword's value following the same one-token rule, except `due`/`date`, which stays free-form multi-token since it's the same field as the bare date, just introduced explicitly (FR-013). `list` is now a required keyword on every reminders command that names a target list, not a bare positional. Phase 1 wires all eight of reminders' argument-taking commands (`add`, `change`, `rename`, `remove`, `done`, `show`, `list`, `find`); Phase 2 (#192 calendar, #193 contacts, #194 mail, #195 text) wires the rest.
+
+**Why:** The old parser had two live "no silent failures" holes: a bare multi-word list name that didn't match an existing calendar silently became part of the date string, and `change "X" priority high due none` dropped the `due none` clear because `due` was stripped as filler ahead of whatever keyword happened to come first. FR-024 also closed three more: an unrecognized `priority` value, an unknown `list … by` sort key, and an unparseable date on `add`/`change` all used to drop or default silently; they now error, matching how recurrence already behaved.
+
+**A key implementation nuance:** a keyword's value is capped at one token (not greedy) specifically so `ArgumentError.unknownKeyword` is reachable at all — under a fully generic "collect until the next recognized keyword" reading, a stray unrecognized token would always get silently absorbed into whatever value or bareDate region preceded it, and the case would be unreachable code. `due`/`date` is the sole exception because it's semantically the same field as the bare date, which is itself free-form.
+
+**Deferred:** `lists` / `open` take no arguments and don't currently receive the args array (`.open` dispatches before the command switch), so a stray-token guard for them needs plumbing outside this feature's scope — **#201**.
+
 ### 2026-09-01 — Test framework: Swift Testing (spec 016)
 
 **Decision:** The suite moved from Quick + Nimble to Swift Testing. `describe`/`context` → nested `@Suite` structs; `it` → `@Test`; Nimble matchers → `#expect` / `#require`. Filenames stay `*Spec.swift`, one per source file. 1,073 `it` blocks → 1,073 `@Test`, zero consolidations.

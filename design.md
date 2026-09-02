@@ -134,6 +134,35 @@ When reviewing code: if a flag appears in a diff, stop. Ask what command the fla
 
 ---
 
+## Argument shape
+
+Every command in the suite has the same shape. Three sentences:
+
+1. The name comes first, quoted if it contains a space. A bare word that is also a keyword (`list`, `due`, …) needs quotes to be used as the name: `reminders add "list"`.
+2. A due date is either bare right after the name or introduced by `due` (or `date`) anywhere — one or the other, never both. An optional `on` reads naturally in either form (`due on friday`, `on march 1`).
+3. Everything else is `keyword value`, in any order. `note` / `body` / `message` comes last and takes the rest of the line.
+
+```bash
+reminders add "Pay rent" "march 1" list "Bills" repeat monthly priority high
+reminders change "Pay rent" due none priority high
+reminders rename "Pay rent" "Pay mortgage"
+reminders add "Call dentist" due on friday note "ask about the crown"
+contacts add "Bob Smith" email bob@x.com phone 555-1234
+mail send "Alice Chen" subject "Lunch?" body "Free at noon?"
+```
+
+**Quoting.** Quote every value that contains a space. Quoting one that doesn't is harmless — a fully-quoted line parses identically — so when in doubt, quote. Use double quotes; if a value contains a literal `"` or `$`, single-quote that one argument.
+
+The one place quotes are optional is the trailing text field (`note` / `body` / `message`): it takes the rest of the line, so `note ask about the crown` and `note "ask about the crown"` are the same. The examples above quote it anyway, for consistency.
+
+**`list` is a keyword, not a position.** `reminders add "Pay rent" list "Bills"`, never `reminders add "Pay rent" Bills`. The bare form used to work only when the list already existed and silently became part of the date otherwise — a keyword removes the guesswork and the silent failure.
+
+**Unrecognized input is an error.** A misspelled keyword, a stray word, a keyword with no value, a keyword twice, a date given both ways, a value that isn't valid for its field (an unknown priority, a sort key that isn't a real column, an unparseable date) — each stops the command with a message naming the problem. Nothing is silently absorbed or defaulted.
+
+The parser is one shared implementation in GetClearKit, driven by a per-command descriptor. See `ARCHITECTURE.md`.
+
+---
+
 ## Setup is idempotent
 
 `<tool> setup` is safe to re-run at any time:

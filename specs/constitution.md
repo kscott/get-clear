@@ -62,6 +62,16 @@ New commands must fit this vocabulary. If a new word is needed, it must pass the
 
 ---
 
+## Argument shape
+
+Every command: one identifier first (quoted if it has a space); at most one bare date, or the `due` keyword, not both; every other value introduced by a keyword, order-independent; one optional trailing free-text field (`note` / `body` / `message`) last. Quote every value with a space; quoting any value is safe. The trailing field is the only value where quotes are optional — but examples quote it anyway.
+
+Unrecognized tokens, missing keyword values, duplicate keywords, a date given two ways, and a value that fails its field's validation (bad priority, bad sort key, unparseable date) are errors — never silently absorbed or defaulted (see "No silent failures").
+
+The parser is a single shared implementation in GetClearKit (`CommandArguments.swift`), parameterized by a per-command `CommandShape`. Tools declare shapes; they do not write parsers.
+
+---
+
 ## Setup is idempotent
 
 `setup` commands are safe to re-run at any time. They detect existing state and reuse it. They prompt only when required. A user must never need to know or care whether this is their first run or their tenth.
