@@ -1,41 +1,44 @@
 import ContactKit
 import ContactsLib
 import ContactTestSupport
-import Nimble
-import Quick
+import Testing
 
-final class ListHandlerSpec: AsyncSpec {
-    override class func spec() {
-        var store: SpyContactStore!
-        beforeEach { store = SpyContactStore() }
+@Suite("handleLists")
+struct HandleListsTests {
+    let store = SpyContactStore()
 
-        describe("handleLists") {
-            it("returns sorted group names one per line") {
-                store.groups = [ContactGroup(identifier: "b", name: "Work"),
-                                ContactGroup(identifier: "a", name: "Personal")]
-                let out = try await handleLists(store: store)
-                expect(out) == "Personal\nWork"
-            }
-            it("returns empty string when there are no groups") {
-                store.groups = []
-                let out = try await handleLists(store: store)
-                expect(out) == ""
-            }
-        }
+    @Test("returns sorted group names one per line")
+    func returnsSortedGroupNames() async throws {
+        store.groups = [ContactGroup(identifier: "b", name: "Work"),
+                        ContactGroup(identifier: "a", name: "Personal")]
+        let out = try await handleLists(store: store)
+        #expect(out == "Personal\nWork")
+    }
 
-        describe("handleList") {
-            it("throws usage error when no group name is given") {
-                await expect { try await handleList(args: ["list"], store: store) }
-                    .to(throwError())
-            }
-            it("returns contact rows sorted by name") {
-                store.groups = [ContactGroup(identifier: "g1", name: "Friends")]
-                store.contacts = [bobContact, aliceContact]
-                let out = try await handleList(args: ["list", "Friends"], store: store)
-                let lines = out.components(separatedBy: "\n")
-                expect(lines.first).to(contain("Alice"))
-                expect(lines.last).to(contain("Bob"))
-            }
-        }
+    @Test("returns empty string when there are no groups")
+    func emptyWhenNoGroups() async throws {
+        store.groups = []
+        let out = try await handleLists(store: store)
+        #expect(out == "")
+    }
+}
+
+@Suite("handleList")
+struct HandleListTests {
+    let store = SpyContactStore()
+
+    @Test("throws usage error when no group name is given")
+    func throwsWithoutGroupName() async {
+        await #expect(throws: (any Error).self) { try await handleList(args: ["list"], store: store) }
+    }
+
+    @Test("returns contact rows sorted by name")
+    func returnsContactRowsSorted() async throws {
+        store.groups = [ContactGroup(identifier: "g1", name: "Friends")]
+        store.contacts = [bobContact, aliceContact]
+        let out = try await handleList(args: ["list", "Friends"], store: store)
+        let lines = out.components(separatedBy: "\n")
+        #expect(lines.first?.contains("Alice") == true)
+        #expect(lines.last?.contains("Bob") == true)
     }
 }

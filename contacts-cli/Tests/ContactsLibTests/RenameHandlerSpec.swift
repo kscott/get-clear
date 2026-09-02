@@ -1,30 +1,29 @@
 import ContactKit
 import ContactsLib
 import ContactTestSupport
-import Nimble
-import Quick
+import Testing
 
-final class RenameHandlerSpec: AsyncSpec {
-    override class func spec() {
-        var store: SpyContactStore!
-        beforeEach { store = SpyContactStore() }
+@Suite("handleRename")
+struct RenameHandlerTests {
+    let store = SpyContactStore()
 
-        describe("handleRename") {
-            it("throws usage error when fewer than two name args are given") {
-                await expect { try await handleRename(args: ["rename", "Alice"], store: store) }
-                    .to(throwError())
-            }
-            it("calls store.rename with the resolved identifier") {
-                store.contacts = [aliceContact]
-                _ = try await handleRename(args: ["rename", "alice", "Alice Jones"], store: store)
-                expect(store.renamedItems.first?.identifier) == "alice-id"
-                expect(store.renamedItems.first?.to) == "Alice Jones"
-            }
-            it("joins multiple unquoted tokens into the new name") {
-                store.contacts = [aliceContact]
-                _ = try await handleRename(args: ["rename", "alice", "Alice", "Jones"], store: store)
-                expect(store.renamedItems.first?.to) == "Alice Jones"
-            }
-        }
+    @Test("throws usage error when fewer than two name args are given")
+    func throwsWithFewerThanTwoNames() async {
+        await #expect(throws: (any Error).self) { try await handleRename(args: ["rename", "Alice"], store: store) }
+    }
+
+    @Test("calls store.rename with the resolved identifier")
+    func callsStoreRename() async throws {
+        store.contacts = [aliceContact]
+        _ = try await handleRename(args: ["rename", "alice", "Alice Jones"], store: store)
+        #expect(store.renamedItems.first?.identifier == "alice-id")
+        #expect(store.renamedItems.first?.to == "Alice Jones")
+    }
+
+    @Test("joins multiple unquoted tokens into the new name")
+    func joinsUnquotedTokens() async throws {
+        store.contacts = [aliceContact]
+        _ = try await handleRename(args: ["rename", "alice", "Alice", "Jones"], store: store)
+        #expect(store.renamedItems.first?.to == "Alice Jones")
     }
 }
