@@ -107,7 +107,7 @@ Per the manifest-strategy deviation, "Update the manifest" was already done in `
 - [x] T037 [US4] Coverage (`xcrun llvm-cov report` on `get-clearPackageTests.xctest`, `-ignore-filename-regex="(\.build|Tests)"`): aggregate **81.6% line** (was 80.66%; +1) — within tolerance. **RemindersLib 92.6% line** (was 91.4%; +1.2) — within tolerance (SC-010). `ARCHITECTURE.md` `:164`/`:178` restated with the fresh numbers.
 - [x] T038 [US2] Parity table in `migration-notes.md` complete: 1,073 `it` → **1,073 `@Test`** across all 9 targets, **zero consolidations** (SC-003).
 - [x] T039 [US5] `git diff main --stat -- .github/workflows/` → empty (SC-007). `git diff main --stat -- '**/Sources/**'` → only `ReminderChangeParsing.swift` (SC-008). No `*Spec`-typed suites; all suite types unprefixed (SC-011).
-- [ ] T040 Push the branch; `.githooks/pre-push` (`./scripts/lint`) passes. Open the PR; CI (`swift build` + `swift test` on `macos-latest`) is green.
+- [x] T040 Branch pushed (`.githooks/pre-push` → `./scripts/lint` passed). PR **#199** opened against `main`. `ci.yml` triggers on `push` to `main` only, not on PRs/feature branches — its `swift build` + `swift test` (on a full-Xcode `macos-latest` runner, where `Testing` resolves natively) run on merge. GitGuardian check green.
 
 ---
 
