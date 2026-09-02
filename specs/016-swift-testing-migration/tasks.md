@@ -115,7 +115,7 @@ Per the manifest-strategy deviation, "Update the manifest" was already done in `
 
 - [ ] T041 On the `015-argument-shape` branch (separate): doc-only commit updating `specs/015-argument-shape/{tasks.md,plan.md,quickstart.md,research.md}` per FR-022 — `*Spec.swift`/`QuickSpec`/`Nimble`/`describe`/`context`/`it` → Swift Testing vocabulary; the `quickstart.md:85-93` Quick code block → `@Suite`/`@Test`/`#expect(throws:)`. Does not implement 015.
 - [ ] T042 Flag to Ken (out of repo): `~/.claude/projects/-Users-ken-dev-get-clear/memory/project_coverage_tooling.md` hardcodes `.build/…/get-clearPackageTests.xctest/Contents/MacOS/…` — update to the `swift test --show-codecov-path` + `swift build --show-bin-path` recipe (FR-024). Cross-machine via the dotfiles symlink.
-- [ ] T043 (Deferred, relates to #196) Re-tighten the SwiftLint rules loosened for Quick — `static_over_final_class` (`.swiftlint.yml:27`), `function_body_length` error 400 (`:79`). Check for new `Sources/` warnings first. Not part of this migration.
+- [x] T043 Re-tighten the SwiftLint rules loosened for Quick (branch `spec-016-t043-retighten-swiftlint`, post-merge). `static_over_final_class` re-enabled — **zero violations** (the old comment's worry about "production enum/static patterns" was unfounded). `function_body_length` error `400 → 150` — the longest `Sources/` function is ~112 lines (`DateParser.parseDate`), so zero new errors; the warning band stays at 60 (the 5 length warnings, 64–112 lines, are unchanged and still tracked in #198). `./scripts/lint` clean, 71 warnings unchanged.
 
 ---
 

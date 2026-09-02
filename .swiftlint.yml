@@ -24,10 +24,6 @@ analyzer_rules:
 
 disabled_rules:
   - todo
-  # static_over_final_class: was disabled for QuickSpec's `override class func spec()`.
-  # Quick is gone (spec 016), but re-enabling risks flagging production enum/static
-  # patterns — revisit as its own cleanup, not the migration.
-  - static_over_final_class
   # opening_brace conflicts with SwiftFormat's wrapMultilineStatementBraces (kept ON
   # in .swiftformat): SwiftLint wants the brace on the condition's last line, SwiftFormat
   # wants it wrapped. SwiftFormat owns brace placement in this repo.
@@ -82,11 +78,11 @@ line_length:
   ignores_comments: true
   ignores_urls: true
 
-# error only at 400 (was loosened for Quick spec() bodies; the warning band still
-# surfaces long functions in Sources/)
+# error at 150 (was 400 for Quick spec() bodies, now gone — spec 016). The longest
+# Sources/ function is ~112 lines; the warning band at 60 still surfaces the rest.
 function_body_length:
   warning: 60
-  error: 400
+  error: 150
 
 # Blank lines inside multiline string literals (CLI usage text) carry indentation
 # whitespace by design — matches .swiftformat's `--trimwhitespace nonblank-lines`.
