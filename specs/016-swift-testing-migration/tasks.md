@@ -63,27 +63,29 @@
 
 Each target: rewrite every `*Spec.swift` (type names lose the tool prefix — `CalendarAddHandlerSpec` → `AddHandlerTests`); remove that target's two `.product` entries from `Package.swift`; verify (`swift build --build-tests --target <T>` at minimum, `swift test --filter <T>` ×5 + `--no-parallel` if T006 was yes); `swiftformat --lint` the target dir; reconcile the `@Test` count; **diff-review every rewritten file against its original for assertion faithfulness — same input, same expected value, same matcher semantics (US2 Independent Test)**; append any new consolidations / decisions to `migration-notes.md`.
 
-- [ ] T017 [US2] Rewrite `Tests/AppleEventKitSupportTests/` (1 file, `CGColorHexSpec` — pure CGColor hex math, 11 `it`s). Update its `Package.swift` testTarget. Verify.
-- [ ] T018 [US2] Rewrite `Tests/AppleContactKitTests/` (1 file, `ToContactSpec` — `CNContact`→`Contact` mapping, 14 `it`s). Update manifest. Verify.
-- [ ] T019 [US2] Rewrite `Tests/ContactKitTests/` (3 files incl. `SpyContactStoreSpec` which is an `AsyncSpec` testing the shared `SpyContactStore`, 26 `it`s). Update manifest. Verify. Note: depends on `Tests/ContactTestSupport/` (unchanged — no Quick import).
-- [ ] T020 [US2] Rewrite `text-cli/Tests/TextLibTests/` (7 files, 70 `it`s; 1 `AsyncSpec`; `SendHandlerSpec` has the file-private `SpyMessageSender` and `TargetResolverSpec` has `throwError(TextError.notFound(…))` — bucket 1, `TextError` is already `Equatable`). Update manifest. Verify.
-- [ ] T021 [US2] Rewrite `mail-cli/Tests/MailLibTests/` (11 files, 154 `it`s; 2 `AsyncSpec`; uses `MailTestSupport.swift`'s `SpyMailClient` with `var shouldThrow`; several bucket-2 error-inspecting closures). Update manifest. Verify.
-- [ ] T022 [US2] Rewrite `contacts-cli/Tests/ContactsLibTests/` (12 files, 60 `it`s; 7 `AsyncSpec`; `SpyContactStore` from `ContactTestSupport`; bare handler-spec names already — just drop `Spec`→`Tests`). Update manifest. Verify.
-- [ ] T023 [US2] Rewrite `calendar-cli/Tests/CalendarLibTests/` (19 files, 199 `it`s; 11 `AsyncSpec`; **all types are `Calendar`-prefixed** — `CalendarAddHandlerSpec` → `AddHandlerTests` etc.; `Fixtures.swift`'s `SpyCalendarStore`; `CalendarStoreSpec` has a bucket-3 `guard case`; `throwError(CalendarStoreError.notFound)` bucket 1 — already `Equatable`). Update manifest. Verify.
-- [ ] T024 [US2] Rewrite `reminders-cli/Tests/RemindersLibTests/` (19 files, 327 `it`s — the largest; 10 `AsyncSpec`; **`OptionsParsingSpec` is the only 3-level-nested file**; two `ReminderStore` doubles — `SpyStore` in `Fixtures.swift` + `MockStore` file-private in `ReminderStoreSpec`; the 16 bucket-2 error-inspecting closures on `ReminderHandlerError.message` live here; `ChangeCommandSpec` has 6 bucket-3 `guard case` sites and `throwError(ReminderChangeError.nothingToChange/.unrecognizedRecurrence)` — needs T025). Update manifest. Verify.
-- [ ] T025 [US2] In `reminders-cli/Sources/RemindersLib/ReminderChangeParsing.swift:24`: `public enum ReminderChangeError: Error` → `public enum ReminderChangeError: Error, Equatable`. Ships in the same commit as T024. This is the **only** `Sources/` change (FR-011 exception) — record it in `migration-notes.md`. `swift build` — green, no behaviour change.
+Per the manifest-strategy deviation, "Update the manifest" was already done in `7ed56a4` — each task reduces to rewrite + verify. Verification ran as: strip the other 8 `testTarget`s from `Package.swift`, `./scripts/test --filter <T>`, restore (D3).
 
-**Checkpoint**: all 9 targets on Swift Testing; `Package.swift` still declares `.package(url: Quick/Nimble)` but no testTarget references them.
+- [x] T017 [US2] `Tests/AppleEventKitSupportTests/` — `CGColorHexSpec`, 11 `it` → **11 `@Test`** ✓. Commit.
+- [x] T018 [US2] `Tests/AppleContactKitTests/` — `ToContactSpec`, 14 → **14** ✓. Commit.
+- [x] T019 [US2] `Tests/ContactKitTests/` — 3 files, 26 → **26** ✓ (`SpyContactStoreSpec` `AsyncSpec` → `@Suite`). Commit.
+- [x] T020 [US2] `text-cli/Tests/TextLibTests/` — 7 files, 70 → **70** ✓ (`SpyMessageSender` file-private kept; `throwError(TextError.case)` → `#expect(throws: TextError.case)`; `expect(try! f())` → `@Test throws`). Commit.
+- [x] T021 [US2] `mail-cli/Tests/MailLibTests/` — 11 files, 154 → **154** ✓ (no bucket-2 after all; `.notTo(throwError())` → `#expect(throws: Never.self)`). Commit.
+- [x] T022 [US2] `contacts-cli/Tests/ContactsLibTests/` — 12 files, 60 → **60** ✓. Commit.
+- [x] T023 [US2] `calendar-cli/Tests/CalendarLibTests/` — 19 files, 199 → **199** ✓ (Calendar-prefixed types → unprefixed; `CalendarStoreSpec` ambiguous inspecting closure → returned-error + `guard case …? `; Show/RemoveHandlerSpec `CalendarHandlerError.description` bucket-2). Commit.
+- [x] T024 [US2] `reminders-cli/Tests/RemindersLibTests/` — 19 files, 327 → **327** ✓ (16 `ReminderHandlerError.message` bucket-2; `OptionsParsingSpec` 3-level nesting preserved; `MockStore` stays `private` so its suite `let store` is `private let`; `ChangeCommandSpec` 6 `if case … else { fail() }` → `guard case`/`Issue.record`). Commit (with T025).
+- [x] T025 [US2] `reminders-cli/Sources/RemindersLib/ReminderChangeParsing.swift:24`: `ReminderChangeError: Error` → `Error, Equatable`. Shipped in the T024 commit. Only `Sources/` change. `swift build` green, no behaviour change. Recorded in `migration-notes.md`.
+
+**Checkpoint**: all 9 targets on Swift Testing. Full `./scripts/test` → **1073 tests in 384 suites passed** on the CLT-only machine.
 
 ---
 
 ## Phase 5: Remove Quick/Nimble; delete vestigial manifests (US1)
 
-- [ ] T026 [US1] `Package.swift`: delete the two `.package(url: "https://github.com/Quick/…")` / `Nimble` lines from `dependencies` (remove the now-empty `dependencies:` key entirely).
-- [ ] T027 [US1] `swift package resolve` — `Package.resolved` regenerates: schema `"version": 2` → `3`, all 7 pins (quick, nimble, cwlcatchexception, cwlpreconditiontesting, swift-algorithms, swift-argument-parser, swift-numerics) gone. `.build/checkouts/` empties of those 7 dirs.
-- [ ] T028 [US1] `git rm` the five vestigial manifests and their resolved files: `{reminders,calendar,contacts,mail,text}-cli/Package.swift` and `{…}-cli/Package.resolved` (research.md R10, FR-002a).
-- [ ] T029 [P] [US1] `git rm -r` the orphaned `{reminders,calendar,contacts,mail,text}-cli/.github/` directories (dead standalone-repo workflows; GitHub only reads root `.github/`).
-- [ ] T030 [US1] `grep -rn "import Quick\|import Nimble" --include="*.swift" .` (outside `.build/`) → **zero**. `grep -rn "QuickSpec\|AsyncSpec\|\.to(equal\|describe(\|context(\|beforeEach" --include="*.swift" .` → zero.
+- [x] T026 [US1] Already done in `7ed56a4` — Quick/Nimble + the `dependencies:` key removed from `Package.swift` entirely (the manifest-strategy deviation).
+- [x] T027 [US1] Already done in `7ed56a4` — `Package.resolved` had 0 pins and SwiftPM deleted it; `.build/checkouts/` no longer holds the 7 dirs.
+- [x] T028 [US1] `git rm`'d `{reminders,calendar,contacts,mail,text}-cli/Package.swift` + `Package.resolved` (10 files).
+- [x] T029 [P] [US1] `git rm -r`'d `{reminders,calendar,contacts,mail,text}-cli/.github/` (10 dead workflow files).
+- [x] T030 [US1] `grep -rn "import Quick\|import Nimble" --include="*.swift" .` (outside `.build/`) → **0**. `grep -rn "QuickSpec\|AsyncSpec\|\.to(equal\|describe(\|context(\|beforeEach" …` → **0**.
 
 **Checkpoint**: Quick and Nimble are entirely gone from the repo.
 
