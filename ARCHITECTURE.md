@@ -161,7 +161,7 @@ The threshold: if exercising a branch requires a permission dialog or a file to 
 
 **hexColor duplication (resolved):** `hexColor` was duplicated between `RemindersEventKit` and `CalendarEventKit` and initially accepted as necessary because CGColor requires CoreGraphics, which can't go in GetClearKit. Later resolved by creating `AppleEventKitSupport` — a shared target that imports CoreGraphics but not EventKit. See 2026-05-06 decision log entry.
 
-**Test coverage:** CalendarLibTests ships with 14 handler spec files + 4 shared/infrastructure specs (CalendarStoreSpec, CalendarResolverSpec, EventFormatterSpec, CalendarWhatHandlerSpec). 987 total suite tests, 0 failures.
+**Test coverage:** CalendarLibTests ships with 14 handler spec files + 4 shared/infrastructure specs (CalendarStoreSpec, CalendarResolverSpec, EventFormatterSpec, CalendarWhatHandlerSpec). 1,073 total suite tests (`swift test`, spec 016), 0 failures; ~81.6% aggregate line coverage.
 
 ### 2026-04-24 — Three-tier model introduced; reminders-cli complete (#147)
 
@@ -175,7 +175,7 @@ The threshold: if exercising a branch requires a permission dialog or a file to 
 - Handler functions return `String`, throw `ReminderHandlerError` — fully testable via `SpyStore`.
 - `ReminderStore` protocol with `resolve` default extension for not-found/ambiguous lookup.
 
-**Test coverage:** RemindersLib reached 91.4% line coverage including structural zeros (`WhatHandler`, `OpenHandler`, `UsageText`). Testable code coverage is ~97.8%. `hexColor` moved from RemindersLib to RemindersEventKit (framework type conversion belongs at the boundary) — CalendarDot.swift is now 100% covered and has no framework imports.
+**Test coverage:** RemindersLib is at ~92.6% line coverage (`xcrun llvm-cov`, spec 016) including structural zeros (`WhatHandler`, `OpenHandler`, `UsageText`). Testable code coverage is ~98%. `hexColor` moved from RemindersLib to RemindersEventKit (framework type conversion belongs at the boundary) — CalendarDot.swift is now 100% covered and has no framework imports.
 
 **Template:** reminders-cli is the reference implementation. #140–143 follow this pattern for the other four tools.
 

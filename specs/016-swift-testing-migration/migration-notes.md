@@ -83,3 +83,23 @@ Confirmed: `swift test --filter GetClearKitTests` compiles all 9 test targets, s
 | CalendarLibTests | 199 | **199** ✓ | none |
 | RemindersLibTests | 327 | **327** ✓ | none |
 | **Total** | **1,073** | **1,073** ✓ | none |
+
+Every `it` maps 1:1 to a `@Test`, verbatim description, same matcher semantics. No two-inputs-same-path consolidations were taken — the census over-counted the opportunity; each `it` that looked redundant turned out to assert a distinct field or a distinct input shape.
+
+---
+
+## Phase 7 validation (SC results)
+
+| SC | Check | Result |
+|---|---|---|
+| SC-001 | `./scripts/test` green on CLT-only | **1073 / 1073** in 384 suites |
+| SC-003 | parity: `it` → `@Test` | 1,073 → 1,073, 0 consolidations |
+| SC-004 | 5 consecutive runs identical | ✓ (0.04–0.06s each) |
+| SC-005 | `--no-parallel` same result | ✓ 1073 / 1073 |
+| SC-006 | `swift build -c release`, no new warnings | ✓ (2 pre-existing baseline warnings only) |
+| SC-007 | `.github/workflows/` unchanged vs `main` | ✓ empty diff |
+| SC-008 | `Sources/` diff = `ReminderChangeError: Equatable` only | ✓ 1 file, 1 line |
+| SC-010 | coverage within ~2 pts | aggregate 81.6% line (was 80.66%), RemindersLib 92.6% (was 91.4%) |
+| SC-011 | no prefixed suite types | ✓ all `<Thing>Tests`, module-scoped |
+
+No suite needed `@Suite(.serialized)` — the parallel isolation model (fresh suite instance per `@Test`, per-instance `UUID()` temp dirs in `ActivityLogSpec`) held across all 9 targets.

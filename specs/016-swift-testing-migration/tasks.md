@@ -102,12 +102,12 @@ Per the manifest-strategy deviation, "Update the manifest" was already done in `
 
 ## Phase 7: Validation (US1, US4, US5, SC coverage)
 
-- [ ] T035 [US1] [US4] Full suite: `swift test` from the repo root — green on this CLT-only machine (SC-001). Run it **five consecutive times** — identical pass/fail set every time (SC-004). Run once `swift test --no-parallel` — same result (SC-005). If any suite flakes, isolate it (unique fixture / `.serialized` with a noted reason) and re-verify.
-- [ ] T036 [US1] `swift build -c release` — all five binaries, zero new warnings vs the T001 baseline (SC-006).
-- [ ] T037 [US4] Coverage: `PROFDATA=$(swift test --enable-code-coverage --show-codecov-path)`; `BIN=$(swift build --show-bin-path)`; `xcrun llvm-cov report "$BIN/<test-bundle>" -instr-profile "$PROFDATA" -ignore-filename-regex="(.build|Tests|Spec)"` — runs clean; aggregate line coverage within ~2 points of the recorded 80.66%, RemindersLib within ~2 of 91.4% (SC-010). Restate `ARCHITECTURE.md:152` (fresh `swift test` count) and `:166` (fresh RemindersLib coverage) with the real numbers.
-- [ ] T038 [US2] Finalize the parity table in `migration-notes.md`: per target, `it` count (T002) vs `@Test` count, every consolidation listed with justification. Totals must reconcile to 1,073 minus listed consolidations (SC-003).
-- [ ] T039 [US5] `git diff main -- .github/workflows/` → empty (SC-007). `git diff main --stat -- Sources/` → only `ReminderChangeParsing.swift` (SC-008). `grep -rn "CalendarAddHandlerSpec\|MailFindHandlerSpec\|MailSendHandlerSpec"` → zero; every suite type is unprefixed (SC-011).
-- [ ] T040 Push the branch; `.githooks/pre-push` (`swiftlint lint --quiet`, `swiftformat --lint .`) passes. Open the PR; CI (`swift build` + `swift test` on `macos-latest`) is green.
+- [x] T035 [US1] [US4] `./scripts/test` from the repo root — **1073 tests in 384 suites passed** on this CLT-only machine (SC-001). Five consecutive runs, identical every time (SC-004). `--no-parallel` — same 1073/1073 (SC-005). No flakes; no `.serialized` needed anywhere.
+- [x] T036 [US1] `swift build -c release` — all five binaries link; the only 2 warnings are the pre-existing baseline ones (`SpyContactStore` Sendable, `main.swift` `usage()` unused), zero new (SC-006).
+- [x] T037 [US4] Coverage (`xcrun llvm-cov report` on `get-clearPackageTests.xctest`, `-ignore-filename-regex="(\.build|Tests)"`): aggregate **81.6% line** (was 80.66%; +1) — within tolerance. **RemindersLib 92.6% line** (was 91.4%; +1.2) — within tolerance (SC-010). `ARCHITECTURE.md` `:164`/`:178` restated with the fresh numbers.
+- [x] T038 [US2] Parity table in `migration-notes.md` complete: 1,073 `it` → **1,073 `@Test`** across all 9 targets, **zero consolidations** (SC-003).
+- [x] T039 [US5] `git diff main --stat -- .github/workflows/` → empty (SC-007). `git diff main --stat -- '**/Sources/**'` → only `ReminderChangeParsing.swift` (SC-008). No `*Spec`-typed suites; all suite types unprefixed (SC-011).
+- [ ] T040 Push the branch; `.githooks/pre-push` (`./scripts/lint`) passes. Open the PR; CI (`swift build` + `swift test` on `macos-latest`) is green.
 
 ---
 
