@@ -56,7 +56,8 @@ Confirmed: `swift test --filter GetClearKitTests` compiles all 9 test targets, s
 ## Canonical forms for the fiddly buckets (research R3 — validated in the pilot)
 
 - **Bucket 3 — `fail()` in `guard case`**: `Issue.record("…")` in the `else` branch, then `return` (or `continue` in a loop). Used in `GetClearKitSpec` (`parseArgs`) and `DateParserSpec` (weekday loop).
-- **Bucket 2 — error-inspecting closure**: `let err = #expect(throws: T.self) { … }; #expect(err?.message.contains(…) == true)`. (Not exercised in the pilot — RemindersLibTests.)
+- **Bucket 2 — error-inspecting closure**: `let err = #expect(throws: T.self) { … }; #expect(err?.message.contains(…) == true)`. Exercised heavily in RemindersLibTests (16 `ReminderHandlerError.message` sites across the handler specs) plus Calendar's `CalendarHandlerError.description`. Where the closure did `if case … else { fail() }` (ReminderStoreSpec, CalendarStoreSpec), the follow-up is `guard case let .x(v)? = err else { Issue.record(…); return }` then `#expect` on `v` — the `?` pattern because `#expect(throws:)` returns `T?`.
+- **File-private double stored on a suite struct**: `MockStore` (ReminderStoreSpec) is `private`, so the `let store = MockStore()` on each nested `@Suite` struct must be `private let` (a non-private struct property can't expose a private type).
 - **Bucket 1 — specific error value**: `#expect(throws: E.case) { … }` (needs `Equatable`; `ReminderChangeError` gains it). (Not in the pilot.)
 - **Force-unwrap of `cal.date(byAdding:…)`** → `try #require(…)` with the `@Test func` marked `throws` — SwiftFormat's `wrapConditionalBodies`/require conversion applied it; kept, it's the better idiom and behaviour-equivalent (clean failure vs crash).
 - **`context` with a single `it`** → still nested as a `@Suite` struct (faithful; the context string carries real information in the test tree).
@@ -64,7 +65,7 @@ Confirmed: `swift test --filter GetClearKitTests` compiles all 9 test targets, s
 
 ## The one `Sources/` change
 
-`ReminderChangeError: Error` → `Error, Equatable` (`ReminderChangeParsing.swift`). Ships with the RemindersLibTests commit. Matches `ReminderStoreError` / `CalendarStoreError` / `TextError`.
+`ReminderChangeError: Error` → `Error, Equatable` (`ReminderChangeParsing.swift:24`). Shipped with the RemindersLibTests commit (T024/T025). Enables `#expect(throws: ReminderChangeError.nothingToChange)` / `.unrecognizedRecurrence("garbage")` in `ChangeCommandSpec`. Matches `ReminderStoreError` / `CalendarStoreError` / `TextError`. `swift build` green, no behaviour change (`git diff main --stat -- '*/Sources/*'` = this one line).
 
 ---
 
@@ -80,5 +81,5 @@ Confirmed: `swift test --filter GetClearKitTests` compiles all 9 test targets, s
 | MailLibTests | 154 | **154** ✓ | none |
 | ContactsLibTests | 60 | **60** ✓ | none |
 | CalendarLibTests | 199 | **199** ✓ | none |
-| RemindersLibTests | 327 | _ | _ |
-| **Total** | **1,073** | _ | _ |
+| RemindersLibTests | 327 | **327** ✓ | none |
+| **Total** | **1,073** | **1,073** ✓ | none |

@@ -2,33 +2,32 @@
 
 import Foundation
 import GetClearKit
-import Nimble
-import Quick
 import RemindersLib
+import Testing
 
-final class FindHandlerSpec: AsyncSpec {
-    override class func spec() {
-        var store: SpyStore!
+@Suite("handleFind")
+struct FindHandlerTests {
+    let store = SpyStore()
 
-        beforeEach { store = SpyStore() }
+    @Test("returns formatted find rows for matching items")
+    func returnsMatchingRows() async throws {
+        store.items = [makeItem()]
+        let out = try await handleFind(args: ["find", "rent"], store: store)
+        #expect(out.contains("Pay rent"))
+    }
 
-        describe("handleFind") {
-            it("returns formatted find rows for matching items") {
-                store.items = [makeItem()]
-                let out = try await handleFind(args: ["find", "rent"], store: store)
-                expect(out).to(contain("Pay rent"))
-            }
-            it("returns a no-match message when nothing matches") {
-                store.items = [makeItem(title: "Buy groceries")]
-                let out = try await handleFind(args: ["find", "dentist"], store: store)
-                expect(out).to(contain("dentist"))
-                expect(out).to(contain("No"))
-            }
-            it("throws when no query argument is provided") {
-                await expect {
-                    try await handleFind(args: ["find"], store: store)
-                }.to(throwError(errorType: ReminderHandlerError.self))
-            }
+    @Test("returns a no-match message when nothing matches")
+    func returnsNoMatchMessage() async throws {
+        store.items = [makeItem(title: "Buy groceries")]
+        let out = try await handleFind(args: ["find", "dentist"], store: store)
+        #expect(out.contains("dentist"))
+        #expect(out.contains("No"))
+    }
+
+    @Test("throws when no query argument is provided")
+    func throwsWithoutQuery() async {
+        await #expect(throws: ReminderHandlerError.self) {
+            try await handleFind(args: ["find"], store: store)
         }
     }
 }
