@@ -103,7 +103,7 @@ Per the manifest-strategy deviation, "Update the manifest" was already done in `
 ## Phase 7: Validation (US1, US4, US5, SC coverage)
 
 - [x] T035 [US1] [US4] `./scripts/test` from the repo root — **1073 tests in 384 suites passed** on this CLT-only machine (SC-001). Five consecutive runs, identical every time (SC-004). `--no-parallel` — same 1073/1073 (SC-005). No flakes; no `.serialized` needed anywhere.
-- [x] T036 [US1] `swift build -c release` — all five binaries link; the only 2 warnings are the pre-existing baseline ones (`SpyContactStore` Sendable, `main.swift` `usage()` unused), zero new (SC-006).
+- [x] T036 [US1] `swift build -c release` — all five binaries link, zero new warnings (SC-006). Follow-up done here rather than deferred: the two `Sendable`-protocol spies surfaced by the now-compiling test targets (`SpyContactStore` / `SpyMailClient`) got `@unchecked Sendable` + a "each `@Test` gets its own spy" comment. A full clean test build now shows only `main.swift:18` (`usage()` unused, `Sources/`, FR-011).
 - [x] T037 [US4] Coverage (`xcrun llvm-cov report` on `get-clearPackageTests.xctest`, `-ignore-filename-regex="(\.build|Tests)"`): aggregate **81.6% line** (was 80.66%; +1) — within tolerance. **RemindersLib 92.6% line** (was 91.4%; +1.2) — within tolerance (SC-010). `ARCHITECTURE.md` `:164`/`:178` restated with the fresh numbers.
 - [x] T038 [US2] Parity table in `migration-notes.md` complete: 1,073 `it` → **1,073 `@Test`** across all 9 targets, **zero consolidations** (SC-003).
 - [x] T039 [US5] `git diff main --stat -- .github/workflows/` → empty (SC-007). `git diff main --stat -- '**/Sources/**'` → only `ReminderChangeParsing.swift` (SC-008). No `*Spec`-typed suites; all suite types unprefixed (SC-011).

@@ -21,11 +21,11 @@ Instead: Quick + Nimble removed entirely (dependencies + all 9 testTargets) in t
 - `swift-tools-version` 5.9 → 6.0; `swiftLanguageModes: [.v5]` on `Package(...)` (package-level — must come *after* `targets:` in the arg order, else `error: argument 'products' must precede argument 'swiftLanguageModes'`).
 - `.swift-version` 5.9 → 6.0.
 - SwiftFormat 0.62.1 verified clean tree-wide at `.swift-version` 6.0.
-- **Pre-existing warnings, none introduced by 016.** At T005 two were noted from the `--swift-version 6.0` context; a full clean `./scripts/test` build (all test targets now compile — they didn't pre-016) surfaces **3**:
-  - `Tests/ContactTestSupport/SpyContactStore.swift:4` — `contacts` mutable `var` in a `Sendable` conformer (`ContactStore: Sendable`). "Error in Swift 6 language mode"; a warning under v5.
-  - `mail-cli/Tests/MailLibTests/MailTestSupport.swift:8` — `SpyMailClient.sentEmails` mutable `var` in a `Sendable` conformer (`MailClient: Sendable`). Same class of warning. **`MailTestSupport.swift` is byte-identical to `main`** — this warning was always latent, only invisible because `MailLibTests` never compiled (XCTest broken). Not new.
-  - `Sources/GetClear/main.swift:18` — `usage()` result unused `[#no-usage]`.
-  - All 3 left as-is: pre-existing, not `*Spec.swift`, and `SpyStore`/`SpyCalendarStore`/`SpyMessageSender`/`MockStore` conform to **non-`Sendable`** protocols so they don't warn. The `Sendable`-conformer spies are a real blocker for a future move to **Swift 6 language mode** (016 pins v5) — see the parallel-execution note below.
+- **Warnings.** At T005 two were noted from the `--swift-version 6.0` context. Once all test targets compile (they didn't pre-016), a full clean `./scripts/test` build surfaced **3**:
+  - `Tests/ContactTestSupport/SpyContactStore.swift` — `contacts` (and siblings) mutable `var` in a `Sendable` conformer (`ContactStore: Sendable`). **Fixed** — `@unchecked Sendable` + a comment ("Swift Testing gives every `@Test` its own suite instance and thus its own spy — no spy is shared across concurrent tests").
+  - `mail-cli/Tests/MailLibTests/MailTestSupport.swift` — `SpyMailClient` mutable `var`s in a `Sendable` conformer (`MailClient: Sendable`); `MailTestSupport.swift` was byte-identical to `main` — the warning was always latent, invisible only because `MailLibTests` never compiled. **Fixed** the same way.
+  - `Sources/GetClear/main.swift:18` — `usage()` result unused `[#no-usage]`. **Left** (FR-011 — `Sources/`, out of scope). This is now the only warning on a full test build.
+  - `SpyStore` / `SpyCalendarStore` / `SpyMessageSender` / `MockStore` conform to **non-`Sendable`** protocols → no warning, no annotation needed.
 
 ---
 
@@ -98,7 +98,7 @@ Every `it` maps 1:1 to a `@Test`, verbatim description, same matcher semantics. 
 | SC-003 | parity: `it` → `@Test` | 1,073 → 1,073, 0 consolidations |
 | SC-004 | 5 consecutive runs identical | ✓ (0.04–0.06s each) |
 | SC-005 | `--no-parallel` same result | ✓ 1073 / 1073 |
-| SC-006 | `swift build -c release`, no new warnings | ✓ (`-c release` builds no test targets → same 2 warnings as the T001 release baseline; a full test build shows 3, all pre-existing — see toolchain notes) |
+| SC-006 | `swift build -c release`, no new warnings | ✓ — the two spy `Sendable` warnings surfaced by the now-compiling test targets were fixed with `@unchecked Sendable`; a full clean test build now shows only the pre-existing `main.swift:18` `usage()` warning (`Sources/`, FR-011) |
 | SC-007 | `.github/workflows/` unchanged vs `main` | ✓ empty diff |
 | SC-008 | `Sources/` diff = `ReminderChangeError: Equatable` only | ✓ 1 file, 1 line |
 | SC-010 | coverage within ~2 pts | aggregate 81.6% line (was 80.66%), RemindersLib 92.6% (was 91.4%) |
@@ -114,4 +114,4 @@ Swift Testing runs `@Test`s in parallel by default (across suites and within the
 - **Shared fixtures** hoisted to file scope (`private let all`, `private let cal`, `private let now`, `private let range`, `private let numbered`, …) are all read-only value types or arrays of them — safe to read concurrently.
 - **`ActivityLogSpec`** is the only filesystem-touching suite; each nested suite instance builds its own `…appendingPathComponent("gc-test-\(UUID().uuidString)")` dir. Verified non-flaky under parallel and `--no-parallel`.
 - **Verification:** 25 consecutive `./scripts/test` runs (5 at T015/T035 + 20 stress), every one `1073/1073` in 384 suites, identical; `--no-parallel` matches. No `@Suite(.serialized)` anywhere, none needed. Satisfies SC-004/SC-005 and the new constitution principle ("fix the isolation, don't serialize around it").
-- **Latent, not now:** `SpyContactStore` and `SpyMailClient` conform to `Sendable` protocols (`ContactStore` / `MailClient`) while holding mutable `var`s — a v5 warning, a Swift-6-**language-mode** error. Not a parallelism bug (the per-test-instance model makes it safe in practice), but the real blocker if the suite ever moves off `swiftLanguageModes: [.v5]`. Fix then: `@unchecked Sendable` + a "tests own their isolation" comment, or `nonisolated(unsafe)` on the vars. Sibling of #198 / T043 — surfaced by 016, not part of it.
+- **`@unchecked Sendable` on the two `Sendable`-protocol spies** (`SpyContactStore` → `ContactStore: Sendable`, `SpyMailClient` → `MailClient: Sendable`). Each carries mutable recording state, but the per-`@Test` suite instance means no spy is ever shared across concurrent tests — the annotation states that contract rather than serializing. Silences the two "error in Swift 6 language mode" warnings and unblocks a future move off `swiftLanguageModes: [.v5]`.
