@@ -1,0 +1,62 @@
+#!/usr/bin/env bash
+# lint — run SwiftLint + SwiftFormat over the suite.
+#
+# Single source of truth for linting: the pre-push hook calls this, and so
+# should you. Blocks (exit 1) on a SwiftLint error, a SwiftLint crash, or a
+# SwiftFormat violation. SwiftLint *warnings* pass — run `swiftlint lint` to
+# review them, `swiftlint --fix && swiftformat .` to clean.
+#
+# Usage: ./scripts/lint
+
+set -uo pipefail
+cd "$(dirname "$0")/.."
+
+for tool in swiftlint swiftformat; do
+    command -v "$tool" &>/dev/null || { echo "$tool not found — run: brew install $tool"; exit 1; }
+done
+
+# SwiftLint's SourceKitten cannot locate sourcekitdInProc.framework when only
+# the Command Line Tools are installed (no Xcode) — its dlopen fallback paths
+# don't include $(xcode-select -p)/usr/lib, where the CLT keeps it. Point it
+# there explicitly. Harmless with a full Xcode (it resolves on its own).
+export DYLD_FRAMEWORK_PATH="$(xcode-select -p)/usr/lib${DYLD_FRAMEWORK_PATH:+:$DYLD_FRAMEWORK_PATH}"
+
+echo "SwiftLint..."
+lint_output=$(swiftlint lint --quiet 2>&1)
+lint_status=$?
+if echo "$lint_output" | grep -qE "Fatal error|Loading .* failed|Could not load"; then
+    echo "$lint_output" | grep -E "Fatal error|Loading .* failed|Could not load" | head -3
+    echo ""
+    echo "SwiftLint crashed — it is not actually linting. Fix the toolchain before pushing."
+    exit 1
+fi
+if [ "$lint_status" -ne 0 ] && [ "$lint_status" -ne 2 ]; then
+    # 0 = clean, 2 = warnings present (allowed). Anything else is a real failure.
+    echo "$lint_output"
+    echo ""
+    echo "SwiftLint exited $lint_status."
+    exit 1
+fi
+lint_errors=$(echo "$lint_output" | grep ": error:" || true)
+if [ -n "$lint_errors" ]; then
+    echo "$lint_errors"
+    echo ""
+    echo "Fix SwiftLint errors before pushing. Run: swiftlint --fix"
+    exit 1
+fi
+
+lint_warnings=$(echo "$lint_output" | grep -c ": warning:" || true)
+
+echo "SwiftFormat..."
+if ! swiftformat --lint . &>/dev/null; then
+    swiftformat --lint . 2>/dev/null | grep "error:" || true
+    echo ""
+    echo "Fix formatting before pushing. Run: swiftformat ."
+    exit 1
+fi
+
+if [ "$lint_warnings" -gt 0 ]; then
+    echo "Lint passed — $lint_warnings SwiftLint warning(s) (allowed). Run 'swiftlint lint' to review."
+else
+    echo "Lint clean."
+fi

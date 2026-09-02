@@ -164,6 +164,7 @@ The CI workflow still runs `swift build` and `swift test` and still goes green. 
 ### Functional Requirements — Scope
 
 - **FR-021**: `.github/workflows/` MUST NOT change. CI continues to run `swift build` + `swift test`.
+- **FR-025**: SwiftLint MUST run reliably on this machine. It has been crash-looping (`sourcekitdInProc.framework` not on its search path under CLT-only) and the pre-push hook silently passed the crash (it grepped for `: error:`; the crash prints `Fatal error:`). The fix: a `scripts/lint` wrapper that sets `DYLD_FRAMEWORK_PATH` to `$(xcode-select -p)/usr/lib`, detects a crash and **fails the push**, and treats SwiftLint warnings as allowed / errors and format violations as blocking; `.githooks/pre-push` calls it. Two `.swiftlint.yml` rules that directly contradict SwiftFormat are resolved (`opening_brace` disabled — SwiftFormat's `wrapMultilineStatementBraces` owns braces; `trailing_whitespace: ignores_empty_lines: true` — matches `.swiftformat --trimwhitespace nonblank-lines`), removing 33 conflict-warnings with no code change. The remaining ~71 pre-existing `Sources/` warnings (`force_unwrapping` etc.) are triaged in issue #198 — **not** in this feature.
 - **FR-024**: Code coverage MUST keep working. `swift test --enable-code-coverage` followed by `xcrun llvm-cov` MUST produce coverage figures equivalent to the pre-migration suite (same tests, same code exercised). Any script, doc, or memory that hardcodes the test-bundle binary path (e.g. `…PackageTests.xctest/Contents/MacOS/…`) MUST be updated to the path the migrated suite produces, or switched to `swift test --show-codecov-path`.
 - **FR-022**: Spec 015's `tasks.md`, `plan.md`, `quickstart.md`, and `research.md` MUST be updated where they name `*Spec.swift` files, `QuickSpec`, Nimble, `describe`/`context`/`it`, or "Quick + Nimble", so 015 is implemented Swift-Testing-native. (Its `spec.md`, `contracts/`, and `data-model.md` are already framework-clean.) This is a documentation change to 015's artifacts, done on the `015-argument-shape` branch; it does not implement 015.
 - **FR-023**: This feature changes no behavior of any shipping tool. It is a test-infrastructure and toolchain-metadata change only.
@@ -193,6 +194,7 @@ The CI workflow still runs `swift build` and `swift test` and still goes green. 
 - **SC-008**: The only non-test files modified are: the root `Package.swift` / `Package.resolved`, `.swift-version`, `.swiftformat` (only if a rule disable is needed, T005), the deleted `*-cli/` manifests, the documentation files (`CLAUDE.md`, `review.md`, `ARCHITECTURE.md`, constitution), and **exactly one line under `Sources/`** — `Equatable` on `ReminderChangeError` (FR-011).
 - **SC-009**: `CLAUDE.md`, `review.md`, `ARCHITECTURE.md`, and the constitution name Swift Testing as the test framework, consistently, and the constitution carries a testing principle it did not have before.
 - **SC-011**: Every suite type name is unprefixed (`AddHandlerTests`, not `CalendarAddHandlerSpec`); the naming is uniform across all nine test targets.
+- **SC-012**: `./scripts/lint` runs SwiftLint (actually linting, not crashing) + SwiftFormat and exits 0 on the current tree; a simulated SwiftLint crash makes it exit non-zero. The pre-push hook delegates to it.
 
 ---
 
@@ -204,6 +206,7 @@ The CI workflow still runs `swift build` and `swift test` and still goes green. 
 - **Drop the tool-prefix on suite type names** (option A): `CalendarAddHandlerSpec` → `AddHandlerTests`, uniform bare names across all nine targets. `*Spec.swift` filenames unchanged.
 - **Trust-but-verify `ActivityLogSpec` isolation**: migrate it without `.serialized`, then prove it with the five-consecutive-runs and `--no-parallel` checks (SC-004/SC-005). Add `.serialized` only if it actually flakes.
 - **One `Sources/` change**: `Equatable` on `ReminderChangeError` (FR-011). Approved — matches the three sibling error types; enables the clean `#expect(throws:)` value form.
+- **SwiftLint fix is in scope** (FR-025): make the tool actually run + make the hook fail loud on a crash + resolve the 2 SwiftFormat-contradicting rules. The ~71 pre-existing `Sources/` warnings go to a **separate issue (#198)**, not 016.
 - **Package-level `swiftLanguageModes: [.v5]`**, not 23 per-target pins.
 - **Pilot on `GetClearKitTests` first** (7 files, includes `ActivityLogSpec`) — it validates the 6.0 bump, the language-mode pin, the XCTest-free build, the `beforeEach`→`init` pattern, and the parallel question in one step.
 
