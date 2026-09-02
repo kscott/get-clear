@@ -18,7 +18,7 @@
 ## Phase 1: Setup — baseline
 
 - [ ] T001 Confirm `swift build` is green from the repo root (all five binaries link). Record it. Note that `swift test` currently fails to build (`XCTest/XCTest.h` not found) — that is the starting condition, not a regression.
-- [ ] T002 Capture the parity baseline: per test target, count `it(` occurrences and record them in a scratch table for later reconciliation (SC-003). Totals expected: GetClearKitTests 212, ContactKitTests 26, AppleContactKitTests 14, AppleEventKitSupportTests 11, CalendarLibTests 199, ContactsLibTests 60, MailLibTests 154, RemindersLibTests 327, TextLibTests 70 — **1,073** total. Also run `swift test --enable-code-coverage` **is not possible locally**; note the last recorded coverage baseline (`ARCHITECTURE.md:152` / `:166`, and `cross-tool-review-2026-04-29.md`: 1,032 tests / 80.66% line) as the SC-010 reference.
+- [ ] T002 Capture the parity baseline: per test target, count `it(` occurrences and record them in a scratch table for later reconciliation (SC-003). Totals expected: GetClearKitTests 212, ContactKitTests 26, AppleContactKitTests 14, AppleEventKitSupportTests 11, CalendarLibTests 199, ContactsLibTests 60, MailLibTests 154, RemindersLibTests 327, TextLibTests 70 — **1,073** total. Coverage can't be captured locally now (`swift test` is broken); record the last aggregate figures — 1,032 tests / 80.66% line (`cross-tool-review-2026-04-29.md`), RemindersLib 91.4% (`ARCHITECTURE.md:166`) — as the SC-010 reference.
 
 ---
 
@@ -58,7 +58,7 @@
 
 ## Phase 4: Remaining 8 targets (US1, US2) — one commit each, smallest first
 
-Each target: rewrite every `*Spec.swift` (type names lose the tool prefix — `CalendarAddHandlerSpec` → `AddHandlerTests`); remove that target's two `.product` entries from `Package.swift`; verify (`swift build --build-tests --target <T>` at minimum, `swift test --filter <T>` ×5 + `--no-parallel` if T006 was yes); `swiftformat --lint` the target dir; reconcile the `@Test` count; append any new consolidations / decisions to `migration-notes.md`.
+Each target: rewrite every `*Spec.swift` (type names lose the tool prefix — `CalendarAddHandlerSpec` → `AddHandlerTests`); remove that target's two `.product` entries from `Package.swift`; verify (`swift build --build-tests --target <T>` at minimum, `swift test --filter <T>` ×5 + `--no-parallel` if T006 was yes); `swiftformat --lint` the target dir; reconcile the `@Test` count; **diff-review every rewritten file against its original for assertion faithfulness — same input, same expected value, same matcher semantics (US2 Independent Test)**; append any new consolidations / decisions to `migration-notes.md`.
 
 - [ ] T017 [US2] Rewrite `Tests/AppleEventKitSupportTests/` (1 file, `CGColorHexSpec` — pure CGColor hex math, 11 `it`s). Update its `Package.swift` testTarget. Verify.
 - [ ] T018 [US2] Rewrite `Tests/AppleContactKitTests/` (1 file, `ToContactSpec` — `CNContact`→`Contact` mapping, 14 `it`s). Update manifest. Verify.
@@ -91,7 +91,7 @@ Each target: rewrite every `*Spec.swift` (type names lose the tool prefix — `C
 - [ ] T031 [P] [US3] Rewrite `CLAUDE.md:44` (testing paragraph) and `CLAUDE.md:114` (Active Technologies bullet → `Swift 6.0 (swift-tools-version: 6.0, language mode v5) + Swift Testing`) per `contracts/doc-text.md`.
 - [ ] T032 [P] [US3] Rewrite `review.md:92` and `review.md:94` per `contracts/doc-text.md`. `review.md:9,10` unchanged.
 - [ ] T033 [P] [US3] Add the testing principle to `.specify/memory/constitution.md` from `contracts/constitution-testing-principle.md` (placement: after "GetClearKit first").
-- [ ] T034 [US3] `ARCHITECTURE.md`: add the decision-log entry (round-trip history + CLT-dropped-XCTest cause) from `contracts/doc-text.md`; rewrite entries `:55`, `:98`, `:148` (ObjC-collision constraint gone; `AsyncSpec` note); leave `:152`/`:166` for T037.
+- [ ] T034 [US3] `ARCHITECTURE.md`: add the decision-log entry (round-trip history + CLT-dropped-XCTest cause) from `contracts/doc-text.md`; rewrite entries `:55`, `:98`, `:148` (ObjC-collision constraint gone; `AsyncSpec` note); leave `:152`/`:166` for T037. Also fix the now-false comment in `.swiftlint.yml:27` ("QuickSpec requires `override class func spec()`") — the rule stays disabled (re-tightening is T043) but the rationale line is rewritten or removed.
 
 ---
 
@@ -99,7 +99,7 @@ Each target: rewrite every `*Spec.swift` (type names lose the tool prefix — `C
 
 - [ ] T035 [US1] [US4] Full suite: `swift test` from the repo root — green on this CLT-only machine (SC-001). Run it **five consecutive times** — identical pass/fail set every time (SC-004). Run once `swift test --no-parallel` — same result (SC-005). If any suite flakes, isolate it (unique fixture / `.serialized` with a noted reason) and re-verify.
 - [ ] T036 [US1] `swift build -c release` — all five binaries, zero new warnings vs the T001 baseline (SC-006).
-- [ ] T037 [US4] Coverage: `PROFDATA=$(swift test --enable-code-coverage --show-codecov-path)`; `BIN=$(swift build --show-bin-path)`; `xcrun llvm-cov report "$BIN/<test-bundle>" -instr-profile "$PROFDATA" -ignore-filename-regex="(.build|Tests|Spec)"` — runs clean, figures within ~2 points of the T002 baseline per target (SC-010). Restate `ARCHITECTURE.md:152` (fresh `swift test` count) and `:166` (fresh RemindersLib coverage) with the real numbers.
+- [ ] T037 [US4] Coverage: `PROFDATA=$(swift test --enable-code-coverage --show-codecov-path)`; `BIN=$(swift build --show-bin-path)`; `xcrun llvm-cov report "$BIN/<test-bundle>" -instr-profile "$PROFDATA" -ignore-filename-regex="(.build|Tests|Spec)"` — runs clean; aggregate line coverage within ~2 points of the recorded 80.66%, RemindersLib within ~2 of 91.4% (SC-010). Restate `ARCHITECTURE.md:152` (fresh `swift test` count) and `:166` (fresh RemindersLib coverage) with the real numbers.
 - [ ] T038 [US2] Finalize the parity table in `migration-notes.md`: per target, `it` count (T002) vs `@Test` count, every consolidation listed with justification. Totals must reconcile to 1,073 minus listed consolidations (SC-003).
 - [ ] T039 [US5] `git diff main -- .github/workflows/` → empty (SC-007). `git diff main --stat -- Sources/` → only `ReminderChangeParsing.swift` (SC-008). `grep -rn "CalendarAddHandlerSpec\|MailFindHandlerSpec\|MailSendHandlerSpec"` → zero; every suite type is unprefixed (SC-011).
 - [ ] T040 Push the branch; `.githooks/pre-push` (`swiftlint lint --quiet`, `swiftformat --lint .`) passes. Open the PR; CI (`swift build` + `swift test` on `macos-latest`) is green.
