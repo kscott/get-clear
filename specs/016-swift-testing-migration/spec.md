@@ -129,22 +129,24 @@ The CI workflow still runs `swift build` and `swift test` and still goes green. 
 ### Functional Requirements — The migration
 
 - **FR-001**: Every `*Spec.swift` file in the repository MUST be rewritten to Swift Testing: `@Suite` types, `@Test` functions, `#expect` / `#require` assertions. After the migration, no test source file imports `Quick` or `Nimble`.
-- **FR-002**: Quick and Nimble MUST be removed from every `Package.swift` (all six manifests: root plus the five `*-cli/` packages) — from `dependencies` and from every target's dependency list — and from `Package.resolved`.
+- **FR-002**: Quick and Nimble MUST be removed from the root `Package.swift` — from `dependencies` and from every one of the nine test targets that lists them — and the root `Package.resolved` regenerated with no Quick/Nimble pins and none of their seven transitive pins.
+- **FR-002a**: The five `*-cli/Package.swift` manifests and their `Package.resolved` files, which are vestigial pre-monorepo leftovers that SwiftPM never reads, MUST be deleted. The `*-cli/Sources/` and `*-cli/Tests/` directories (which the root manifest references by path) are untouched. Stale `*-cli/.build/` directories and orphaned `*-cli/.github/` workflow files MAY be removed in the same change.
 - **FR-003**: No dependency remaining in the resolved graph may link XCTest. `swift test` MUST build and run with only the Command Line Tools installed (no `Xcode.app`, `xcode-select -p` pointing at `CommandLineTools`).
 - **FR-004**: Each `it` / harness test case MUST map to exactly one `@Test`. Two `it`s that asserted the identical behavior on the identical input MAY be consolidated to one `@Test`, and each such consolidation MUST be listed in the migration's notes. No other reduction in assertions is permitted.
 - **FR-005**: `describe` and `context` groupings MUST be preserved as nested `@Suite` types, so the test tree reads the same.
 - **FR-006**: `beforeEach` setup MUST be preserved as per-test fixture construction (a suite initializer or equivalent) that runs fresh for every test, with no state shared between tests.
 - **FR-007**: Async tests MUST remain async — `@Test` functions that `await` the same APIs the `AsyncSpec` `it` blocks awaited.
-- **FR-008**: Error-throwing assertions MUST preserve their specificity: a test that asserted a particular error type or value MUST still assert that particular error, not merely "something was thrown."
+- **FR-008**: Error-throwing assertions MUST preserve their specificity: a test that asserted a particular error type or value MUST still assert that particular error, not merely "something was thrown." Where a test asserted a specific error *value*, the error type must be `Equatable` for `#expect(throws: Error.case)`; where it is not, the returned-error-plus-`#expect` form is used.
 - **FR-009**: Test descriptions MUST remain natural-English sentences describing the behavior (the existing convention), carried onto `@Test("…")` and `@Suite("…")`.
-- **FR-010**: The one-test-file-per-source-file rule MUST hold: each migrated file corresponds to the same single source file, named to match.
-- **FR-011**: No production code (anything outside a test target) may change, with one narrow exception: a process-global side effect that prevents a suite from running safely in parallel MAY be made test-directable (e.g. an injectable path or sink), and any such change MUST be behavior-preserving and confined to that purpose. All such changes MUST be listed in the migration's notes.
+- **FR-010**: The one-test-file-per-source-file rule MUST hold: each migrated file corresponds to the same single source file. Filenames keep the `*Spec.swift` form (no mass rename). Suite **type names** drop the tool prefix that existed only to avoid Quick's Objective-C class-name collisions (`CalendarAddHandlerSpec` → `AddHandlerTests`); every target lands on uniform, unprefixed type names.
+- **FR-011**: No production code (anything outside a test target) may change. The survey confirmed the only process-global side effect in the suite — `ActivityLog` file writes — already takes an injectable `baseDirectory:` and every test already passes a unique temp directory, so no production seam needs adding. If the work uncovers a genuinely new case that cannot be isolated test-side, a minimal behavior-preserving production change to make it test-directable is permitted and MUST be listed in the migration's notes; otherwise production code is not touched.
 
 ### Functional Requirements — Toolchain
 
-- **FR-012**: `swift-tools-version` MUST be raised from `5.9` to `6.0` in all six manifests.
-- **FR-013**: Every target in every manifest MUST explicitly pin Swift 5 language mode, so raising the tools-version does not change how the code under test compiles.
+- **FR-012**: The root `Package.swift` `swift-tools-version` MUST be raised from `5.9` to `6.0`. (The `*-cli/` manifests are deleted, FR-002a, so there is nothing else to raise.)
+- **FR-013**: The root `Package.swift` MUST pin Swift 5 language mode for all targets — via the package-level `swiftLanguageModes: [.v5]` argument — so raising the tools-version does not change how any code under test compiles. Per-target `swiftSettings` pins are the fallback only if the package-level form proves insufficient for a target.
 - **FR-014**: `swift build -c release` MUST produce all five CLI binaries with no new warnings or errors after the tools-version bump.
+- **FR-014a**: The repo-root `.swift-version` file MUST be updated from `5.9` to a version consistent with the new floor (`6.0` or the installed toolchain version), so toolchain-selection tooling does not request a toolchain that cannot build the package.
 
 ### Functional Requirements — Parallel safety
 
@@ -154,15 +156,16 @@ The CI workflow still runs `swift build` and `swift test` and still goes green. 
 
 ### Functional Requirements — Documentation
 
-- **FR-018**: `CLAUDE.md`'s testing section MUST be rewritten to name Swift Testing as the framework and describe its structure (`@Suite` nesting for grouping, `@Test` per behavior, `#expect` / `#require`), while restating the conventions that carry over unchanged: one behavior per test, natural-sentence descriptions, one test file per source file, edge cases and bad input as first-class tests, new source file and new test file in the same commit.
-- **FR-019**: The constitution (`.specify/memory/constitution.md`) and any other in-repo guidance (`review.md`, `design.md`, `ARCHITECTURE.md`) MUST be updated wherever they name Quick, Nimble, or `QuickSpec`, so no document contradicts `CLAUDE.md`.
-- **FR-020**: `ARCHITECTURE.md` MUST gain a decision-log entry recording the move, its cause (CLT dropped XCTest; Quick depends on it), and the date.
+- **FR-018**: `CLAUDE.md`'s testing section (`CLAUDE.md:44`) and its "Active Technologies" bullet (`CLAUDE.md:114`) MUST be rewritten to name Swift Testing as the framework and describe its structure (`@Suite` nesting for grouping, `@Test` per behavior, `#expect` / `#require`), while restating the conventions that carry over unchanged: one behavior per test, natural-sentence descriptions, one test file per source file, edge cases and bad input as first-class tests, new source file and new test file in the same commit.
+- **FR-019**: `review.md` (its "Framework: Quick + Nimble" / "Structure: describe → context → it" / "unimplemented behavior gets an `it`" passages) MUST be brought in line with `CLAUDE.md`. `design.md` and `README.md` contain no test-framework reference and need no change.
+- **FR-019a**: The constitution (`.specify/memory/constitution.md`) currently has no testing principle. This feature MUST add one — a short principle stating the test framework is Swift Testing, one behavior per test, one test file per source file, natural-sentence descriptions, edge cases and bad input are first-class, source and test ship together — consistent with `CLAUDE.md` and `review.md`.
+- **FR-020**: `ARCHITECTURE.md` MUST (a) gain a decision-log entry recording the move, its cause (CLT dropped XCTest; Quick depends on it), and the round-trip history (hand-rolled harness → Quick+Nimble → Swift Testing); (b) rewrite or remove the entries made obsolete by the move — the Objective-C spec-class-collision constraint (`:55`, `:148`), the `AsyncSpec` note (`:98`); and (c) restate the test count and coverage baseline (`:152`, `:166`) against a fresh measurement.
 
 ### Functional Requirements — Scope
 
 - **FR-021**: `.github/workflows/` MUST NOT change. CI continues to run `swift build` + `swift test`.
 - **FR-024**: Code coverage MUST keep working. `swift test --enable-code-coverage` followed by `xcrun llvm-cov` MUST produce coverage figures equivalent to the pre-migration suite (same tests, same code exercised). Any script, doc, or memory that hardcodes the test-bundle binary path (e.g. `…PackageTests.xctest/Contents/MacOS/…`) MUST be updated to the path the migrated suite produces, or switched to `swift test --show-codecov-path`.
-- **FR-022**: Spec 015's `tasks.md` and contract files MUST be updated where they name `*Spec.swift` files or Quick/Nimble patterns, so 015 is implemented Swift-Testing-native. This is a documentation change to 015's artifacts; it does not implement 015.
+- **FR-022**: Spec 015's `tasks.md`, `plan.md`, `quickstart.md`, and `research.md` MUST be updated where they name `*Spec.swift` files, `QuickSpec`, Nimble, `describe`/`context`/`it`, or "Quick + Nimble", so 015 is implemented Swift-Testing-native. (Its `spec.md`, `contracts/`, and `data-model.md` are already framework-clean.) This is a documentation change to 015's artifacts, done on the `015-argument-shape` branch; it does not implement 015.
 - **FR-023**: This feature changes no behavior of any shipping tool. It is a test-infrastructure and toolchain-metadata change only.
 
 ### Key Entities
@@ -170,8 +173,8 @@ The CI workflow still runs `swift build` and `swift test` and still goes green. 
 - **Spec file**: A `*Spec.swift` file in a test target. 80 of them, ~6,900 lines total, across `GetClearKitTests` and the five tools' `*LibTests`. Each corresponds to one source file. Migrated in place, keeping its name.
 - **Suite**: A `@Suite`-annotated type replacing a `QuickSpec` / `describe` / `context`. Nested to mirror the old grouping.
 - **Test**: A `@Test`-annotated function replacing one `it`. Carries a natural-sentence description and one assertion.
-- **Package manifest**: One of the six `Package.swift` files. Each loses its Quick/Nimble dependencies, gains a `6.0` tools-version, and pins Swift 5 language mode per target.
-- **Carried-over conventions**: One behavior per test, natural-sentence descriptions, one test file per source file, edge cases first-class, source-and-test in the same commit. Framework-independent; preserved verbatim.
+- **Root package manifest**: `/Package.swift` — the only manifest SwiftPM reads. Loses its Quick/Nimble dependencies, gains a `6.0` tools-version and a package-level Swift 5 language-mode pin. The five `*-cli/Package.swift` are deleted.
+- **Carried-over conventions**: One behavior per test, natural-sentence descriptions, one test file per source file, edge cases first-class, source-and-test in the same commit. Framework-independent; preserved verbatim and written into the constitution (FR-019a).
 
 ---
 
@@ -180,27 +183,39 @@ The CI workflow still runs `swift build` and `swift test` and still goes green. 
 ### Measurable Outcomes
 
 - **SC-001**: On a machine with only the Command Line Tools (no Xcode), `swift test` builds and runs the entire suite to completion. Today it fails to build.
-- **SC-002**: Zero occurrences of `import Quick` or `import Nimble` in the repository (outside `.build/`). Zero references to Quick or Nimble in `Package.resolved`.
+- **SC-002**: Zero occurrences of `import Quick` or `import Nimble` in the repository (outside `.build/`). The root `Package.resolved` has no Quick, Nimble, or Cwl* / swift-algorithms / swift-argument-parser / swift-numerics pins. No `*-cli/Package.swift` or `*-cli/Package.resolved` files remain.
 - **SC-003**: The count of independent assertions after the migration equals the count before, target by target, with every consolidation individually listed and justified.
 - **SC-004**: `swift test` run five times consecutively on an unchanged checkout yields the identical pass/fail set every time.
 - **SC-005**: The suite passes both with parallel execution and with `--no-parallel`.
 - **SC-006**: `swift build -c release` produces all five binaries with no new warnings after the `swift-tools-version` bump.
 - **SC-007**: CI (`swift build` + `swift test`) passes on the branch with no change to `.github/workflows/`.
 - **SC-010**: `swift test --enable-code-coverage` + `xcrun llvm-cov` runs clean and reports coverage percentages within a point or two of the pre-migration baseline for every target.
-- **SC-008**: No file outside a test target is modified, except any listed behavior-preserving change made solely to render a suite parallel-safe.
-- **SC-009**: `CLAUDE.md`, the constitution, and any other in-repo guidance name Swift Testing (not Quick/Nimble) as the test framework, consistently.
+- **SC-008**: No file outside a test target is modified, except: the root `Package.swift` / `Package.resolved`, `.swift-version`, the deleted `*-cli/` manifests, and the documentation files (`CLAUDE.md`, `review.md`, `ARCHITECTURE.md`, constitution). Zero changes under `Sources/`.
+- **SC-009**: `CLAUDE.md`, `review.md`, `ARCHITECTURE.md`, and the constitution name Swift Testing as the test framework, consistently, and the constitution carries a testing principle it did not have before.
+- **SC-011**: Every suite type name is unprefixed (`AddHandlerTests`, not `CalendarAddHandlerSpec`); the naming is uniform across all nine test targets.
 
 ---
 
+## Decisions locked (2026-09-01, with Ken)
+
+- **Delete the vestigial `*-cli/Package.swift` + `Package.resolved`.** They are never a build input. `*-cli/Sources/` and `*-cli/Tests/` stay.
+- **Bump `.swift-version`** alongside `swift-tools-version`.
+- **Add a testing principle to the constitution** — it currently has none.
+- **Drop the tool-prefix on suite type names** (option A): `CalendarAddHandlerSpec` → `AddHandlerTests`, uniform bare names across all nine targets. `*Spec.swift` filenames unchanged.
+- **Trust-but-verify `ActivityLogSpec` isolation**: migrate it without `.serialized`, then prove it with the five-consecutive-runs and `--no-parallel` checks (SC-004/SC-005). Add `.serialized` only if it actually flakes.
+- **Package-level `swiftLanguageModes: [.v5]`**, not 23 per-target pins.
+- **Pilot on `GetClearKitTests` first** (7 files, includes `ActivityLogSpec`) — it validates the 6.0 bump, the language-mode pin, the XCTest-free build, the `beforeEach`→`init` pattern, and the parallel question in one step.
+
 ## Assumptions
 
-- The suite's use of Quick/Nimble is limited to `describe` / `context` / `it` and the matchers `equal`, `beNil`, `beEmpty`, `contain`, `haveCount`, `throwError`, plus Nimble's `==` operator form. A survey found no `sharedExamples`, `itBehavesLike`, `waitUntil`, `toEventually`, `afterEach`, `beforeSuite`, or custom matchers. Any such usage discovered during the work is handled explicitly, not dropped.
+- The suite's use of Quick/Nimble is limited to `describe` / `context` / `it`, the matchers `beNil`, `beEmpty`, `contain`, `haveCount`, `beginWith`, `throwError`, Nimble's `==` / `!=` / `<` / `>` operator forms, and `fail()`. The survey (1,073 `it` blocks, full matcher census) found no `equal()`, `beTrue`/`beFalse`, `beCloseTo`, `sharedExamples`, `itBehavesLike`, `waitUntil`, `toEventually`, `afterEach`, `beforeSuite`, or custom matchers. Any usage outside this set discovered during the work is handled explicitly, not dropped.
 - Swift 6.3.3 (the installed toolchain) bundles the `Testing` library and SwiftPM's integration for it, which activates at `swift-tools-version: 6.0`.
-- Raising `swift-tools-version` to 6.0 with Swift 5 language mode pinned per target does not change compilation of the code under test. If a manifest feature used today is unavailable at 6.0, that is surfaced during the work.
-- The 34 `beforeEach` hooks build local fixtures; converting them to suite initializers preserves behavior. Any that mutate static/global state are the parallel-safety work of US4.
-- `ActivityLog` writing to a real file during tests is the most likely process-global side effect. Whether it already honors an override, or needs one added, is determined during the work (FR-011).
+- Raising `swift-tools-version` to 6.0 with `swiftLanguageModes: [.v5]` does not change compilation of the code under test. If a manifest feature used today is unavailable at 6.0, that is surfaced during the work.
+- 28 of the 34 `beforeEach` hooks are one-line `store = Spy…()` resets → suite stored properties. The other 6 (all in `ActivityLogSpec`) already isolate via a per-test `UUID()` temp dir passed as `baseDirectory:` — no production change needed (FR-011).
+- The ~7 specific-error-value assertions use error types that either conform to `Equatable` or will use the returned-error form; the ~16 error-inspecting closures and ~21 `fail()`-in-`guard case` sites each get one canonical Swift Testing form, decided in the pilot.
 - CI's GitHub runners have Xcode, so CI passed throughout the local breakage and will pass throughout the migration regardless of ordering.
-- Spec 015 is on its own branch, not yet implemented; updating its artifacts is low-risk and does not conflict with this branch.
+- Spec 015 is on its own branch, not yet implemented; its FR-022 doc sweep happens on `015-argument-shape`, not this branch.
+- SwiftFormat 0.62.1 (pinned) handles Swift Testing macro syntax; the pilot confirms this against the pre-push `swiftformat --lint` gate before the sweep begins.
 
 ## Out of Scope
 
@@ -208,5 +223,7 @@ The CI workflow still runs `swift build` and `swift test` and still goes green. 
 - Adding test coverage. Issues #41–45 (Lib-target coverage) are separate.
 - Migrating to Swift 6 language mode. Language mode stays v5; only the tools-version moves.
 - Changing CI, release, or packaging workflows beyond leaving them untouched.
-- Implementing spec 015. Only its written artifacts are touched, and only to match the new framework.
+- Implementing spec 015. Its FR-022 artifact sweep is called out but is done on the `015-argument-shape` branch, separately.
 - Adopting Swift Testing features beyond what the migration needs (traits, `.tags`, parameterized tests, exit tests) — those can come later, per-test, as normal work.
+- Re-tightening the SwiftLint rules that were loosened for Quick (`static_over_final_class`, `function_body_length` 400). Their rationale goes stale but changing them risks new warnings on production code — a separate cleanup (relates to #196).
+- Adding temp-directory cleanup to `ActivityLogSpec` (pre-existing `$TMPDIR` litter). Cheap but not required.
