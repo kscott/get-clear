@@ -398,6 +398,10 @@ struct DateParserTests {
         @Test("returns nil for multi-word nonsense") func nilForNonsense() {
             #expect(parseDate("foo bar baz") == nil)
         }
+
+        @Test("returns nil for a four-word day phrase") func nilForFourWords() {
+            #expect(parseDate("one two three four") == nil)
+        }
     }
 }
 
