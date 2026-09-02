@@ -1,16 +1,13 @@
 import CalendarLib
 import Foundation
-import Nimble
-import Quick
+import Testing
 
-final class CalendarOpenHandlerSpec: QuickSpec {
-    override class func spec() {
-        describe("handleOpen") {
-            it("opens the Calendar app URL") {
-                var opened: URL?
-                _ = handleOpen(opener: { opened = $0 })
-                expect(opened?.path) == "/System/Applications/Calendar.app"
-            }
-        }
+@Suite("handleOpen")
+struct OpenHandlerTests {
+    @Test("opens the Calendar app URL")
+    func opensCalendarAppURL() {
+        var opened: URL?
+        _ = handleOpen(opener: { opened = $0 })
+        #expect(opened?.path == "/System/Applications/Calendar.app")
     }
 }
