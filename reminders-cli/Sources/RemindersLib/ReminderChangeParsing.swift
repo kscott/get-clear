@@ -50,94 +50,18 @@ public func parseReminderChanges(
     _ opts: ParsedOptions,
     existingItem: ReminderItem
 ) throws -> ReminderChanges {
-    var due: ValueChange<DateComponents> = .unchanged
-    var recurrence: ValueChange<RecurrenceSpec> = .unchanged
-    var priority: ValueChange<Int> = .unchanged
-    var note: ValueChange<String> = .unchanged
-    var url: ValueChange<URL> = .unchanged
-    var list: ValueChange<String> = .unchanged
-    var descriptions: [String] = []
-
     // `due none` clears the date independently of every other field below — it arrives via the
     // `due` keyword now, so it is never dropped when another keyword precedes it (FR-012).
-    if !opts.date.isEmpty {
-        if opts.date.lowercased() == "none" {
-            due = .cleared
-            descriptions.append("due cleared")
-        } else if let pd = parseDate(opts.date) {
-            let cal = Calendar.current
-            if pd.hasTime, !pd.hasDate, let existing = existingItem.dueDateComponents {
-                // Time-only input — preserve existing date, update time only
-                var comps = existing
-                let t = cal.dateComponents([.hour, .minute], from: pd.date)
-                comps.hour = t.hour
-                comps.minute = t.minute
-                let display = cal.date(from: comps) ?? pd.date
-                due = .replaced(from: existing, to: comps)
-                descriptions.append("due → \(formatDate(display, showTime: true))")
-            } else {
-                let comps = dateComponents(from: pd)
-                if let existing = existingItem.dueDateComponents {
-                    due = .replaced(from: existing, to: comps)
-                } else {
-                    due = .added(comps)
-                }
-                descriptions.append("due → \(formatDate(pd.date, showTime: pd.hasTime))")
-            }
-        }
-    }
+    let (due, dueDescription) = changedDue(opts, existingItem: existingItem)
+    let (recurrence, recurrenceDescription) = try changedRecurrence(opts, existingItem: existingItem)
+    let (priority, priorityDescription) = try changedPriority(opts, existingItem: existingItem)
+    let (note, noteDescription) = changedNote(opts, existingItem: existingItem)
+    let (url, urlDescription) = changedURL(opts, existingItem: existingItem)
+    let list: ValueChange<String> = opts.list.isEmpty
+        ? .unchanged : .replaced(from: existingItem.list.title, to: opts.list)
 
-    if !opts.recurrence.isEmpty {
-        if opts.recurrence.lowercased() == "none" {
-            recurrence = .cleared
-            descriptions.append("repeat cleared")
-        } else if let spec = parseRecurrence(opts.recurrence) {
-            if let existing = existingItem.recurrenceSpec {
-                recurrence = .replaced(from: existing, to: spec)
-            } else {
-                recurrence = .added(spec)
-            }
-            descriptions.append(describeRecurrence(spec))
-        } else {
-            throw ReminderChangeError.unrecognizedRecurrence(opts.recurrence)
-        }
-    }
-
-    if !opts.priority.isEmpty {
-        guard let p = parsePriority(opts.priority) else {
-            throw ReminderChangeError.unrecognizedPriority(opts.priority)
-        }
-        priority = .replaced(from: existingItem.priority, to: p)
-        descriptions.append(p == 0 ? "priority cleared" : "priority → \(opts.priority)")
-    }
-
-    if !opts.note.isEmpty {
-        if opts.note.lowercased() == "none" {
-            note = .cleared
-            descriptions.append("note cleared")
-        } else {
-            note = existingItem.notes.map { .replaced(from: $0, to: opts.note) } ?? .added(opts.note)
-            descriptions.append("+ note")
-        }
-    }
-
-    if !opts.url.isEmpty {
-        if opts.url.lowercased() == "none" {
-            url = .cleared
-            descriptions.append("url cleared")
-        } else if let parsed = URL(string: opts.url) {
-            if let existing = existingItem.url {
-                url = .replaced(from: existing, to: parsed)
-            } else {
-                url = .added(parsed)
-            }
-            descriptions.append("url → \(opts.url)")
-        }
-    }
-
-    if !opts.list.isEmpty {
-        list = .replaced(from: existingItem.list.title, to: opts.list)
-    }
+    let descriptions = [dueDescription, recurrenceDescription, priorityDescription, noteDescription, urlDescription]
+        .compactMap(\.self)
 
     if descriptions.isEmpty, opts.list.isEmpty {
         throw ReminderChangeError.nothingToChange
@@ -147,4 +71,86 @@ public func parseReminderChanges(
         due: due, recurrence: recurrence, priority: priority,
         note: note, url: url, list: list, descriptions: descriptions
     )
+}
+
+private func changedDue(
+    _ opts: ParsedOptions, existingItem: ReminderItem
+) -> (ValueChange<DateComponents>, String?) {
+    guard !opts.date.isEmpty else { return (.unchanged, nil) }
+    if opts.date.lowercased() == "none" {
+        return (.cleared, "due cleared")
+    }
+    guard let pd = parseDate(opts.date) else { return (.unchanged, nil) }
+    let cal = Calendar.current
+    if pd.hasTime, !pd.hasDate, let existing = existingItem.dueDateComponents {
+        // Time-only input — preserve existing date, update time only
+        var comps = existing
+        let t = cal.dateComponents([.hour, .minute], from: pd.date)
+        comps.hour = t.hour
+        comps.minute = t.minute
+        let display = cal.date(from: comps) ?? pd.date
+        return (.replaced(from: existing, to: comps), "due → \(formatDate(display, showTime: true))")
+    }
+    let comps = dateComponents(from: pd)
+    let change: ValueChange<DateComponents> = if let existing = existingItem.dueDateComponents {
+        .replaced(from: existing, to: comps)
+    } else {
+        .added(comps)
+    }
+    return (change, "due → \(formatDate(pd.date, showTime: pd.hasTime))")
+}
+
+private func changedRecurrence(
+    _ opts: ParsedOptions, existingItem: ReminderItem
+) throws -> (ValueChange<RecurrenceSpec>, String?) {
+    guard !opts.recurrence.isEmpty else { return (.unchanged, nil) }
+    if opts.recurrence.lowercased() == "none" {
+        return (.cleared, "repeat cleared")
+    }
+    guard let spec = parseRecurrence(opts.recurrence) else {
+        throw ReminderChangeError.unrecognizedRecurrence(opts.recurrence)
+    }
+    let change: ValueChange<RecurrenceSpec> = if let existing = existingItem.recurrenceSpec {
+        .replaced(from: existing, to: spec)
+    } else {
+        .added(spec)
+    }
+    return (change, describeRecurrence(spec))
+}
+
+private func changedPriority(
+    _ opts: ParsedOptions, existingItem: ReminderItem
+) throws -> (ValueChange<Int>, String?) {
+    guard !opts.priority.isEmpty else { return (.unchanged, nil) }
+    guard let p = parsePriority(opts.priority) else {
+        throw ReminderChangeError.unrecognizedPriority(opts.priority)
+    }
+    return (.replaced(from: existingItem.priority, to: p), p == 0 ? "priority cleared" : "priority → \(opts.priority)")
+}
+
+private func changedNote(_ opts: ParsedOptions, existingItem: ReminderItem) -> (ValueChange<String>, String?) {
+    guard !opts.note.isEmpty else { return (.unchanged, nil) }
+    if opts.note.lowercased() == "none" {
+        return (.cleared, "note cleared")
+    }
+    let change: ValueChange<String> = if let existing = existingItem.notes {
+        .replaced(from: existing, to: opts.note)
+    } else {
+        .added(opts.note)
+    }
+    return (change, "+ note")
+}
+
+private func changedURL(_ opts: ParsedOptions, existingItem: ReminderItem) -> (ValueChange<URL>, String?) {
+    guard !opts.url.isEmpty else { return (.unchanged, nil) }
+    if opts.url.lowercased() == "none" {
+        return (.cleared, "url cleared")
+    }
+    guard let parsed = URL(string: opts.url) else { return (.unchanged, nil) }
+    let change: ValueChange<URL> = if let existing = existingItem.url {
+        .replaced(from: existing, to: parsed)
+    } else {
+        .added(parsed)
+    }
+    return (change, "url → \(opts.url)")
 }

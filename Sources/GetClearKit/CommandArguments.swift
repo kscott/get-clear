@@ -109,13 +109,24 @@ public enum ArgumentError: Error, LocalizedError, Equatable {
 /// Quotes are already resolved by the shell — this works on the token array only.
 public func parseCommand(_ tokens: [String], shape: CommandShape) throws -> ParsedCommand {
     var remaining = tokens[...]
-    let allKeywordWords = commandKeywordWords(shape)
+    let keywordWords = commandKeywordWords(shape)
 
-    func isKeywordWord(_ token: String) -> Bool {
-        allKeywordWords.contains(token.lowercased())
+    let identifiers = try consumeIdentifiers(from: &remaining, shape: shape, keywordWords: keywordWords)
+    let bareDate = try consumeLeadingRegion(from: &remaining, shape: shape, keywordWords: keywordWords)
+    let (values, trailingText) = try consumeKeywordPairs(from: &remaining, shape: shape, keywordWords: keywordWords)
+
+    // A bare date and a due/date keyword can't both be given.
+    if bareDate != nil, values["due"] != nil {
+        throw ArgumentError.dateGivenTwice
     }
 
-    // 1. Identifiers.
+    return ParsedCommand(identifiers: identifiers, bareDate: bareDate, values: values, trailingText: trailingText)
+}
+
+/// Consumes one token per `Identifier` in order; a bare keyword word is never taken as a name.
+private func consumeIdentifiers(
+    from remaining: inout ArraySlice<String>, shape: CommandShape, keywordWords: Set<String>
+) throws -> [String] {
     var identifiers: [String] = []
     for identifier in shape.identifiers {
         guard let next = remaining.first else {
@@ -124,7 +135,7 @@ public func parseCommand(_ tokens: [String], shape: CommandShape) throws -> Pars
             }
             continue
         }
-        if isKeywordWord(next) {
+        if isKeywordWord(next, in: keywordWords) {
             if identifier.required {
                 throw ArgumentError.missingIdentifier(name: identifier.name, blockedBy: next)
             }
@@ -133,34 +144,38 @@ public func parseCommand(_ tokens: [String], shape: CommandShape) throws -> Pars
         identifiers.append(next)
         remaining = remaining.dropFirst()
     }
+    return identifiers
+}
 
-    // 2. Leading region — collect tokens up to the first keyword (or trailingTextKeyword).
+/// Collects tokens up to the first keyword (or trailingTextKeyword) and interprets them per `shape.leading`.
+private func consumeLeadingRegion(
+    from remaining: inout ArraySlice<String>, shape: CommandShape, keywordWords: Set<String>
+) throws -> String? {
     var leadingTokens: [String] = []
-    while let next = remaining.first, !isKeywordWord(next) {
+    while let next = remaining.first, !isKeywordWord(next, in: keywordWords) {
         leadingTokens.append(next)
         remaining = remaining.dropFirst()
     }
-
-    var bareDate: String?
+    guard !leadingTokens.isEmpty else { return nil }
     switch shape.leading {
     case .none:
-        if !leadingTokens.isEmpty {
-            throw ArgumentError.unexpectedTokens(leadingTokens)
-        }
+        throw ArgumentError.unexpectedTokens(leadingTokens)
     case .bareDate:
-        if !leadingTokens.isEmpty {
-            bareDate = leadingTokens.joined(separator: " ")
-        }
+        return leadingTokens.joined(separator: " ")
     }
+}
 
-    // 3. Keyword pairs until trailingTextKeyword or end.
-    //
-    // A keyword's value is exactly one token (quoted if it has a space) — the same rule
-    // as an identifier — with one exception: the due/date keyword's value is free-form,
-    // collected greedily like the bareDate region, because it is the same field (FR-013).
-    // This also keeps unknownKeyword reachable: a single-token value collector leaves a
-    // stray trailing word exposed at the top of the next iteration instead of silently
-    // absorbing it into the previous value.
+/// Consumes `keyword value` pairs until `trailingTextKeyword` or end of input.
+///
+/// A keyword's value is exactly one token (quoted if it has a space) — the same rule as an
+/// identifier — with one exception: the due/date keyword's value is free-form, collected
+/// greedily like the bareDate region, because it is the same field (FR-013). This also keeps
+/// unknownKeyword reachable: a single-token value collector leaves a stray trailing word
+/// exposed at the top of the next iteration instead of silently absorbing it into the
+/// previous value.
+private func consumeKeywordPairs(
+    from remaining: inout ArraySlice<String>, shape: CommandShape, keywordWords: Set<String>
+) throws -> (values: [String: String], trailingText: String?) {
     var values: [String: String] = [:]
     var trailingText: String?
 
@@ -182,11 +197,11 @@ public func parseCommand(_ tokens: [String], shape: CommandShape) throws -> Pars
 
         var valueTokens: [String] = []
         if canonical == dateKeywordCanonical {
-            while let next = remaining.first, !isKeywordWord(next) {
+            while let next = remaining.first, !isKeywordWord(next, in: keywordWords) {
                 valueTokens.append(next)
                 remaining = remaining.dropFirst()
             }
-        } else if let next = remaining.first, !isKeywordWord(next) {
+        } else if let next = remaining.first, !isKeywordWord(next, in: keywordWords) {
             valueTokens.append(next)
             remaining = remaining.dropFirst()
         }
@@ -196,12 +211,11 @@ public func parseCommand(_ tokens: [String], shape: CommandShape) throws -> Pars
         values[canonical] = valueTokens.joined(separator: " ")
     }
 
-    // 5. A bare date and a due/date keyword can't both be given.
-    if bareDate != nil, values["due"] != nil {
-        throw ArgumentError.dateGivenTwice
-    }
+    return (values, trailingText)
+}
 
-    return ParsedCommand(identifiers: identifiers, bareDate: bareDate, values: values, trailingText: trailingText)
+private func isKeywordWord(_ token: String, in keywordWords: Set<String>) -> Bool {
+    keywordWords.contains(token.lowercased())
 }
 
 /// The one keyword whose value is free-form multi-token, mirroring the `.bareDate` region —

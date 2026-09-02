@@ -100,11 +100,11 @@
 
 ## Phase 6: Polish & Validation
 
-- [ ] T034 Run `.specify/scripts/bash/update-agent-context.sh claude`; keep the added line in house style.
-- [ ] T035 Run `swift build -c release` — zero errors, zero new warnings.
-- [ ] T036 Run `./scripts/test` — all pass; report the total count. Spot-check the success criteria: SC-002 (ten varied commands across add/change/rename/remove/list/find), SC-003 (unknown token, missing value, unknown keyword value, unparseable date, unknown list, date twice, duplicate keyword all error + non-zero exit), SC-004 (`priority high due none` applies both), SC-005 (a fully-quoted usage example ≡ its minimal form), SC-006 (extract every fenced `reminders` command from `design.md`/`README.md`/`PROMPTS.md`/`UsageText.swift` and confirm none is rejected). Confirm `reminders add "X" due on friday` == `reminders add "X" friday`.
-- [ ] T037 Run `./scripts/lint` — clean (pre-push gate).
-- [ ] T038 Flag to Ken (out of repo): the reminders Claude Code skill guidance (`~/.claude/skills/…`, a dotfiles symlink — not in this repo) should carry the three-sentence rule and the quoting note, so Claude constructs command lines that obey the shape (spec Edge Cases; Assumptions). Not a code change here — a separate dotfiles edit.
+- [X] T034 Run `.specify/scripts/bash/update-agent-context.sh claude`; keep the added line in house style.
+- [X] T035 Run `swift build -c release` — zero errors, zero new warnings.
+- [X] T036 Run `./scripts/test` — all pass; report the total count. Spot-check the success criteria: SC-002 (ten varied commands across add/change/rename/remove/list/find), SC-003 (unknown token, missing value, unknown keyword value, unparseable date, unknown list, date twice, duplicate keyword all error + non-zero exit), SC-004 (`priority high due none` applies both), SC-005 (a fully-quoted usage example ≡ its minimal form), SC-006 (extract every fenced `reminders` command from `design.md`/`README.md`/`PROMPTS.md`/`UsageText.swift` and confirm none is rejected). Confirm `reminders add "X" due on friday` == `reminders add "X" friday`.
+- [X] T037 Run `./scripts/lint` — clean (pre-push gate).
+- [X] T038 Flag to Ken (out of repo): the reminders Claude Code skill guidance (`~/.claude/skills/…`, a dotfiles symlink — not in this repo) should carry the three-sentence rule and the quoting note, so Claude constructs command lines that obey the shape (spec Edge Cases; Assumptions). Not a code change here — a separate dotfiles edit.
 
 ---
 
