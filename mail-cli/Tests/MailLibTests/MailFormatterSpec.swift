@@ -4,137 +4,173 @@
 
 import Foundation
 import MailLib
-import Nimble
-import Quick
+import Testing
 
-final class MailFormatterSpec: QuickSpec {
-    override class func spec() {
-        describe("formatAddress") {
-            it("formats name and email together") {
-                let addr: [String: Any] = ["name": "Alice", "email": "alice@example.com"]
-                expect(formatAddress(addr)) == "Alice <alice@example.com>"
-            }
+@Suite("formatAddress")
+struct FormatAddressTests {
+    @Test("formats name and email together")
+    func nameAndEmail() {
+        let addr: [String: Any] = ["name": "Alice", "email": "alice@example.com"]
+        #expect(formatAddress(addr) == "Alice <alice@example.com>")
+    }
 
-            it("returns just the email when name is empty") {
-                let addr: [String: Any] = ["name": "", "email": "alice@example.com"]
-                expect(formatAddress(addr)) == "alice@example.com"
-            }
+    @Test("returns just the email when name is empty")
+    func emailWhenNameEmpty() {
+        let addr: [String: Any] = ["name": "", "email": "alice@example.com"]
+        #expect(formatAddress(addr) == "alice@example.com")
+    }
 
-            it("returns just the email when name is missing") {
-                let addr: [String: Any] = ["email": "alice@example.com"]
-                expect(formatAddress(addr)) == "alice@example.com"
-            }
+    @Test("returns just the email when name is missing")
+    func emailWhenNameMissing() {
+        let addr: [String: Any] = ["email": "alice@example.com"]
+        #expect(formatAddress(addr) == "alice@example.com")
+    }
+}
+
+private let confAlice = AddressEntry(name: "Alice", email: "alice@example.com")
+private let confBob = AddressEntry(name: "Bob", email: "bob@example.com")
+
+@Suite("formatSendConfirmation")
+struct FormatSendConfirmationTests {
+    @Suite("sent, no cc, no subject")
+    struct SentNoCcNoSubject {
+        @Test("returns a sent confirmation with bold recipient")
+        func sentConfirmationWithRecipient() {
+            let result = formatSendConfirmation(to: "alice@example.com", cc: [], subject: "", isDraft: false)
+            #expect(result.contains("alice@example.com"))
+        }
+    }
+
+    @Suite("sent with subject")
+    struct SentWithSubject {
+        @Test("includes the subject")
+        func includesSubject() {
+            let result = formatSendConfirmation(to: "alice@example.com", cc: [], subject: "Lunch?", isDraft: false)
+            #expect(result.contains("Lunch?"))
+        }
+    }
+
+    @Suite("sent with cc")
+    struct SentWithCc {
+        @Test("includes the cc recipient")
+        func includesCcRecipient() {
+            let result = formatSendConfirmation(to: "alice@example.com", cc: [confBob], subject: "", isDraft: false)
+            #expect(result.contains("bob@example.com"))
         }
 
-        describe("formatSendConfirmation") {
-            let alice = AddressEntry(name: "Alice", email: "alice@example.com")
-            let bob = AddressEntry(name: "Bob", email: "bob@example.com")
+        @Test("includes multiple cc recipients")
+        func includesMultipleCcRecipients() {
+            let result = formatSendConfirmation(to: "alice@example.com", cc: [confAlice, confBob], subject: "", isDraft: false)
+            #expect(result.contains("Alice"))
+            #expect(result.contains("Bob"))
+        }
+    }
 
-            context("sent, no cc, no subject") {
-                it("returns a sent confirmation with bold recipient") {
-                    let result = formatSendConfirmation(to: "alice@example.com", cc: [], subject: "", isDraft: false)
-                    expect(result).to(contain("alice@example.com"))
-                }
-            }
-            context("sent with subject") {
-                it("includes the subject") {
-                    let result = formatSendConfirmation(to: "alice@example.com", cc: [], subject: "Lunch?", isDraft: false)
-                    expect(result).to(contain("Lunch?"))
-                }
-            }
-            context("sent with cc") {
-                it("includes the cc recipient") {
-                    let result = formatSendConfirmation(to: "alice@example.com", cc: [bob], subject: "", isDraft: false)
-                    expect(result).to(contain("bob@example.com"))
-                }
-                it("includes multiple cc recipients") {
-                    let result = formatSendConfirmation(to: "alice@example.com", cc: [alice, bob], subject: "", isDraft: false)
-                    expect(result).to(contain("Alice"))
-                    expect(result).to(contain("Bob"))
-                }
-            }
-            context("draft") {
-                it("says Saved draft") {
-                    let result = formatSendConfirmation(to: "alice@example.com", cc: [], subject: "", isDraft: true)
-                    expect(result).to(contain("draft"))
-                }
-                it("includes the subject in a draft confirmation") {
-                    let result = formatSendConfirmation(to: "alice@example.com", cc: [], subject: "Re: Lunch", isDraft: true)
-                    expect(result).to(contain("Re: Lunch"))
-                }
-            }
+    @Suite("draft")
+    struct Draft {
+        @Test("says Saved draft")
+        func saysSavedDraft() {
+            let result = formatSendConfirmation(to: "alice@example.com", cc: [], subject: "", isDraft: true)
+            #expect(result.contains("draft"))
         }
 
-        describe("formatAddresses") {
-            it("joins multiple addresses with commas") {
-                let addrs: [[String: Any]] = [
-                    ["name": "Alice", "email": "alice@example.com"],
-                    ["name": "Bob", "email": "bob@example.com"]
-                ]
-                expect(formatAddresses(addrs)) == "Alice <alice@example.com>, Bob <bob@example.com>"
-            }
-
-            it("returns empty string for empty list") {
-                expect(formatAddresses([])) == ""
-            }
+        @Test("includes the subject in a draft confirmation")
+        func includesSubjectInDraft() {
+            let result = formatSendConfirmation(to: "alice@example.com", cc: [], subject: "Re: Lunch", isDraft: true)
+            #expect(result.contains("Re: Lunch"))
         }
+    }
+}
 
-        describe("leftPad") {
-            it("pads a short string to the specified width") {
-                expect("5".leftPad(3)) == "  5"
-            }
+@Suite("formatAddresses")
+struct FormatAddressesTests {
+    @Test("joins multiple addresses with commas")
+    func joinsWithCommas() {
+        let addrs: [[String: Any]] = [
+            ["name": "Alice", "email": "alice@example.com"],
+            ["name": "Bob", "email": "bob@example.com"]
+        ]
+        #expect(formatAddresses(addrs) == "Alice <alice@example.com>, Bob <bob@example.com>")
+    }
 
-            it("does not truncate a string that is already at width") {
-                expect("123".leftPad(3)) == "123"
-            }
+    @Test("returns empty string for empty list")
+    func emptyForEmptyList() {
+        #expect(formatAddresses([]) == "")
+    }
+}
 
-            it("does not truncate a string that exceeds width") {
-                expect("12345".leftPad(3)) == "12345"
-            }
+@Suite("leftPad")
+struct LeftPadTests {
+    @Test("pads a short string to the specified width")
+    func padsShortString() {
+        #expect("5".leftPad(3) == "  5")
+    }
+
+    @Test("does not truncate a string that is already at width")
+    func noTruncateAtWidth() {
+        #expect("123".leftPad(3) == "123")
+    }
+
+    @Test("does not truncate a string that exceeds width")
+    func noTruncateOverWidth() {
+        #expect("12345".leftPad(3) == "12345")
+    }
+}
+
+@Suite("formatDate")
+struct FormatDateTests {
+    @Suite("a date with fractional seconds in the current year")
+    struct FractionalSecondsCurrentYear {
+        @Test("returns a short month-day string, not the raw ISO input")
+        func notRawISO() {
+            let iso = "2026-04-13T14:30:00.000Z"
+            #expect(formatDate(iso) != iso)
         }
+    }
 
-        describe("formatDate") {
-            context("a date with fractional seconds in the current year") {
-                it("returns a short month-day string, not the raw ISO input") {
-                    let iso = "2026-04-13T14:30:00.000Z"
-                    expect(formatDate(iso)) != iso
-                }
-            }
-
-            context("today's date") {
-                it("returns a time string (h:mma) for a date that is today") {
-                    let fmt = ISO8601DateFormatter()
-                    fmt.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-                    let result = formatDate(fmt.string(from: Date()))
-                    expect(result).to(contain(":"))
-                }
-            }
-
-            context("a date in a past year") {
-                it("returns a string containing the year") {
-                    expect(formatDate("2020-06-15T10:00:00Z")).to(contain("2020"))
-                }
-            }
-
-            context("an unparseable string") {
-                it("returns the raw string unchanged") {
-                    expect(formatDate("not-a-date")) == "not-a-date"
-                }
-            }
+    @Suite("today's date")
+    struct TodaysDate {
+        @Test("returns a time string (h:mma) for a date that is today")
+        func timeStringForToday() {
+            let fmt = ISO8601DateFormatter()
+            fmt.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+            let result = formatDate(fmt.string(from: Date()))
+            #expect(result.contains(":"))
         }
+    }
 
-        describe("formatDateLong") {
-            context("a valid date") {
-                it("returns a formatted string, not the raw ISO input") {
-                    expect(formatDateLong("2026-04-13T14:30:00.000Z")) != "2026-04-13T14:30:00.000Z"
-                }
-            }
+    @Suite("a date in a past year")
+    struct PastYear {
+        @Test("returns a string containing the year")
+        func containsYear() {
+            #expect(formatDate("2020-06-15T10:00:00Z").contains("2020"))
+        }
+    }
 
-            context("an unparseable string") {
-                it("returns the raw string unchanged") {
-                    expect(formatDateLong("not-a-date")) == "not-a-date"
-                }
-            }
+    @Suite("an unparseable string")
+    struct UnparseableString {
+        @Test("returns the raw string unchanged")
+        func rawUnchanged() {
+            #expect(formatDate("not-a-date") == "not-a-date")
+        }
+    }
+}
+
+@Suite("formatDateLong")
+struct FormatDateLongTests {
+    @Suite("a valid date")
+    struct ValidDate {
+        @Test("returns a formatted string, not the raw ISO input")
+        func notRawISO() {
+            #expect(formatDateLong("2026-04-13T14:30:00.000Z") != "2026-04-13T14:30:00.000Z")
+        }
+    }
+
+    @Suite("an unparseable string")
+    struct UnparseableString {
+        @Test("returns the raw string unchanged")
+        func rawUnchanged() {
+            #expect(formatDateLong("not-a-date") == "not-a-date")
         }
     }
 }

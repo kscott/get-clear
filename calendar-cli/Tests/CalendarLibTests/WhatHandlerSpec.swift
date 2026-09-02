@@ -1,22 +1,23 @@
 import CalendarLib
 import Foundation
-import Nimble
-import Quick
+import Testing
 
-final class CalendarWhatHandlerSpec: QuickSpec {
-    override class func spec() {
-        describe("handleWhat") {
-            it("throws for an unrecognised range string") {
-                expect { try handleWhat(args: ["what", "notarange"]) }.to(throwError())
-            }
-            it("returns a non-empty string for today") {
-                let out = try handleWhat(args: ["what"])
-                expect(out).toNot(beEmpty())
-            }
-            it("returns a non-empty string for a named range") {
-                let out = try handleWhat(args: ["what", "7d"])
-                expect(out).toNot(beEmpty())
-            }
-        }
+@Suite("handleWhat")
+struct WhatHandlerTests {
+    @Test("throws for an unrecognised range string")
+    func throwsForUnrecognisedRange() {
+        #expect(throws: (any Error).self) { try handleWhat(args: ["what", "notarange"]) }
+    }
+
+    @Test("returns a non-empty string for today")
+    func nonEmptyForToday() throws {
+        let out = try handleWhat(args: ["what"])
+        #expect(!out.isEmpty)
+    }
+
+    @Test("returns a non-empty string for a named range")
+    func nonEmptyForNamedRange() throws {
+        let out = try handleWhat(args: ["what", "7d"])
+        #expect(!out.isEmpty)
     }
 }

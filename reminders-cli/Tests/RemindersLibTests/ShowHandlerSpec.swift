@@ -2,36 +2,34 @@
 
 import Foundation
 import GetClearKit
-import Nimble
-import Quick
 import RemindersLib
+import Testing
 
-final class ShowHandlerSpec: AsyncSpec {
-    override class func spec() {
-        var store: SpyStore!
+@Suite("handleShow")
+struct ShowHandlerTests {
+    let store = SpyStore()
 
-        beforeEach { store = SpyStore() }
+    @Test("returns the formatted show output for the matched item")
+    func returnsFormattedOutput() async throws {
+        store.items = [makeItem()]
+        let out = try await handleShow(args: ["show", "Pay rent"], store: store)
+        #expect(out.contains("Pay rent"))
+        #expect(out.contains("Personal"))
+    }
 
-        describe("handleShow") {
-            it("returns the formatted show output for the matched item") {
-                store.items = [makeItem()]
-                let out = try await handleShow(args: ["show", "Pay rent"], store: store)
-                expect(out).to(contain("Pay rent"))
-                expect(out).to(contain("Personal"))
-            }
-            it("throws with the not-found message when the title is absent") {
-                store.items = []
-                await expect {
-                    try await handleShow(args: ["show", "Pay rent"], store: store)
-                }.to(throwError { (e: ReminderHandlerError) in
-                    expect(e.message).to(contain("Pay rent"))
-                })
-            }
-            it("throws when no title argument is provided") {
-                await expect {
-                    try await handleShow(args: ["show"], store: store)
-                }.to(throwError(errorType: ReminderHandlerError.self))
-            }
+    @Test("throws with the not-found message when the title is absent")
+    func throwsNotFound() async {
+        store.items = []
+        let err = await #expect(throws: ReminderHandlerError.self) {
+            try await handleShow(args: ["show", "Pay rent"], store: store)
+        }
+        #expect(err?.message.contains("Pay rent") == true)
+    }
+
+    @Test("throws when no title argument is provided")
+    func throwsWithoutTitle() async {
+        await #expect(throws: ReminderHandlerError.self) {
+            try await handleShow(args: ["show"], store: store)
         }
     }
 }

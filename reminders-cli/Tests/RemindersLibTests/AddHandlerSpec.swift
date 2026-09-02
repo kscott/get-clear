@@ -2,57 +2,63 @@
 
 import Foundation
 import GetClearKit
-import Nimble
-import Quick
 import RemindersLib
+import Testing
 
-final class AddHandlerSpec: AsyncSpec {
-    override class func spec() {
-        var store: SpyStore!
+@Suite("handleAdd")
+struct AddHandlerTests {
+    let store = SpyStore()
 
-        beforeEach { store = SpyStore() }
+    @Test("returns the add confirmation including the list name")
+    func returnsConfirmationWithListName() async throws {
+        store.lists = [personalList]
+        let out = try await handleAdd(args: ["add", "Pay rent", "Personal"], store: store)
+        #expect(out.contains("Pay rent"))
+        #expect(out.contains("Personal"))
+    }
 
-        describe("handleAdd") {
-            it("returns the add confirmation including the list name") {
-                store.lists = [personalList]
-                let out = try await handleAdd(args: ["add", "Pay rent", "Personal"], store: store)
-                expect(out).to(contain("Pay rent"))
-                expect(out).to(contain("Personal"))
-            }
-            it("records the added item with the store") {
-                store.lists = [personalList]
-                _ = try await handleAdd(args: ["add", "Pay rent", "Personal"], store: store)
-                expect(store.addedItems.count) == 1
-                expect(store.addedItems[0].title) == "Pay rent"
-            }
-            it("uses the default list when no list is specified") {
-                store.lists = [personalList]
-                _ = try await handleAdd(args: ["add", "Pay rent"], store: store)
-                expect(store.addedItems[0].list.title) == "Personal"
-            }
-            it("sets the due date when a date option is provided") {
-                store.lists = [personalList]
-                _ = try await handleAdd(args: ["add", "Pay rent", "Personal", "due", "friday"], store: store)
-                expect(store.addedItems[0].dueDateComponents).notTo(beNil())
-            }
-            it("sets the recurrence when a repeat option is provided") {
-                store.lists = [personalList]
-                _ = try await handleAdd(args: ["add", "Pay rent", "Personal", "repeat", "monthly"], store: store)
-                expect(store.addedItems[0].recurrenceSpec).notTo(beNil())
-            }
-            it("throws with an unrecognized repeat message when the recurrence string is invalid") {
-                store.lists = [personalList]
-                await expect {
-                    try await handleAdd(args: ["add", "Pay rent", "Personal", "repeat", "fortnightly"], store: store)
-                }.to(throwError { (e: ReminderHandlerError) in
-                    expect(e.message).to(contain("fortnightly"))
-                })
-            }
-            it("throws when no title argument is provided") {
-                await expect {
-                    try await handleAdd(args: ["add"], store: store)
-                }.to(throwError(errorType: ReminderHandlerError.self))
-            }
+    @Test("records the added item with the store")
+    func recordsAddedItem() async throws {
+        store.lists = [personalList]
+        _ = try await handleAdd(args: ["add", "Pay rent", "Personal"], store: store)
+        #expect(store.addedItems.count == 1)
+        #expect(store.addedItems[0].title == "Pay rent")
+    }
+
+    @Test("uses the default list when no list is specified")
+    func usesDefaultList() async throws {
+        store.lists = [personalList]
+        _ = try await handleAdd(args: ["add", "Pay rent"], store: store)
+        #expect(store.addedItems[0].list.title == "Personal")
+    }
+
+    @Test("sets the due date when a date option is provided")
+    func setsDueDate() async throws {
+        store.lists = [personalList]
+        _ = try await handleAdd(args: ["add", "Pay rent", "Personal", "due", "friday"], store: store)
+        #expect(store.addedItems[0].dueDateComponents != nil)
+    }
+
+    @Test("sets the recurrence when a repeat option is provided")
+    func setsRecurrence() async throws {
+        store.lists = [personalList]
+        _ = try await handleAdd(args: ["add", "Pay rent", "Personal", "repeat", "monthly"], store: store)
+        #expect(store.addedItems[0].recurrenceSpec != nil)
+    }
+
+    @Test("throws with an unrecognized repeat message when the recurrence string is invalid")
+    func throwsUnrecognizedRepeat() async {
+        store.lists = [personalList]
+        let err = await #expect(throws: ReminderHandlerError.self) {
+            try await handleAdd(args: ["add", "Pay rent", "Personal", "repeat", "fortnightly"], store: store)
+        }
+        #expect(err?.message.contains("fortnightly") == true)
+    }
+
+    @Test("throws when no title argument is provided")
+    func throwsWithoutTitle() async {
+        await #expect(throws: ReminderHandlerError.self) {
+            try await handleAdd(args: ["add"], store: store)
         }
     }
 }

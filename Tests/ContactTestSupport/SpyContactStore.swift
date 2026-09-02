@@ -1,6 +1,9 @@
 import ContactKit
 
-public final class SpyContactStore: ContactStore {
+/// @unchecked Sendable: `ContactStore` is `Sendable`, and this spy carries mutable
+/// recording state. Safe because Swift Testing gives every `@Test` its own suite
+/// instance (and thus its own spy) — no spy is ever shared across concurrent tests.
+public final class SpyContactStore: ContactStore, @unchecked Sendable {
     public var contacts: [Contact] = []
     public var groups: [ContactGroup] = []
     public var addResult: Contact = makeContact()

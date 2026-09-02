@@ -89,11 +89,11 @@ Edge cases and bad input are first-class test cases:
 
 **Test file structure mirrors source file structure.** For every file in `*Lib/`, there is a corresponding file in `Tests/*LibTests/`. New source file and test file ship in the same commit.
 
-**Framework: Quick + Nimble.** Each file is a `QuickSpec` subclass named `*Spec.swift`. Run with `swift test`.
+**Framework: Swift Testing.** Each file is `*Spec.swift`, one per source file, using `@Suite` / `@Test` / `#expect`. Run with `swift test` — no Xcode required.
 
-**Structure: describe → context → it.** One assertion per `it`. Descriptions are natural English sentences. No two `it` blocks test the same behavior — pick the most readable example.
+**Structure: `@Suite` → nested `@Suite` → `@Test`.** One assertion per `@Test`. Descriptions are natural-English sentences. No two `@Test`s test the same behavior — pick the most readable example. Tests run in parallel; no shared mutable state, no ordering assumptions.
 
-**Document absent behavior explicitly.** Unimplemented behavior gets an `it` that asserts nil and says "not yet supported." This makes the gap visible and provides a ready-made acceptance test.
+**Document absent behavior explicitly.** Unimplemented behavior gets a `@Test` that asserts the current (nil / empty) result and says "not yet supported" in its description. This makes the gap visible and provides a ready-made acceptance test.
 
 ---
 

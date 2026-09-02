@@ -2,18 +2,15 @@
 // Tests for TextLib handleOpen.
 
 import Foundation
-import Nimble
-import Quick
+import Testing
 import TextLib
 
-final class OpenHandlerSpec: QuickSpec {
-    override class func spec() {
-        describe("handleOpen") {
-            it("opens the Messages app URL") {
-                var opened: URL?
-                handleOpen(opener: { opened = $0 })
-                expect(opened?.path) == "/System/Applications/Messages.app"
-            }
-        }
+@Suite("handleOpen")
+struct OpenHandlerTests {
+    @Test("opens the Messages app URL")
+    func opensMessagesAppURL() {
+        var opened: URL?
+        handleOpen(opener: { opened = $0 })
+        #expect(opened?.path == "/System/Applications/Messages.app")
     }
 }

@@ -1,42 +1,46 @@
 import CalendarLib
 import Foundation
-import Nimble
-import Quick
+import Testing
 
-final class CalendarNextHandlerSpec: AsyncSpec {
-    override class func spec() {
-        var store: SpyCalendarStore!
-        let config = CalendarConfig.empty
-        beforeEach { store = SpyCalendarStore() }
+@Suite("handleNext")
+struct NextHandlerTests {
+    let store = SpyCalendarStore()
+    let config = CalendarConfig.empty
 
-        describe("handleNext") {
-            it("returns 'No upcoming events' when store is empty") {
-                store.events = []
-                let out = try await handleNext(args: ["next"], store: store, calFilter: nil, config: config)
-                expect(out).to(contain("No upcoming events"))
-            }
-            it("returns event title for upcoming events") {
-                store.events = [makeEvent(title: "Quarterly Review", dayOffset: 1)]
-                let out = try await handleNext(args: ["next"], store: store, calFilter: nil, config: config)
-                expect(out).to(contain("Quarterly Review"))
-            }
-            it("defaults to 5 events when no count argument is given") {
-                store.events = (1 ... 10).map { makeEvent(identifier: "e\($0)", title: "Event \($0)", dayOffset: $0) }
-                let out = try await handleNext(args: ["next"], store: store, calFilter: nil, config: config)
-                let lines = out.components(separatedBy: "\n").filter { !$0.isEmpty }
-                expect(lines.count) == 5
-            }
-            it("respects a custom count argument") {
-                store.events = (1 ... 10).map { makeEvent(identifier: "e\($0)", title: "Event \($0)", dayOffset: $0) }
-                let out = try await handleNext(args: ["next", "3"], store: store, calFilter: nil, config: config)
-                let lines = out.components(separatedBy: "\n").filter { !$0.isEmpty }
-                expect(lines.count) == 3
-            }
-            it("appends location to the event line when present") {
-                store.events = [makeEvent(title: "Offsite", dayOffset: 1, location: "Building 2")]
-                let out = try await handleNext(args: ["next"], store: store, calFilter: nil, config: config)
-                expect(out).to(contain("Building 2"))
-            }
-        }
+    @Test("returns 'No upcoming events' when store is empty")
+    func noUpcomingEvents() async throws {
+        store.events = []
+        let out = try await handleNext(args: ["next"], store: store, calFilter: nil, config: config)
+        #expect(out.contains("No upcoming events"))
+    }
+
+    @Test("returns event title for upcoming events")
+    func returnsEventTitle() async throws {
+        store.events = [makeEvent(title: "Quarterly Review", dayOffset: 1)]
+        let out = try await handleNext(args: ["next"], store: store, calFilter: nil, config: config)
+        #expect(out.contains("Quarterly Review"))
+    }
+
+    @Test("defaults to 5 events when no count argument is given")
+    func defaultsToFive() async throws {
+        store.events = (1 ... 10).map { makeEvent(identifier: "e\($0)", title: "Event \($0)", dayOffset: $0) }
+        let out = try await handleNext(args: ["next"], store: store, calFilter: nil, config: config)
+        let lines = out.components(separatedBy: "\n").filter { !$0.isEmpty }
+        #expect(lines.count == 5)
+    }
+
+    @Test("respects a custom count argument")
+    func respectsCustomCount() async throws {
+        store.events = (1 ... 10).map { makeEvent(identifier: "e\($0)", title: "Event \($0)", dayOffset: $0) }
+        let out = try await handleNext(args: ["next", "3"], store: store, calFilter: nil, config: config)
+        let lines = out.components(separatedBy: "\n").filter { !$0.isEmpty }
+        #expect(lines.count == 3)
+    }
+
+    @Test("appends location to the event line when present")
+    func appendsLocation() async throws {
+        store.events = [makeEvent(title: "Offsite", dayOffset: 1, location: "Building 2")]
+        let out = try await handleNext(args: ["next"], store: store, calFilter: nil, config: config)
+        #expect(out.contains("Building 2"))
     }
 }

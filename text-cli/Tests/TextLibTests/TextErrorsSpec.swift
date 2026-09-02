@@ -1,25 +1,28 @@
 // TextErrorsSpec.swift
 // Tests for TextLib TextError — error descriptions.
 
-import Nimble
-import Quick
+import Testing
 import TextLib
 
-final class TextErrorsSpec: QuickSpec {
-    override class func spec() {
-        describe("TextError.errorDescription") {
-            it("formats sendFailed") {
-                expect(TextError.sendFailed("osascript error").errorDescription) == "Send failed: osascript error"
-            }
-            it("formats notFound") {
-                expect(TextError.notFound("Alice").errorDescription) == "No contact found for \"Alice\""
-            }
-            it("passes ambiguous message through unchanged") {
-                expect(TextError.ambiguous("too many").errorDescription) == "too many"
-            }
-            it("passes badArguments message through unchanged") {
-                expect(TextError.badArguments("provide a contact").errorDescription) == "provide a contact"
-            }
-        }
+@Suite("TextError.errorDescription")
+struct TextErrorsTests {
+    @Test("formats sendFailed")
+    func formatsSendFailed() {
+        #expect(TextError.sendFailed("osascript error").errorDescription == "Send failed: osascript error")
+    }
+
+    @Test("formats notFound")
+    func formatsNotFound() {
+        #expect(TextError.notFound("Alice").errorDescription == "No contact found for \"Alice\"")
+    }
+
+    @Test("passes ambiguous message through unchanged")
+    func passesAmbiguousThrough() {
+        #expect(TextError.ambiguous("too many").errorDescription == "too many")
+    }
+
+    @Test("passes badArguments message through unchanged")
+    func passesBadArgumentsThrough() {
+        #expect(TextError.badArguments("provide a contact").errorDescription == "provide a contact")
     }
 }

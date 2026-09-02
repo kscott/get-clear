@@ -1,14 +1,11 @@
 import ContactsLib
-import Nimble
-import Quick
+import Testing
 
-final class ContactHandlerErrorSpec: QuickSpec {
-    override class func spec() {
-        describe("ContactHandlerError") {
-            it("usage error description returns the message") {
-                let error = ContactHandlerError.usage("provide a contact name")
-                expect(error.localizedDescription) == "provide a contact name"
-            }
-        }
+@Suite("ContactHandlerError")
+struct ContactHandlerErrorTests {
+    @Test("usage error description returns the message")
+    func usageErrorDescription() {
+        let error = ContactHandlerError.usage("provide a contact name")
+        #expect(error.localizedDescription == "provide a contact name")
     }
 }

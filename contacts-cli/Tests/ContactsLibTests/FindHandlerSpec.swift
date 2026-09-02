@@ -1,29 +1,28 @@
 import ContactKit
 import ContactsLib
 import ContactTestSupport
-import Nimble
-import Quick
+import Testing
 
-final class FindHandlerSpec: AsyncSpec {
-    override class func spec() {
-        var store: SpyContactStore!
-        beforeEach { store = SpyContactStore() }
+@Suite("handleFind")
+struct FindHandlerTests {
+    let store = SpyContactStore()
 
-        describe("handleFind") {
-            it("throws usage error when no query is given") {
-                await expect { try await handleFind(args: ["find"], store: store) }
-                    .to(throwError())
-            }
-            it("returns matching contacts") {
-                store.contacts = [aliceContact, bobContact]
-                let out = try await handleFind(args: ["find", "alice"], store: store)
-                expect(out).to(contain("Alice Smith"))
-            }
-            it("returns not-found message for unmatched query") {
-                store.contacts = []
-                let out = try await handleFind(args: ["find", "xyzzy"], store: store)
-                expect(out).to(contain("No contacts matching"))
-            }
-        }
+    @Test("throws usage error when no query is given")
+    func throwsWithoutQuery() async {
+        await #expect(throws: (any Error).self) { try await handleFind(args: ["find"], store: store) }
+    }
+
+    @Test("returns matching contacts")
+    func returnsMatchingContacts() async throws {
+        store.contacts = [aliceContact, bobContact]
+        let out = try await handleFind(args: ["find", "alice"], store: store)
+        #expect(out.contains("Alice Smith"))
+    }
+
+    @Test("returns not-found message for unmatched query")
+    func returnsNotFoundMessage() async throws {
+        store.contacts = []
+        let out = try await handleFind(args: ["find", "xyzzy"], store: store)
+        #expect(out.contains("No contacts matching"))
     }
 }

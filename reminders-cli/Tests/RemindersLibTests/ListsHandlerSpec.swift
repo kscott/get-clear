@@ -2,27 +2,24 @@
 
 import Foundation
 import GetClearKit
-import Nimble
-import Quick
 import RemindersLib
+import Testing
 
-final class ListsHandlerSpec: AsyncSpec {
-    override class func spec() {
-        var store: SpyStore!
+@Suite("handleLists")
+struct ListsHandlerTests {
+    let store = SpyStore()
 
-        beforeEach { store = SpyStore() }
+    @Test("returns newline-separated sorted list titles")
+    func returnsSortedTitles() async throws {
+        store.lists = [workList, personalList]
+        let out = try await handleLists(store: store)
+        #expect(out == "Personal\nWork")
+    }
 
-        describe("handleLists") {
-            it("returns newline-separated sorted list titles") {
-                store.lists = [workList, personalList]
-                let out = try await handleLists(store: store)
-                expect(out) == "Personal\nWork"
-            }
-            it("returns empty string when there are no lists") {
-                store.lists = []
-                let out = try await handleLists(store: store)
-                expect(out) == ""
-            }
-        }
+    @Test("returns empty string when there are no lists")
+    func emptyWhenNoLists() async throws {
+        store.lists = []
+        let out = try await handleLists(store: store)
+        #expect(out == "")
     }
 }
