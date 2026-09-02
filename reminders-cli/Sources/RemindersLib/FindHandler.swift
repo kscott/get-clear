@@ -3,12 +3,9 @@
 import GetClearKit
 
 public func handleFind(args: [String], store: any ReminderStore) async throws -> String {
-    let parsed: ParsedCommand
-    do {
-        parsed = try parseCommand(Array(args.dropFirst()), shape: ReminderCommandShapes.find)
-    } catch let e as ArgumentError {
-        throw ReminderHandlerError(e.errorDescription ?? "invalid arguments")
-    }
+    let parsed = try parseCommand(
+        Array(args.dropFirst()), shape: ReminderCommandShapes.find, wrapError: ReminderHandlerError.init
+    )
     let query = parsed.identifiers[0]
     let items = try await store.fetchIncomplete(in: nil)
     let matched = filtered(items, matching: query).sorted(by: comparator(for: .due))

@@ -4,12 +4,9 @@ import Foundation
 import GetClearKit
 
 public func handleAdd(args: [String], store: any ReminderStore) async throws -> String {
-    let parsed: ParsedCommand
-    do {
-        parsed = try parseCommand(Array(args.dropFirst()), shape: ReminderCommandShapes.add)
-    } catch let e as ArgumentError {
-        throw ReminderHandlerError(e.errorDescription ?? "invalid arguments")
-    }
+    let parsed = try parseCommand(
+        Array(args.dropFirst()), shape: ReminderCommandShapes.add, wrapError: ReminderHandlerError.init
+    )
     let title = parsed.identifiers[0]
     let allLists = try await store.fetchLists()
     let opts = parseOptions(from: parsed)

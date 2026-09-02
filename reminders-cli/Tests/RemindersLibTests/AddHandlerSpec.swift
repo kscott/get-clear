@@ -53,6 +53,13 @@ struct AddHandlerTests {
         #expect(store.addedItems[0].recurrenceSpec != nil)
     }
 
+    @Test("sets the priority when a recognized priority value is provided")
+    func setsRecognizedPriority() async throws {
+        store.lists = [personalList]
+        _ = try await handleAdd(args: ["add", "Pay rent", "list", "Personal", "priority", "high"], store: store)
+        #expect(store.addedItems[0].priority == 1)
+    }
+
     @Test("throws with an unrecognized repeat message when the recurrence string is invalid")
     func throwsUnrecognizedRepeat() async {
         store.lists = [personalList]

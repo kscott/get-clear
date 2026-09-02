@@ -18,6 +18,13 @@ private let bareDateShape = CommandShape(
     trailingTextKeyword: "note"
 )
 
+private struct TestToolError: Error, Equatable {
+    let message: String
+    init(_ message: String) {
+        self.message = message
+    }
+}
+
 private let optionalFilterShape = CommandShape(
     identifiers: [Identifier("list", required: false)],
     leading: .none,
@@ -144,8 +151,33 @@ struct CommandArgumentsTests {
         }
     }
 
+    @Suite("wrapError overload")
+    struct WrapErrorOverload {
+        @Test("returns the same ParsedCommand as the unwrapped overload on success")
+        func returnsSameResultOnSuccess() throws {
+            let plain = try parseCommand(["Pay rent", "list", "Bills"], shape: titleShape)
+            let wrapped = try parseCommand(
+                ["Pay rent", "list", "Bills"], shape: titleShape, wrapError: TestToolError.init
+            )
+            #expect(plain == wrapped)
+        }
+
+        @Test("wraps an ArgumentError into the caller's error type, carrying its message")
+        func wrapsArgumentErrorMessage() {
+            #expect(throws: TestToolError("provide a title")) {
+                try parseCommand([], shape: titleShape, wrapError: TestToolError.init)
+            }
+        }
+    }
+
     @Suite("ArgumentError cases")
     struct ArgumentErrorCases {
+        @Test("errorDescription delegates to message, for LocalizedError conformance")
+        func errorDescriptionDelegatesToMessage() {
+            let error = ArgumentError.dateGivenTwice
+            #expect(error.errorDescription == error.message)
+        }
+
         @Test("missingIdentifier fires when a required identifier has no token")
         func missingIdentifierCase() {
             #expect(throws: ArgumentError.missingIdentifier(name: "title")) {

@@ -3,12 +3,9 @@
 import GetClearKit
 
 public func handleChange(args: [String], store: any ReminderStore) async throws -> String {
-    let parsed: ParsedCommand
-    do {
-        parsed = try parseCommand(Array(args.dropFirst()), shape: ReminderCommandShapes.change)
-    } catch let e as ArgumentError {
-        throw ReminderHandlerError(e.errorDescription ?? "invalid arguments")
-    }
+    let parsed = try parseCommand(
+        Array(args.dropFirst()), shape: ReminderCommandShapes.change, wrapError: ReminderHandlerError.init
+    )
     let title = parsed.identifiers[0]
     let allLists = try await store.fetchLists()
     let list = try resolvedList(named: parsed.values["list"], from: allLists)

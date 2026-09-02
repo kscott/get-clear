@@ -61,4 +61,13 @@ struct ListHandlerTests {
         }
         #expect(err?.message.contains("sideways") == true)
     }
+
+    @Test("throws for a stray token after a quoted filter")
+    func throwsForStrayToken() async {
+        store.lists = [personalList]
+        let err = await #expect(throws: ReminderHandlerError.self) {
+            try await handleList(args: ["list", "Personal", "extra"], store: store)
+        }
+        #expect(err?.message.contains("quote") == true)
+    }
 }

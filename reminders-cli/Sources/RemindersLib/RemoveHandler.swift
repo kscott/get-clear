@@ -3,12 +3,9 @@
 import GetClearKit
 
 public func handleRemove(args: [String], store: any ReminderStore) async throws -> String {
-    let parsed: ParsedCommand
-    do {
-        parsed = try parseCommand(Array(args.dropFirst()), shape: ReminderCommandShapes.remove)
-    } catch let e as ArgumentError {
-        throw ReminderHandlerError(e.errorDescription ?? "invalid arguments")
-    }
+    let parsed = try parseCommand(
+        Array(args.dropFirst()), shape: ReminderCommandShapes.remove, wrapError: ReminderHandlerError.init
+    )
     let title = parsed.identifiers[0]
     let list = try await resolvedList(named: parsed.values["list"], from: store)
     do {

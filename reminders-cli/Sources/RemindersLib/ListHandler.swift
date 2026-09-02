@@ -3,12 +3,9 @@
 import GetClearKit
 
 public func handleList(args: [String], store: any ReminderStore) async throws -> String {
-    let parsed: ParsedCommand
-    do {
-        parsed = try parseCommand(Array(args.dropFirst()), shape: ReminderCommandShapes.list)
-    } catch let e as ArgumentError {
-        throw ReminderHandlerError(e.errorDescription ?? "invalid arguments")
-    }
+    let parsed = try parseCommand(
+        Array(args.dropFirst()), shape: ReminderCommandShapes.list, wrapError: ReminderHandlerError.init
+    )
     let filterName = parsed.identifiers.first
 
     var order: ReminderSortOrder = .due

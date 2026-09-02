@@ -82,7 +82,9 @@ public enum ArgumentError: Error, LocalizedError, Equatable {
     case duplicateKeyword(String)
     case dateGivenTwice
 
-    public var errorDescription: String? {
+    /// Every case produces a message — unlike `errorDescription`, this is never nil, so
+    /// callers never need a fallback string they can't actually exercise in a test.
+    public var message: String {
         switch self {
         case let .missingIdentifier(name, blockedBy):
             if let blockedBy {
@@ -102,6 +104,26 @@ public enum ArgumentError: Error, LocalizedError, Equatable {
         case .dateGivenTwice:
             return "date given two ways — use a bare date or due, not both"
         }
+    }
+
+    public var errorDescription: String? {
+        message
+    }
+}
+
+/// Parse argv-after-the-command-name into a `ParsedCommand`, per `shape`, wrapping any
+/// `ArgumentError` into the caller's own tool-specific error type via `wrapError`.
+///
+/// Every tool's handlers wrap `ArgumentError` into their own domain error the same way —
+/// this overload centralizes the catch/rethrow so a handler never writes that boilerplate
+/// itself: `try parseCommand(tokens, shape: shape, wrapError: MyToolError.init)`.
+public func parseCommand(
+    _ tokens: [String], shape: CommandShape, wrapError: (String) -> some Error
+) throws -> ParsedCommand {
+    do {
+        return try parseCommand(tokens, shape: shape)
+    } catch let e as ArgumentError {
+        throw wrapError(e.message)
     }
 }
 
