@@ -93,10 +93,10 @@ Per the manifest-strategy deviation, "Update the manifest" was already done in `
 
 ## Phase 6: Documentation + constitution (US3)
 
-- [ ] T031 [P] [US3] Rewrite `CLAUDE.md:44` (testing paragraph) and `CLAUDE.md:114` (Active Technologies bullet → `Swift 6.0 (swift-tools-version: 6.0, language mode v5) + Swift Testing`) per `contracts/doc-text.md`.
-- [ ] T032 [P] [US3] Rewrite `review.md:92` and `review.md:94` per `contracts/doc-text.md`. `review.md:9,10` unchanged.
-- [ ] T033 [P] [US3] Add the testing principle to `.specify/memory/constitution.md` from `contracts/constitution-testing-principle.md` (placement: after "GetClearKit first").
-- [ ] T034 [US3] `ARCHITECTURE.md`: add the decision-log entry (round-trip history + CLT-dropped-XCTest cause) from `contracts/doc-text.md`; rewrite entries `:55`, `:98`, `:148` (ObjC-collision constraint gone; `AsyncSpec` note); leave `:152`/`:166` for T037. Also fix the now-false comment in `.swiftlint.yml:27` ("QuickSpec requires `override class func spec()`") — the rule stays disabled (re-tightening is T043) but the rationale line is rewritten or removed.
+- [x] T031 [P] [US3] `CLAUDE.md` testing paragraph + Active Technologies bullet (`Swift 6.0 (swift-tools-version: 6.0, language mode v5) + Swift Testing`) rewritten per `contracts/doc-text.md`.
+- [x] T032 [P] [US3] `review.md` "Framework" + "Structure" bullets rewritten per `contracts/doc-text.md`. The `swift test` / coverage checklist items unchanged.
+- [x] T033 [P] [US3] New "Tests are Swift Testing, and they are code" principle added to `specs/constitution.md` (the `.specify/memory/constitution.md` symlink target), after "GetClearKit first".
+- [x] T034 [US3] `ARCHITECTURE.md`: decision-log entry added (2026-09-01, round-trip history + CLT-dropped-XCTest cause + CLT tooling note); the ObjC-collision "spec class naming" and `AsyncSpec` notes rewritten. `:152`/`:166` left for T037. `.swiftlint.yml:27` comment was already corrected in T005a ("Quick is gone (spec 016)").
 
 ---
 
