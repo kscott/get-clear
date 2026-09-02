@@ -3,24 +3,27 @@
 
 import Foundation
 import MailLib
-import Nimble
-import Quick
+import Testing
 
-final class MailWhatHandlerSpec: QuickSpec {
-    override class func spec() {
-        describe("handleWhat") {
-            it("returns output for the default range") {
-                expect { try handleWhat(args: ["what"]) }.notTo(throwError())
-            }
-            it("returns output for a named range") {
-                expect { try handleWhat(args: ["what", "today"]) }.notTo(throwError())
-            }
-            it("returns output for a non-today named range") {
-                expect { try handleWhat(args: ["what", "yesterday"]) }.notTo(throwError())
-            }
-            it("throws for an unrecognised range") {
-                expect { try handleWhat(args: ["what", "notarange"]) }.to(throwError())
-            }
-        }
+@Suite("handleWhat")
+struct WhatHandlerTests {
+    @Test("returns output for the default range")
+    func defaultRange() {
+        #expect(throws: Never.self) { try handleWhat(args: ["what"]) }
+    }
+
+    @Test("returns output for a named range")
+    func namedRange() {
+        #expect(throws: Never.self) { try handleWhat(args: ["what", "today"]) }
+    }
+
+    @Test("returns output for a non-today named range")
+    func nonTodayNamedRange() {
+        #expect(throws: Never.self) { try handleWhat(args: ["what", "yesterday"]) }
+    }
+
+    @Test("throws for an unrecognised range")
+    func unrecognisedRange() {
+        #expect(throws: (any Error).self) { try handleWhat(args: ["what", "notarange"]) }
     }
 }

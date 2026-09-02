@@ -4,7 +4,10 @@
 import Foundation
 import MailLib
 
-final class SpyMailClient: MailClient {
+/// @unchecked Sendable: `MailClient` is `Sendable`, and this spy carries mutable
+/// recording state. Safe because Swift Testing gives every `@Test` its own suite
+/// instance (and thus its own spy) — no spy is ever shared across concurrent tests.
+final class SpyMailClient: MailClient, @unchecked Sendable {
     var sentEmails: [OutboundEmail] = []
     var savedDrafts: [OutboundEmail] = []
     var findResults: [EmailSummary] = []

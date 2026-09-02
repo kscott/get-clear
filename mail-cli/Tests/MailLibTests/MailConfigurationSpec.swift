@@ -4,8 +4,7 @@
 
 import Foundation
 import MailLib
-import Nimble
-import Quick
+import Testing
 
 private let wellFormedTOML = """
 default_from = "alice@example.com"
@@ -18,194 +17,238 @@ id2 = "bob@example.com|Bob"
 key = "value"
 """
 
-final class MailConfigurationSpec: QuickSpec {
-    override class func spec() {
-        describe("parseConfig") {
-            context("a well-formed config") {
-                let toml = wellFormedTOML
+@Suite("parseConfig")
+struct ParseConfigTests {
+    @Suite("a well-formed config")
+    struct WellFormedConfig {
+        let toml = wellFormedTOML
 
-                it("parses the default_from field") {
-                    expect(parseConfig(toml).defaultFrom) == "alice@example.com"
-                }
-
-                it("parses identity email") {
-                    expect(parseConfig(toml).identities.first?.email) == "alice@example.com"
-                }
-
-                it("parses identity name") {
-                    expect(parseConfig(toml).identities.first?.name) == "Alice"
-                }
-
-                it("parses identity id") {
-                    expect(parseConfig(toml).identities.first?.id) == "id1"
-                }
-
-                it("parses multiple identities") {
-                    expect(parseConfig(toml).identities.count) == 2
-                }
-            }
-
-            context("identity with a pipe in the name") {
-                let toml = """
-                default_from = "a@b.com"
-                
-                [identities]
-                id1 = "a@b.com|First|Last"
-                """
-
-                it("joins pipe-separated name parts") {
-                    expect(parseConfig(toml).identities.first?.name) == "First|Last"
-                }
-            }
-
-            context("web_app_url field") {
-                let toml = """
-                default_from = "alice@example.com"
-                web_app_url = "https://mail.google.com"
-                
-                [identities]
-                id1 = "alice@example.com|Ken Scott"
-                """
-
-                it("parses a custom web app URL") {
-                    expect(parseConfig(toml).webAppURL) == URL(string: "https://mail.google.com")
-                }
-            }
-
-            context("missing web_app_url") {
-                it("defaults to the Fastmail URL") {
-                    expect(parseConfig("").webAppURL) == MailConfig.defaultWebAppURL
-                }
-            }
-
-            context("empty config") {
-                it("returns empty defaultFrom") {
-                    expect(parseConfig("").defaultFrom) == ""
-                }
-
-                it("returns no identities") {
-                    expect(parseConfig("").identities).to(beEmpty())
-                }
-            }
-
-            context("lines with comments and blank lines") {
-                let toml = """
-                # this is a comment
-                default_from = "x@y.com"
-                
-                [identities]
-                # another comment
-                id1 = "x@y.com|X Y"
-                """
-
-                it("ignores comment lines") {
-                    expect(parseConfig(toml).defaultFrom) == "x@y.com"
-                }
-
-                it("still parses identity") {
-                    expect(parseConfig(toml).identities.count) == 1
-                }
-            }
-
-            context("a second section header after [identities]") {
-                it("ignores keys under non-identities sections") {
-                    expect(parseConfig(wellFormedTOML).identities.count) == 2
-                }
-                it("does not treat other-section keys as identities") {
-                    expect(parseConfig(wellFormedTOML).identities.map(\.id)).toNot(contain("key"))
-                }
-            }
-
-            context("identity line with too few parts") {
-                let toml = """
-                default_from = "a@b.com"
-                
-                [identities]
-                id1 = "a@b.com"
-                """
-
-                it("skips malformed identity entries") {
-                    expect(parseConfig(toml).identities).to(beEmpty())
-                }
-            }
+        @Test("parses the default_from field")
+        func parsesDefaultFrom() {
+            #expect(parseConfig(toml).defaultFrom == "alice@example.com")
         }
 
-        describe("MailConfig.identity(for:)") {
-            let config = parseConfig(wellFormedTOML)
-
-            it("finds identity by exact email") {
-                expect(config.identity(for: "alice@example.com")?.id) == "id1"
-            }
-
-            it("finds identity case-insensitively") {
-                expect(config.identity(for: "ALICE@EXAMPLE.COM")?.id) == "id1"
-            }
-
-            it("returns nil for unknown email") {
-                expect(config.identity(for: "nobody@nowhere.com")).to(beNil())
-            }
+        @Test("parses identity email")
+        func parsesIdentityEmail() {
+            #expect(parseConfig(toml).identities.first?.email == "alice@example.com")
         }
 
-        describe("MailIdentity.displayLabel") {
-            it("returns 'email (name)' when name is present") {
-                let id = MailIdentity(id: "id1", email: "alice@example.com", name: "Ken Scott")
-                expect(id.displayLabel) == "alice@example.com (Ken Scott)"
-            }
-            it("returns just email when name is empty") {
-                let id = MailIdentity(id: "id1", email: "alice@example.com", name: "")
-                expect(id.displayLabel) == "alice@example.com"
-            }
+        @Test("parses identity name")
+        func parsesIdentityName() {
+            #expect(parseConfig(toml).identities.first?.name == "Alice")
         }
 
-        describe("serializeConfig") {
-            let config = MailConfig(
-                defaultFrom: "alice@example.com",
-                identities: [
-                    MailIdentity(id: "id1", email: "alice@example.com", name: "Alice"),
-                    MailIdentity(id: "id2", email: "bob@example.com", name: "Bob")
-                ]
-            )
-
-            it("round-trips through parseConfig") {
-                expect(parseConfig(serializeConfig(config)).defaultFrom) == config.defaultFrom
-            }
-            it("round-trips identities") {
-                expect(parseConfig(serializeConfig(config)).identities.count) == config.identities.count
-            }
-            it("includes default_from") {
-                expect(serializeConfig(config)).to(contain("default_from = \"alice@example.com\""))
-            }
-            it("includes web_app_url") {
-                expect(serializeConfig(config)).to(contain("web_app_url = \"https://app.fastmail.com\""))
-            }
-            it("includes identity lines") {
-                expect(serializeConfig(config)).to(contain("id1 = \"alice@example.com|Alice\""))
-            }
-            it("includes the identities section header") {
-                expect(serializeConfig(config)).to(contain("[identities]"))
-            }
+        @Test("parses identity id")
+        func parsesIdentityId() {
+            #expect(parseConfig(toml).identities.first?.id == "id1")
         }
 
-        describe("MailConfig.defaultIdentity") {
-            it("returns the identity matching defaultFrom") {
-                let config = parseConfig("""
-                default_from = "alice@example.com"
-                
-                [identities]
-                id1 = "alice@example.com|Ken Scott"
-                """)
-                expect(config.defaultIdentity?.id) == "id1"
-            }
-
-            it("returns nil when defaultFrom has no matching identity") {
-                let config = parseConfig("""
-                default_from = "nobody@example.com"
-                
-                [identities]
-                id1 = "alice@example.com|Ken Scott"
-                """)
-                expect(config.defaultIdentity).to(beNil())
-            }
+        @Test("parses multiple identities")
+        func parsesMultipleIdentities() {
+            #expect(parseConfig(toml).identities.count == 2)
         }
+    }
+
+    @Suite("identity with a pipe in the name")
+    struct IdentityWithPipeInName {
+        let toml = """
+        default_from = "a@b.com"
+        
+        [identities]
+        id1 = "a@b.com|First|Last"
+        """
+
+        @Test("joins pipe-separated name parts")
+        func joinsPipeSeparatedNameParts() {
+            #expect(parseConfig(toml).identities.first?.name == "First|Last")
+        }
+    }
+
+    @Suite("web_app_url field")
+    struct WebAppURLField {
+        let toml = """
+        default_from = "alice@example.com"
+        web_app_url = "https://mail.google.com"
+        
+        [identities]
+        id1 = "alice@example.com|Ken Scott"
+        """
+
+        @Test("parses a custom web app URL")
+        func parsesCustomWebAppURL() {
+            #expect(parseConfig(toml).webAppURL == URL(string: "https://mail.google.com"))
+        }
+    }
+
+    @Suite("missing web_app_url")
+    struct MissingWebAppURL {
+        @Test("defaults to the Fastmail URL")
+        func defaultsToFastmailURL() {
+            #expect(parseConfig("").webAppURL == MailConfig.defaultWebAppURL)
+        }
+    }
+
+    @Suite("empty config")
+    struct EmptyConfig {
+        @Test("returns empty defaultFrom")
+        func emptyDefaultFrom() {
+            #expect(parseConfig("").defaultFrom == "")
+        }
+
+        @Test("returns no identities")
+        func noIdentities() {
+            #expect(parseConfig("").identities.isEmpty)
+        }
+    }
+
+    @Suite("lines with comments and blank lines")
+    struct CommentsAndBlankLines {
+        let toml = """
+        # this is a comment
+        default_from = "x@y.com"
+        
+        [identities]
+        # another comment
+        id1 = "x@y.com|X Y"
+        """
+
+        @Test("ignores comment lines")
+        func ignoresCommentLines() {
+            #expect(parseConfig(toml).defaultFrom == "x@y.com")
+        }
+
+        @Test("still parses identity")
+        func stillParsesIdentity() {
+            #expect(parseConfig(toml).identities.count == 1)
+        }
+    }
+
+    @Suite("a second section header after [identities]")
+    struct SecondSectionHeader {
+        @Test("ignores keys under non-identities sections")
+        func ignoresKeysUnderOtherSections() {
+            #expect(parseConfig(wellFormedTOML).identities.count == 2)
+        }
+
+        @Test("does not treat other-section keys as identities")
+        func doesNotTreatOtherKeysAsIdentities() {
+            #expect(!parseConfig(wellFormedTOML).identities.map(\.id).contains("key"))
+        }
+    }
+
+    @Suite("identity line with too few parts")
+    struct IdentityLineTooFewParts {
+        let toml = """
+        default_from = "a@b.com"
+        
+        [identities]
+        id1 = "a@b.com"
+        """
+
+        @Test("skips malformed identity entries")
+        func skipsMalformedIdentityEntries() {
+            #expect(parseConfig(toml).identities.isEmpty)
+        }
+    }
+}
+
+@Suite("MailConfig.identity(for:)")
+struct MailConfigIdentityForTests {
+    let config = parseConfig(wellFormedTOML)
+
+    @Test("finds identity by exact email")
+    func findsByExactEmail() {
+        #expect(config.identity(for: "alice@example.com")?.id == "id1")
+    }
+
+    @Test("finds identity case-insensitively")
+    func findsCaseInsensitively() {
+        #expect(config.identity(for: "ALICE@EXAMPLE.COM")?.id == "id1")
+    }
+
+    @Test("returns nil for unknown email")
+    func nilForUnknownEmail() {
+        #expect(config.identity(for: "nobody@nowhere.com") == nil)
+    }
+}
+
+@Suite("MailIdentity.displayLabel")
+struct MailIdentityDisplayLabelTests {
+    @Test("returns 'email (name)' when name is present")
+    func emailAndNameWhenPresent() {
+        let id = MailIdentity(id: "id1", email: "alice@example.com", name: "Ken Scott")
+        #expect(id.displayLabel == "alice@example.com (Ken Scott)")
+    }
+
+    @Test("returns just email when name is empty")
+    func justEmailWhenNameEmpty() {
+        let id = MailIdentity(id: "id1", email: "alice@example.com", name: "")
+        #expect(id.displayLabel == "alice@example.com")
+    }
+}
+
+@Suite("serializeConfig")
+struct SerializeConfigTests {
+    let config = MailConfig(
+        defaultFrom: "alice@example.com",
+        identities: [
+            MailIdentity(id: "id1", email: "alice@example.com", name: "Alice"),
+            MailIdentity(id: "id2", email: "bob@example.com", name: "Bob")
+        ]
+    )
+
+    @Test("round-trips through parseConfig")
+    func roundTripsThroughParseConfig() {
+        #expect(parseConfig(serializeConfig(config)).defaultFrom == config.defaultFrom)
+    }
+
+    @Test("round-trips identities")
+    func roundTripsIdentities() {
+        #expect(parseConfig(serializeConfig(config)).identities.count == config.identities.count)
+    }
+
+    @Test("includes default_from")
+    func includesDefaultFrom() {
+        #expect(serializeConfig(config).contains("default_from = \"alice@example.com\""))
+    }
+
+    @Test("includes web_app_url")
+    func includesWebAppURL() {
+        #expect(serializeConfig(config).contains("web_app_url = \"https://app.fastmail.com\""))
+    }
+
+    @Test("includes identity lines")
+    func includesIdentityLines() {
+        #expect(serializeConfig(config).contains("id1 = \"alice@example.com|Alice\""))
+    }
+
+    @Test("includes the identities section header")
+    func includesIdentitiesSectionHeader() {
+        #expect(serializeConfig(config).contains("[identities]"))
+    }
+}
+
+@Suite("MailConfig.defaultIdentity")
+struct MailConfigDefaultIdentityTests {
+    @Test("returns the identity matching defaultFrom")
+    func returnsMatchingIdentity() {
+        let config = parseConfig("""
+        default_from = "alice@example.com"
+        
+        [identities]
+        id1 = "alice@example.com|Ken Scott"
+        """)
+        #expect(config.defaultIdentity?.id == "id1")
+    }
+
+    @Test("returns nil when defaultFrom has no matching identity")
+    func nilWhenNoMatch() {
+        let config = parseConfig("""
+        default_from = "nobody@example.com"
+        
+        [identities]
+        id1 = "alice@example.com|Ken Scott"
+        """)
+        #expect(config.defaultIdentity == nil)
     }
 }

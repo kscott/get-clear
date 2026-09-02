@@ -1,4 +1,4 @@
-// swift-tools-version: 5.9
+// swift-tools-version: 6.0
 import PackageDescription
 
 let package = Package(
@@ -12,10 +12,6 @@ let package = Package(
         .executable(name: "contacts-bin", targets: ["contacts-bin"]),
         .executable(name: "mail-bin", targets: ["mail-bin"]),
         .executable(name: "text-bin", targets: ["text-bin"])
-    ],
-    dependencies: [
-        .package(url: "https://github.com/Quick/Quick.git", from: "7.0.0"),
-        .package(url: "https://github.com/Quick/Nimble.git", from: "13.0.0")
     ],
     targets: [
         // MARK: - GetClearKit
@@ -33,9 +29,7 @@ let package = Package(
         .testTarget(
             name: "GetClearKitTests",
             dependencies: [
-                "GetClearKit",
-                .product(name: "Quick", package: "Quick"),
-                .product(name: "Nimble", package: "Nimble")
+                "GetClearKit"
             ],
             path: "Tests/GetClearKitTests"
         ),
@@ -56,9 +50,7 @@ let package = Package(
         .testTarget(
             name: "ContactKitTests",
             dependencies: [
-                "ContactKit", "GetClearKit", "ContactTestSupport",
-                .product(name: "Quick", package: "Quick"),
-                .product(name: "Nimble", package: "Nimble")
+                "ContactKit", "GetClearKit", "ContactTestSupport"
             ],
             path: "Tests/ContactKitTests"
         ),
@@ -75,9 +67,7 @@ let package = Package(
             name: "AppleContactKitTests",
             dependencies: [
                 "AppleContactKit",
-                "ContactKit",
-                .product(name: "Quick", package: "Quick"),
-                .product(name: "Nimble", package: "Nimble")
+                "ContactKit"
             ],
             path: "Tests/AppleContactKitTests"
         ),
@@ -100,9 +90,7 @@ let package = Package(
         .testTarget(
             name: "AppleEventKitSupportTests",
             dependencies: [
-                "AppleEventKitSupport",
-                .product(name: "Quick", package: "Quick"),
-                .product(name: "Nimble", package: "Nimble")
+                "AppleEventKitSupport"
             ],
             path: "Tests/AppleEventKitSupportTests"
         ),
@@ -132,9 +120,7 @@ let package = Package(
             name: "RemindersLibTests",
             dependencies: [
                 "RemindersLib",
-                "GetClearKit",
-                .product(name: "Quick", package: "Quick"),
-                .product(name: "Nimble", package: "Nimble")
+                "GetClearKit"
             ],
             path: "reminders-cli/Tests/RemindersLibTests"
         ),
@@ -164,9 +150,7 @@ let package = Package(
             name: "CalendarLibTests",
             dependencies: [
                 "CalendarLib",
-                "GetClearKit",
-                .product(name: "Quick", package: "Quick"),
-                .product(name: "Nimble", package: "Nimble")
+                "GetClearKit"
             ],
             path: "calendar-cli/Tests/CalendarLibTests"
         ),
@@ -187,9 +171,7 @@ let package = Package(
         .testTarget(
             name: "ContactsLibTests",
             dependencies: [
-                "ContactsLib", "ContactKit", "GetClearKit", "ContactTestSupport",
-                .product(name: "Quick", package: "Quick"),
-                .product(name: "Nimble", package: "Nimble")
+                "ContactsLib", "ContactKit", "GetClearKit", "ContactTestSupport"
             ],
             path: "contacts-cli/Tests/ContactsLibTests"
         ),
@@ -222,9 +204,7 @@ let package = Package(
         .testTarget(
             name: "MailLibTests",
             dependencies: [
-                "MailLib", "ContactKit", "ContactTestSupport", "GetClearKit",
-                .product(name: "Quick", package: "Quick"),
-                .product(name: "Nimble", package: "Nimble")
+                "MailLib", "ContactKit", "ContactTestSupport", "GetClearKit"
             ],
             path: "mail-cli/Tests/MailLibTests"
         ),
@@ -253,11 +233,12 @@ let package = Package(
             name: "TextLibTests",
             dependencies: [
                 "TextLib",
-                "ContactKit",
-                .product(name: "Quick", package: "Quick"),
-                .product(name: "Nimble", package: "Nimble")
+                "ContactKit"
             ],
             path: "text-cli/Tests/TextLibTests"
         )
-    ]
+    ],
+    // Language mode stays Swift 5 — the tools-version bump (for Swift Testing's
+    // SwiftPM integration) must not change how the code under test compiles.
+    swiftLanguageModes: [.v5]
 )

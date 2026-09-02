@@ -5,87 +5,113 @@
 import ContactKit
 import ContactTestSupport
 import Foundation
-import Nimble
-import Quick
+import Testing
 
-final class ContactMatchingSpec: QuickSpec {
-    override class func spec() {
-        let all = [aliceContact, bobContact, charlieContact, noEmailContact, orgOnlyContact]
+private let all = [aliceContact, bobContact, charlieContact, noEmailContact, orgOnlyContact]
 
-        describe("matchContacts") {
-            context("name matching") {
-                it("finds a contact by partial name") {
-                    expect(matchContacts("alice", in: all).contains { $0.name == "Alice Smith" }) == true
-                }
-                it("returns only the matching contact for a unique query") {
-                    expect(matchContacts("alice", in: all).count) == 1
-                }
-                it("exact prefix scores first") {
-                    expect(matchContacts("alice", in: all).first?.name) == "Alice Smith"
-                }
-                it("finds a contact by last name") {
-                    expect(matchContacts("brown", in: all).contains { $0.name == "Charlie Brown" }) == true
-                }
-                it("exact full name scores first") {
-                    expect(matchContacts("Alice Smith", in: all).first?.name) == "Alice Smith"
-                }
-            }
+@Suite("matchContacts")
+struct ContactMatchingTests {
+    @Suite("name matching")
+    struct NameMatching {
+        @Test("finds a contact by partial name")
+        func findsByPartialName() {
+            #expect(matchContacts("alice", in: all).contains { $0.name == "Alice Smith" } == true)
+        }
 
-            context("email matching") {
-                it("finds a contact by email domain") {
-                    expect(matchContacts("jones.org", in: all).contains { $0.name == "Bob Jones" }) == true
-                }
-            }
+        @Test("returns only the matching contact for a unique query")
+        func uniqueQueryReturnsOne() {
+            #expect(matchContacts("alice", in: all).count == 1)
+        }
 
-            context("company matching") {
-                it("finds a contact by exact company name") {
-                    expect(matchContacts("acme", in: all).contains { $0.name == "Alice Smith" }) == true
-                }
-                it("finds a contact by partial company name") {
-                    expect(matchContacts("init", in: all).contains { $0.company == "Initech" }) == true
-                }
-            }
+        @Test("exact prefix scores first")
+        func exactPrefixScoresFirst() {
+            #expect(matchContacts("alice", in: all).first?.name == "Alice Smith")
+        }
 
-            context("phone matching") {
-                it("finds a contact by digit string") {
-                    expect(matchContacts("5559999", in: all).contains { $0.name == "Charlie Brown" }) == true
-                }
-                it("normalizes dashes in query") {
-                    expect(matchContacts("555-9999", in: all).contains { $0.name == "Charlie Brown" }) == true
-                }
-            }
+        @Test("finds a contact by last name")
+        func findsByLastName() {
+            #expect(matchContacts("brown", in: all).contains { $0.name == "Charlie Brown" } == true)
+        }
 
-            context("sort order") {
-                it("sorts exact name before prefix before substring") {
-                    let contacts = [
-                        makeContact(identifier: "jr-id", name: "Smith Jr"),
-                        makeContact(identifier: "smith-id", name: "Smith"),
-                        makeContact(identifier: "john-id", name: "John Smith")
-                    ]
-                    let r = matchContacts("smith", in: contacts)
-                    expect(r[0].name) == "Smith"
-                    expect(r[1].name) == "Smith Jr"
-                    expect(r[2].name) == "John Smith"
-                }
-            }
+        @Test("exact full name scores first")
+        func exactFullNameScoresFirst() {
+            #expect(matchContacts("Alice Smith", in: all).first?.name == "Alice Smith")
+        }
+    }
 
-            context("edge cases") {
-                it("empty query returns an empty list") {
-                    expect(matchContacts("", in: all)).to(beEmpty())
-                }
-                it("unmatched query returns empty") {
-                    expect(matchContacts("xyzzy", in: all)).to(beEmpty())
-                }
-                it("matching is case insensitive") {
-                    expect(matchContacts("ALICE", in: all)).toNot(beEmpty())
-                }
-            }
+    @Suite("email matching")
+    struct EmailMatching {
+        @Test("finds a contact by email domain")
+        func findsByEmailDomain() {
+            #expect(matchContacts("jones.org", in: all).contains { $0.name == "Bob Jones" } == true)
+        }
+    }
 
-            context("identifier preservation") {
-                it("returned contact carries the original identifier") {
-                    expect(matchContacts("alice", in: all).first?.identifier) == "alice-id"
-                }
-            }
+    @Suite("company matching")
+    struct CompanyMatching {
+        @Test("finds a contact by exact company name")
+        func findsByExactCompany() {
+            #expect(matchContacts("acme", in: all).contains { $0.name == "Alice Smith" } == true)
+        }
+
+        @Test("finds a contact by partial company name")
+        func findsByPartialCompany() {
+            #expect(matchContacts("init", in: all).contains { $0.company == "Initech" } == true)
+        }
+    }
+
+    @Suite("phone matching")
+    struct PhoneMatching {
+        @Test("finds a contact by digit string")
+        func findsByDigitString() {
+            #expect(matchContacts("5559999", in: all).contains { $0.name == "Charlie Brown" } == true)
+        }
+
+        @Test("normalizes dashes in query")
+        func normalizesDashes() {
+            #expect(matchContacts("555-9999", in: all).contains { $0.name == "Charlie Brown" } == true)
+        }
+    }
+
+    @Suite("sort order")
+    struct SortOrder {
+        @Test("sorts exact name before prefix before substring")
+        func sortsExactBeforePrefixBeforeSubstring() {
+            let contacts = [
+                makeContact(identifier: "jr-id", name: "Smith Jr"),
+                makeContact(identifier: "smith-id", name: "Smith"),
+                makeContact(identifier: "john-id", name: "John Smith")
+            ]
+            let r = matchContacts("smith", in: contacts)
+            #expect(r[0].name == "Smith")
+            #expect(r[1].name == "Smith Jr")
+            #expect(r[2].name == "John Smith")
+        }
+    }
+
+    @Suite("edge cases")
+    struct EdgeCases {
+        @Test("empty query returns an empty list")
+        func emptyQueryEmptyList() {
+            #expect(matchContacts("", in: all).isEmpty)
+        }
+
+        @Test("unmatched query returns empty")
+        func unmatchedQueryEmpty() {
+            #expect(matchContacts("xyzzy", in: all).isEmpty)
+        }
+
+        @Test("matching is case insensitive")
+        func caseInsensitive() {
+            #expect(!matchContacts("ALICE", in: all).isEmpty)
+        }
+    }
+
+    @Suite("identifier preservation")
+    struct IdentifierPreservation {
+        @Test("returned contact carries the original identifier")
+        func carriesOriginalIdentifier() {
+            #expect(matchContacts("alice", in: all).first?.identifier == "alice-id")
         }
     }
 }

@@ -41,7 +41,7 @@ These are not reminders. They are the standard.
 
 **Tests are code — all rules apply.** One test file per source file. Test file structure mirrors source file structure. New source file and new test file ship in the same commit.
 
-Test framework is **Quick + Nimble** across all repos. Run via `swift test`. Each test file is a `QuickSpec` subclass named `*Spec.swift`. Structure: `describe` (function/type under test) → `context` (scenario) → `it` (single behavior). One assertion per `it`. Test descriptions are natural English sentences describing behavior — not restating the input. No duplicate tests for the same behavior; if two inputs hit the same code path, pick one. Unimplemented behavior is documented with an `it` that asserts nil and says "not yet supported" in the description.
+Test framework is **Swift Testing** (`import Testing`), run via `swift test`. It ships with the Swift toolchain — no Xcode, no XCTest. Each test file is named `*Spec.swift` and maps to exactly one source file. Structure: a top-level `@Suite` for the function or type under test, nested `@Suite`s for scenarios (what was `describe` → `context`), one `@Test` per behavior. One assertion (`#expect` / `#require`) per `@Test`. `@Test` descriptions are natural-English sentences describing the behavior — not restating the input. No two `@Test`s cover the same behavior; if two inputs hit the same code path, pick one. Unimplemented behavior is documented with a `@Test` that asserts the current (nil / empty) result and says "not yet supported" in its description. Suites run in parallel by default — tests must not share mutable state or depend on order.
 
 ---
 
@@ -111,7 +111,7 @@ Display: `reminders 1.3.1 (Get Clear 1.3.1)` — current suite version is 1.3.1
 Use `scripts/bump-version <suite-version> [tool:version ...]` to bump. Never edit version constants by hand.
 
 ## Active Technologies
-- Swift 5.9 (swift-tools-version: 5.9) + Quick + Nimble (testing)
+- Swift 6.0 (swift-tools-version: 6.0, language mode v5) + Swift Testing
 - GetClearKit, ContactKit, AppleContactKit, ContactStoreFactory — shared suite and contact layers
 - Contacts framework access via AppleContactKit boundary only; no writes
 - Shared CLI argument parser in GetClearKit (`CommandArguments.swift`, spec 015) — per-command `CommandShape`; tools declare shapes, not parsers

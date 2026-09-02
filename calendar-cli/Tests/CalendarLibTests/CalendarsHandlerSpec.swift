@@ -1,30 +1,30 @@
 import CalendarLib
 import Foundation
-import Nimble
-import Quick
+import Testing
 
-final class CalendarsHandlerSpec: AsyncSpec {
-    override class func spec() {
-        var store: SpyCalendarStore!
-        beforeEach { store = SpyCalendarStore() }
+@Suite("handleCalendars")
+struct CalendarsHandlerTests {
+    let store = SpyCalendarStore()
 
-        describe("handleCalendars") {
-            it("returns calendar titles grouped by source") {
-                store.calendars = [workCal, personalCal]
-                let out = try await handleCalendars(store: store)
-                expect(out).to(contain("Work"))
-                expect(out).to(contain("Personal"))
-            }
-            it("returns empty string when no calendars exist") {
-                store.calendars = []
-                let out = try await handleCalendars(store: store)
-                expect(out) == ""
-            }
-            it("groups calendars under their source heading") {
-                store.calendars = [workCal, personalCal]
-                let out = try await handleCalendars(store: store)
-                expect(out).to(contain("iCloud"))
-            }
-        }
+    @Test("returns calendar titles grouped by source")
+    func returnsTitlesGroupedBySource() async throws {
+        store.calendars = [workCal, personalCal]
+        let out = try await handleCalendars(store: store)
+        #expect(out.contains("Work"))
+        #expect(out.contains("Personal"))
+    }
+
+    @Test("returns empty string when no calendars exist")
+    func emptyWhenNoCalendars() async throws {
+        store.calendars = []
+        let out = try await handleCalendars(store: store)
+        #expect(out == "")
+    }
+
+    @Test("groups calendars under their source heading")
+    func groupsUnderSourceHeading() async throws {
+        store.calendars = [workCal, personalCal]
+        let out = try await handleCalendars(store: store)
+        #expect(out.contains("iCloud"))
     }
 }

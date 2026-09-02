@@ -2,9 +2,8 @@
 // Tests for ReminderStore.resolve — the default protocol extension for single-item lookup.
 
 import Foundation
-import Nimble
-import Quick
 import RemindersLib
+import Testing
 
 // MARK: - Mock
 
@@ -36,54 +35,62 @@ private final class MockStore: ReminderStore {
 
 // MARK: - Spec
 
-final class ReminderStoreSpec: AsyncSpec {
-    override class func spec() {
-        var store: MockStore!
+@Suite("resolve")
+struct ReminderStoreTests {
+    @Suite("single match")
+    struct SingleMatch {
+        private let store = MockStore()
 
-        beforeEach { store = MockStore() }
+        @Test("returns the matched item")
+        func returnsMatchedItem() async throws {
+            store.items = [makeItem()]
+            let result = try await store.resolve(title: "Pay rent", in: nil)
+            #expect(result.title == "Pay rent")
+        }
 
-        describe("resolve") {
-            context("single match") {
-                it("returns the matched item") {
-                    store.items = [makeItem()]
-                    let result = try await store.resolve(title: "Pay rent", in: nil)
-                    expect(result.title) == "Pay rent"
-                }
-                it("is case-insensitive") {
-                    store.items = [makeItem(title: "Pay Rent")]
-                    let result = try await store.resolve(title: "pay rent", in: nil)
-                    expect(result.title) == "Pay Rent"
-                }
-                it("passes the list filter through to fetchIncomplete") {
-                    store.items = [makeItem()]
-                    let result = try await store.resolve(title: "Pay rent", in: personalList)
-                    expect(result.title) == "Pay rent"
-                }
+        @Test("is case-insensitive")
+        func caseInsensitive() async throws {
+            store.items = [makeItem(title: "Pay Rent")]
+            let result = try await store.resolve(title: "pay rent", in: nil)
+            #expect(result.title == "Pay Rent")
+        }
+
+        @Test("passes the list filter through to fetchIncomplete")
+        func passesListFilter() async throws {
+            store.items = [makeItem()]
+            let result = try await store.resolve(title: "Pay rent", in: personalList)
+            #expect(result.title == "Pay rent")
+        }
+    }
+
+    @Suite("no match")
+    struct NoMatch {
+        private let store = MockStore()
+
+        @Test("throws ReminderStoreError.notFound")
+        func throwsNotFound() async {
+            store.items = []
+            await #expect(throws: ReminderStoreError.notFound("Pay rent")) {
+                try await store.resolve(title: "Pay rent", in: nil)
             }
+        }
+    }
 
-            context("no match") {
-                it("throws ReminderStoreError.notFound") {
-                    store.items = []
-                    await expect {
-                        try await store.resolve(title: "Pay rent", in: nil)
-                    }.to(throwError(ReminderStoreError.notFound("Pay rent")))
-                }
-            }
+    @Suite("multiple matches")
+    struct MultipleMatches {
+        private let store = MockStore()
 
-            context("multiple matches") {
-                it("throws ReminderStoreError.ambiguous with all matches") {
-                    store.items = [makeItem(), makeItem(list: workList)]
-                    await expect {
-                        try await store.resolve(title: "Pay rent", in: nil)
-                    }.to(throwError { (err: ReminderStoreError) in
-                        if case let .ambiguous(matches) = err {
-                            expect(matches).to(haveCount(2))
-                        } else {
-                            fail("expected .ambiguous, got \(err)")
-                        }
-                    })
-                }
+        @Test("throws ReminderStoreError.ambiguous with all matches")
+        func throwsAmbiguous() async {
+            store.items = [makeItem(), makeItem(list: workList)]
+            let err = await #expect(throws: ReminderStoreError.self) {
+                try await store.resolve(title: "Pay rent", in: nil)
             }
+            guard case let .ambiguous(matches)? = err else {
+                Issue.record("expected .ambiguous, got \(String(describing: err))")
+                return
+            }
+            #expect(matches.count == 2)
         }
     }
 }

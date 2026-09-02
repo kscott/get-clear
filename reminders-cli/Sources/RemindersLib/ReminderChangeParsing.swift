@@ -21,7 +21,7 @@ public struct ReminderChanges {
 }
 
 /// Errors thrown by parseReminderChanges.
-public enum ReminderChangeError: Error {
+public enum ReminderChangeError: Error, Equatable {
     case nothingToChange
     case unrecognizedRecurrence(String)
 }

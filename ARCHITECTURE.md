@@ -52,11 +52,23 @@ When code seems untestable, find the design that makes it testable:
 
 The threshold: if exercising a branch requires a permission dialog or a file to exist on disk, the code is in the wrong layer.
 
-**ObjC spec class naming.** Quick registers spec classes via the ObjC runtime with no module prefix. Two spec classes with the same name in different test targets will collide silently — one will not run. All spec classes must be prefixed with their tool or module name: `CalendarRemoveHandlerSpec`, not `RemoveHandlerSpec`. This applies to every test target in the suite.
+**Suite type naming.** Suite types are plain, unprefixed `<Thing>Tests` (e.g. `AddHandlerTests`), scoped to their test module. Identically-named suites in different targets (`RemindersLibTests.AddHandlerTests`, `ContactsLibTests.AddHandlerTests`) do not collide — they are module-scoped Swift types, not ObjC-runtime-registered classes. Filenames stay `*Spec.swift`, one per source file.
 
 ---
 
 ## Decision log
+
+### 2026-09-01 — Test framework: Swift Testing (spec 016)
+
+**Decision:** The suite moved from Quick + Nimble to Swift Testing. `describe`/`context` → nested `@Suite` structs; `it` → `@Test`; Nimble matchers → `#expect` / `#require`. Filenames stay `*Spec.swift`, one per source file. 1,073 `it` blocks → 1,073 `@Test`, zero consolidations.
+
+**Why:** Quick's `QuickSpec` subclasses `XCTestCase`, so every test transitively linked XCTest — which ships only with a full Xcode install, not the Command Line Tools. A CLT update in mid-2026 stopped bundling XCTest and `swift test` broke on every machine without Xcode; CI (Xcode-equipped runners) kept passing and masked it.
+
+**This is the second round trip.** Before 2026-04-11 (`99a20f6`) the tests were a hand-rolled `TestRunner` harness that existed specifically to avoid the XCTest/Xcode dependency. Adopting Quick + Nimble traded it back. Swift Testing — toolchain-bundled, no XCTest — solves it properly: the suite now builds and runs on CLT-only and on Linux.
+
+**Toolchain:** `swift-tools-version` 5.9 → 6.0 (Swift Testing's SwiftPM integration needs it); language mode stays v5 via package-level `swiftLanguageModes: [.v5]`. The five vestigial `*-cli/Package.swift` (+ `.resolved`, + dead `.github/` workflows) were deleted at the same time. One production line changed: `ReminderChangeError` gained `Equatable` to match its three sibling error types.
+
+**CLT tooling:** SwiftPM 6.x on the Command Line Tools does not wire up the bundled `Testing.framework` (passes `-I` where it needs `-F`; the test binary's rpath misses `Testing.framework` and `lib_TestingInterop.dylib`). `scripts/test` adds the `-F` / `-rpath` flags; devs and hooks call it instead of bare `swift test`. CI (full Xcode) is unaffected and `ci.yml` stays `swift test`.
 
 ### 2026-04-10 — Command enum and runCLI added to GetClearKit
 
@@ -95,7 +107,7 @@ The threshold: if exercising a branch requires a permission dialog or a file to 
 - `requiresContactLookup(_:) -> Bool` in TextLib — defers contact fetch (and permission prompt) until actually needed
 - `handleSend(args:sender:)` receives `any MessageSender`; returns `String`; no contacts parameter
 - `handleOpen(opener:)` follows reminders pattern — takes a `(URL) -> Void` closure, no contacts needed
-- `SendHandlerSpec` uses `AsyncSpec` (not `QuickSpec`) — required for async `it` closures in Quick/Nimble
+- async `@Test` functions are `func …() async throws` — Swift Testing has no async/sync suite split
 - `TextMessages` depends on `ContactKit` (not Contacts framework directly); `text-bin` depends on `ContactStoreFactory`
 
 ### 2026-04-25 — Shared contact resolution library added (#150)
@@ -145,11 +157,11 @@ The threshold: if exercising a branch requires a permission dialog or a file to 
 - `handleDefault` returns `String?` (nil when args don't parse as a range) — kept in CalendarLib for testability. `main.swift` `default:` case calls `usage()` directly; bare-range shorthands like `calendar monday` are not supported (use `calendar list monday`).
 - `.open` and `.what` dispatched before store construction, matching contacts-cli pattern.
 - `parseRange(trailingArgs:default:) throws -> ParsedRange` added to GetClearKit to eliminate the two-line `dropFirst`+`guard` pattern duplicated across WhatHandlers; RemindersLib `WhatHandler` retrofitted.
-- ObjC class name collision: Quick registers specs via ObjC runtime with no module prefix. All `CalendarLibTests` spec classes are prefixed `Calendar` (e.g. `CalendarRemoveHandlerSpec`) to avoid collision with identically-named classes in `ContactsLibTests`.
+- Suite type naming: suite types are unprefixed `<Thing>Tests`, module-scoped. `CalendarLibTests.RemoveHandlerTests` and `ContactsLibTests.RemoveHandlerTests` coexist — Swift Testing suites are Swift types, not ObjC-runtime classes, so there is no collision. (Was: `Calendar`-prefixed classes under Quick.)
 
 **hexColor duplication (resolved):** `hexColor` was duplicated between `RemindersEventKit` and `CalendarEventKit` and initially accepted as necessary because CGColor requires CoreGraphics, which can't go in GetClearKit. Later resolved by creating `AppleEventKitSupport` — a shared target that imports CoreGraphics but not EventKit. See 2026-05-06 decision log entry.
 
-**Test coverage:** CalendarLibTests ships with 14 handler spec files + 4 shared/infrastructure specs (CalendarStoreSpec, CalendarResolverSpec, EventFormatterSpec, CalendarWhatHandlerSpec). 987 total suite tests, 0 failures.
+**Test coverage:** CalendarLibTests ships with 14 handler spec files + 4 shared/infrastructure specs (CalendarStoreSpec, CalendarResolverSpec, EventFormatterSpec, CalendarWhatHandlerSpec). 1,073 total suite tests (`swift test`, spec 016), 0 failures; ~81.6% aggregate line coverage.
 
 ### 2026-04-24 — Three-tier model introduced; reminders-cli complete (#147)
 
@@ -163,7 +175,7 @@ The threshold: if exercising a branch requires a permission dialog or a file to 
 - Handler functions return `String`, throw `ReminderHandlerError` — fully testable via `SpyStore`.
 - `ReminderStore` protocol with `resolve` default extension for not-found/ambiguous lookup.
 
-**Test coverage:** RemindersLib reached 91.4% line coverage including structural zeros (`WhatHandler`, `OpenHandler`, `UsageText`). Testable code coverage is ~97.8%. `hexColor` moved from RemindersLib to RemindersEventKit (framework type conversion belongs at the boundary) — CalendarDot.swift is now 100% covered and has no framework imports.
+**Test coverage:** RemindersLib is at ~92.6% line coverage (`xcrun llvm-cov`, spec 016) including structural zeros (`WhatHandler`, `OpenHandler`, `UsageText`). Testable code coverage is ~98%. `hexColor` moved from RemindersLib to RemindersEventKit (framework type conversion belongs at the boundary) — CalendarDot.swift is now 100% covered and has no framework imports.
 
 **Template:** reminders-cli is the reference implementation. #140–143 follow this pattern for the other four tools.
 

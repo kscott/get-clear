@@ -1,24 +1,21 @@
 import ContactKit
 import ContactsLib
 import ContactTestSupport
-import Nimble
-import Quick
+import Testing
 
-final class ShowHandlerSpec: AsyncSpec {
-    override class func spec() {
-        var store: SpyContactStore!
-        beforeEach { store = SpyContactStore() }
+@Suite("handleShow")
+struct ShowHandlerTests {
+    let store = SpyContactStore()
 
-        describe("handleShow") {
-            it("throws usage error when no name is given") {
-                await expect { try await handleShow(args: ["show"], store: store) }
-                    .to(throwError())
-            }
-            it("returns card lines for a matched contact") {
-                store.contacts = [aliceContact]
-                let out = try await handleShow(args: ["show", "alice"], store: store)
-                expect(out).to(contain("Alice Smith"))
-            }
-        }
+    @Test("throws usage error when no name is given")
+    func throwsWithoutName() async {
+        await #expect(throws: (any Error).self) { try await handleShow(args: ["show"], store: store) }
+    }
+
+    @Test("returns card lines for a matched contact")
+    func returnsCardLines() async throws {
+        store.contacts = [aliceContact]
+        let out = try await handleShow(args: ["show", "alice"], store: store)
+        #expect(out.contains("Alice Smith"))
     }
 }

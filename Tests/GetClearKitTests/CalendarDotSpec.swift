@@ -1,37 +1,45 @@
 // CalendarDotSpec.swift
 
 import GetClearKit
-import Nimble
-import Quick
+import Testing
 
-final class CalendarDotSpec: QuickSpec {
-    override class func spec() {
-        describe("calendarDot") {
-            context("when ANSI is disabled") {
-                it("returns two spaces regardless of hex value") {
-                    expect(calendarDot(hex: "FF5733", ansiEnabled: false)) == "  "
-                }
-                it("returns two spaces when hex is nil") {
-                    expect(calendarDot(hex: nil, ansiEnabled: false)) == "  "
-                }
-            }
+@Suite("calendarDot")
+struct CalendarDotTests {
+    @Suite("when ANSI is disabled")
+    struct AnsiDisabled {
+        @Test("returns two spaces regardless of hex value")
+        func twoSpacesForAnyHex() {
+            #expect(calendarDot(hex: "FF5733", ansiEnabled: false) == "  ")
+        }
 
-            context("when ANSI is enabled") {
-                it("returns an ANSI colored dot for a valid hex color") {
-                    let result = calendarDot(hex: "FF5733", ansiEnabled: true)
-                    expect(result).to(contain("●"))
-                    expect(result).to(contain("\u{001B}[38;2;255;87;51m"))
-                }
-                it("returns two spaces for nil hex") {
-                    expect(calendarDot(hex: nil, ansiEnabled: true)) == "  "
-                }
-                it("returns two spaces for a hex string shorter than 6 characters") {
-                    expect(calendarDot(hex: "FF57", ansiEnabled: true)) == "  "
-                }
-                it("returns two spaces for an invalid hex string") {
-                    expect(calendarDot(hex: "GGGGGG", ansiEnabled: true)) == "  "
-                }
-            }
+        @Test("returns two spaces when hex is nil")
+        func twoSpacesForNilHex() {
+            #expect(calendarDot(hex: nil, ansiEnabled: false) == "  ")
+        }
+    }
+
+    @Suite("when ANSI is enabled")
+    struct AnsiEnabled {
+        @Test("returns an ANSI colored dot for a valid hex color")
+        func coloredDotForValidHex() {
+            let result = calendarDot(hex: "FF5733", ansiEnabled: true)
+            #expect(result.contains("●"))
+            #expect(result.contains("\u{001B}[38;2;255;87;51m"))
+        }
+
+        @Test("returns two spaces for nil hex")
+        func twoSpacesForNilHex() {
+            #expect(calendarDot(hex: nil, ansiEnabled: true) == "  ")
+        }
+
+        @Test("returns two spaces for a hex string shorter than 6 characters")
+        func twoSpacesForShortHex() {
+            #expect(calendarDot(hex: "FF57", ansiEnabled: true) == "  ")
+        }
+
+        @Test("returns two spaces for an invalid hex string")
+        func twoSpacesForInvalidHex() {
+            #expect(calendarDot(hex: "GGGGGG", ansiEnabled: true) == "  ")
         }
     }
 }

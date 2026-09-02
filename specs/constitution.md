@@ -100,6 +100,16 @@ The test: could a new sixth tool get this behavior by importing GetClearKit alon
 
 ---
 
+## Tests are Swift Testing, and they are code
+
+The test framework is Swift Testing (`import Testing`), run with `swift test`. It comes with the toolchain — a machine with the Command Line Tools and no Xcode can build and run the full suite. No test may reintroduce a dependency on XCTest or on Xcode.
+
+One test file per source file, named `*Spec.swift`. One `@Test` per behavior, one assertion per `@Test`, described in a natural-English sentence. Edge cases and bad input are first-class `@Test`s, not follow-ups. A new source file and its test file ship in the same commit.
+
+Suites run in parallel. A test that shares mutable state with another, or depends on execution order, is broken — fix the isolation, do not serialize around it.
+
+---
+
 ## Timestamps come from the system clock
 
 No timestamp may be supplied by a calling process. All times are generated at the moment of execution. This applies to log entries, cache writes, and any time-sensitive comparison.

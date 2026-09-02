@@ -1,22 +1,23 @@
 // UsageTextSpec.swift
 // Tests for TextLib usageText.
 
-import Nimble
-import Quick
+import Testing
 import TextLib
 
-final class UsageTextSpec: QuickSpec {
-    override class func spec() {
-        describe("usageText") {
-            it("contains the send command") {
-                expect(usageText()).to(contain("text send <contact> <message...>"))
-            }
-            it("contains the open command") {
-                expect(usageText()).to(contain("text open"))
-            }
-            it("contains the feedback URL") {
-                expect(usageText()).to(contain("github.com/kscott/get-clear/issues"))
-            }
-        }
+@Suite("usageText")
+struct UsageTextTests {
+    @Test("contains the send command")
+    func containsSendCommand() {
+        #expect(usageText().contains("text send <contact> <message...>"))
+    }
+
+    @Test("contains the open command")
+    func containsOpenCommand() {
+        #expect(usageText().contains("text open"))
+    }
+
+    @Test("contains the feedback URL")
+    func containsFeedbackURL() {
+        #expect(usageText().contains("github.com/kscott/get-clear/issues"))
     }
 }
