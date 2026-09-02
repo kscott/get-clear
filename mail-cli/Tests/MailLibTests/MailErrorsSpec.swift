@@ -3,30 +3,37 @@
 
 import Foundation
 import MailLib
-import Nimble
-import Quick
+import Testing
 
-final class MailErrorsSpec: QuickSpec {
-    override class func spec() {
-        describe("MailError.errorDescription") {
-            it("describes noToken") {
-                expect(MailError.noToken.errorDescription).to(contain("setup"))
-            }
-            it("describes noConfig") {
-                expect(MailError.noConfig.errorDescription).to(contain("setup"))
-            }
-            it("describes noMatchingIdentity with the email") {
-                expect(MailError.noMatchingIdentity("x@y.com").errorDescription).to(contain("x@y.com"))
-            }
-            it("describes sendFailed with the message") {
-                expect(MailError.sendFailed("timeout").errorDescription).to(contain("timeout"))
-            }
-            it("describes notFound with the query") {
-                expect(MailError.notFound("inbox").errorDescription).to(contain("inbox"))
-            }
-            it("describes jmapError with the message") {
-                expect(MailError.jmapError("bad response").errorDescription).to(contain("bad response"))
-            }
-        }
+@Suite("MailError.errorDescription")
+struct MailErrorsTests {
+    @Test("describes noToken")
+    func describesNoToken() {
+        #expect(MailError.noToken.errorDescription?.contains("setup") == true)
+    }
+
+    @Test("describes noConfig")
+    func describesNoConfig() {
+        #expect(MailError.noConfig.errorDescription?.contains("setup") == true)
+    }
+
+    @Test("describes noMatchingIdentity with the email")
+    func describesNoMatchingIdentity() {
+        #expect(MailError.noMatchingIdentity("x@y.com").errorDescription?.contains("x@y.com") == true)
+    }
+
+    @Test("describes sendFailed with the message")
+    func describesSendFailed() {
+        #expect(MailError.sendFailed("timeout").errorDescription?.contains("timeout") == true)
+    }
+
+    @Test("describes notFound with the query")
+    func describesNotFound() {
+        #expect(MailError.notFound("inbox").errorDescription?.contains("inbox") == true)
+    }
+
+    @Test("describes jmapError with the message")
+    func describesJmapError() {
+        #expect(MailError.jmapError("bad response").errorDescription?.contains("bad response") == true)
     }
 }
