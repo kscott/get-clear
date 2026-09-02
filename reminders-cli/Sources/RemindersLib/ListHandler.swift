@@ -3,13 +3,21 @@
 import GetClearKit
 
 public func handleList(args: [String], store: any ReminderStore) async throws -> String {
-    var listArgs = Array(args.dropFirst())
-    var order: ReminderSortOrder = .due
-    if let byIdx = listArgs.firstIndex(of: "by"), byIdx + 1 < listArgs.count {
-        order = ReminderSortOrder(rawValue: listArgs[byIdx + 1].lowercased()) ?? .due
-        listArgs.removeSubrange(byIdx ... (byIdx + 1))
+    let parsed: ParsedCommand
+    do {
+        parsed = try parseCommand(Array(args.dropFirst()), shape: ReminderCommandShapes.list)
+    } catch let e as ArgumentError {
+        throw ReminderHandlerError(e.errorDescription ?? "invalid arguments")
     }
-    let filterName = listArgs.first
+    let filterName = parsed.identifiers.first
+
+    var order: ReminderSortOrder = .due
+    if let by = parsed.values["by"] {
+        guard let parsedOrder = ReminderSortOrder(rawValue: by.lowercased()) else {
+            throw ReminderHandlerError("unknown sort: \(by)")
+        }
+        order = parsedOrder
+    }
 
     let allLists = try await store.fetchLists()
     let targetList = try resolvedList(named: filterName, from: allLists)

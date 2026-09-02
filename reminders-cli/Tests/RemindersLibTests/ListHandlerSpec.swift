@@ -43,4 +43,22 @@ struct ListHandlerTests {
         }
         #expect(err?.message.contains("Nonexistent") == true)
     }
+
+    @Test("applies the filter and sort order in either order")
+    func filterAndByOrderIndependence() async throws {
+        store.lists = [personalList]
+        store.items = [makeItem()]
+        let out = try await handleList(args: ["list", "Personal", "by", "title"], store: store)
+        #expect(out.contains("Pay rent"))
+    }
+
+    @Test("throws unknown-sort message and does not fall back to due order")
+    func throwsUnknownSort() async {
+        store.lists = [personalList]
+        store.items = [makeItem()]
+        let err = await #expect(throws: ReminderHandlerError.self) {
+            try await handleList(args: ["list", "by", "sideways"], store: store)
+        }
+        #expect(err?.message.contains("sideways") == true)
+    }
 }

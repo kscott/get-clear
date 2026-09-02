@@ -154,6 +154,63 @@ struct ReminderCommandShapesTests {
         }
     }
 
+    @Suite("list")
+    struct List {
+        @Test("parses with no filter")
+        func parsesBare() throws {
+            let parsed = try parseCommand([], shape: ReminderCommandShapes.list)
+            #expect(parsed.identifiers.isEmpty)
+        }
+
+        @Test("parses a quoted filter")
+        func parsesQuotedFilter() throws {
+            let parsed = try parseCommand(["Household Bills"], shape: ReminderCommandShapes.list)
+            #expect(parsed.identifiers == ["Household Bills"])
+        }
+
+        @Test("parses a bare by value with no filter")
+        func parsesByWithNoFilter() throws {
+            let parsed = try parseCommand(["by", "created"], shape: ReminderCommandShapes.list)
+            #expect(parsed.identifiers.isEmpty && parsed.values["by"] == "created")
+        }
+
+        @Test("parses a filter and a by value together")
+        func parsesFilterAndBy() throws {
+            let parsed = try parseCommand(["Bills", "by", "priority"], shape: ReminderCommandShapes.list)
+            #expect(parsed.identifiers == ["Bills"] && parsed.values["by"] == "priority")
+        }
+
+        @Test("a stray extra token after the filter throws unexpectedTokens")
+        func strayExtraTokenThrows() {
+            #expect(throws: ArgumentError.unexpectedTokens(["extra"])) {
+                try parseCommand(["Household Bills", "extra"], shape: ReminderCommandShapes.list)
+            }
+        }
+    }
+
+    @Suite("find")
+    struct Find {
+        @Test("parses a quoted query")
+        func parsesQuotedQuery() throws {
+            let parsed = try parseCommand(["pick up dry cleaning"], shape: ReminderCommandShapes.find)
+            #expect(parsed.identifiers == ["pick up dry cleaning"])
+        }
+
+        @Test("no query throws missingIdentifier naming 'query'")
+        func noQueryThrowsMissingIdentifier() {
+            #expect(throws: ArgumentError.missingIdentifier(name: "query")) {
+                try parseCommand([], shape: ReminderCommandShapes.find)
+            }
+        }
+
+        @Test("an unquoted multi-word query throws unexpectedTokens")
+        func unquotedMultiWordThrows() {
+            #expect(throws: ArgumentError.unexpectedTokens(["up", "dry", "cleaning"])) {
+                try parseCommand(["pick", "up", "dry", "cleaning"], shape: ReminderCommandShapes.find)
+            }
+        }
+    }
+
     @Suite("shape self-validation")
     struct ShapeSelfValidation {
         static let allShapes: [(String, CommandShape)] = [
@@ -162,7 +219,9 @@ struct ReminderCommandShapesTests {
             ("rename", ReminderCommandShapes.rename),
             ("remove", ReminderCommandShapes.remove),
             ("done", ReminderCommandShapes.done),
-            ("show", ReminderCommandShapes.show)
+            ("show", ReminderCommandShapes.show),
+            ("list", ReminderCommandShapes.list),
+            ("find", ReminderCommandShapes.find)
         ]
 
         @Test("every keyword canonical is unique across canonicals and aliases", arguments: allShapes)

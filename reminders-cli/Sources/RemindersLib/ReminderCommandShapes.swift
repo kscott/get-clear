@@ -56,4 +56,15 @@ public enum ReminderCommandShapes {
         leading: .none,
         keywords: [Keyword("list")]
     )
+
+    public static let list = CommandShape(
+        identifiers: [Identifier("list", required: false)],
+        leading: .none,
+        keywords: [Keyword("by")]
+    )
+
+    public static let find = CommandShape(
+        identifiers: [Identifier("query")],
+        leading: .none
+    )
 }

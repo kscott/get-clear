@@ -72,12 +72,12 @@
 
 **Independent Test**: Form ten varied commands from the three-sentence rule (multi-word names, reordered keywords, `due` in different positions, a trailing note) — all parse as intended (SC-002). `reminders list "Household Bills" by priority` filters and sorts; `reminders list by sideways` → error. `reminders find "pick up milk"` searches; `reminders find pick up milk` → quote hint.
 
-- [ ] T022 [US1] Add `list` and `find` `CommandShape` values to `reminders-cli/Sources/RemindersLib/ReminderCommandShapes.swift` — `list`: `identifiers [Identifier("list", required: false)]`, keywords `[Keyword("by")]`; `find`: `identifiers [Identifier("query")]`, no keywords.
-- [ ] T023 [US1] Extend `reminders-cli/Tests/RemindersLibTests/ReminderCommandShapesSpec.swift` — `list`: bare (no filter), quoted filter, `by` value, filter + `by`, stray extra token → error; `find`: quoted query, `reminders find` alone → `missingIdentifier(name: "query")`, multi-word unquoted → `unexpectedTokens`.
-- [ ] T024 [US1] Update `reminders-cli/Sources/RemindersLib/ListHandler.swift` — parse via `ReminderCommandShapes.list`; `filterName = parsed.identifiers.first`; map `parsed.values["by"]` to `ReminderSortOrder`, throwing `ReminderHandlerError("unknown sort: <value>")` on an unrecognized value (replaces the current `?? .due` silent fallback); drop the manual `by` index-scanning.
-- [ ] T025 [US1] Update `reminders-cli/Sources/RemindersLib/FindHandler.swift` — parse via `ReminderCommandShapes.find`; `query = parsed.identifiers[0]`; remove the local `guard args.count > 1` check (the parser now throws `missingIdentifier`).
-- [ ] T026 [P] [US1] Update `reminders-cli/Tests/RemindersLibTests/ListHandlerSpec.swift` — filter as a one-token identifier; `by` order-independent of the filter; unknown sort → error; existing grouping/sorting assertions unchanged.
-- [ ] T027 [P] [US1] Update `reminders-cli/Tests/RemindersLibTests/FindHandlerSpec.swift` — quoted multi-word query; `reminders find` alone → error; multi-word unquoted → error.
+- [X] T022 [US1] Add `list` and `find` `CommandShape` values to `reminders-cli/Sources/RemindersLib/ReminderCommandShapes.swift` — `list`: `identifiers [Identifier("list", required: false)]`, keywords `[Keyword("by")]`; `find`: `identifiers [Identifier("query")]`, no keywords.
+- [X] T023 [US1] Extend `reminders-cli/Tests/RemindersLibTests/ReminderCommandShapesSpec.swift` — `list`: bare (no filter), quoted filter, `by` value, filter + `by`, stray extra token → error; `find`: quoted query, `reminders find` alone → `missingIdentifier(name: "query")`, multi-word unquoted → `unexpectedTokens`.
+- [X] T024 [US1] Update `reminders-cli/Sources/RemindersLib/ListHandler.swift` — parse via `ReminderCommandShapes.list`; `filterName = parsed.identifiers.first`; map `parsed.values["by"]` to `ReminderSortOrder`, throwing `ReminderHandlerError("unknown sort: <value>")` on an unrecognized value (replaces the current `?? .due` silent fallback); drop the manual `by` index-scanning.
+- [X] T025 [US1] Update `reminders-cli/Sources/RemindersLib/FindHandler.swift` — parse via `ReminderCommandShapes.find`; `query = parsed.identifiers[0]`; remove the local `guard args.count > 1` check (the parser now throws `missingIdentifier`).
+- [X] T026 [P] [US1] Update `reminders-cli/Tests/RemindersLibTests/ListHandlerSpec.swift` — filter as a one-token identifier; `by` order-independent of the filter; unknown sort → error; existing grouping/sorting assertions unchanged.
+- [X] T027 [P] [US1] Update `reminders-cli/Tests/RemindersLibTests/FindHandlerSpec.swift` — quoted multi-word query; `reminders find` alone → error; multi-word unquoted → error.
 
 **Checkpoint**: all eight commands route through `parseCommand`; the SC-002 ten-command check passes.
 

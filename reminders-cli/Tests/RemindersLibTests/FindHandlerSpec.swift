@@ -30,4 +30,19 @@ struct FindHandlerTests {
             try await handleFind(args: ["find"], store: store)
         }
     }
+
+    @Test("matches a quoted multi-word query")
+    func matchesQuotedMultiWordQuery() async throws {
+        store.items = [makeItem(title: "Pick up dry cleaning")]
+        let out = try await handleFind(args: ["find", "pick up dry cleaning"], store: store)
+        #expect(out.contains("Pick up dry cleaning"))
+    }
+
+    @Test("throws for an unquoted multi-word query")
+    func throwsForUnquotedMultiWordQuery() async {
+        let err = await #expect(throws: ReminderHandlerError.self) {
+            try await handleFind(args: ["find", "pick", "up", "dry", "cleaning"], store: store)
+        }
+        #expect(err?.message.contains("quote") == true)
+    }
 }
