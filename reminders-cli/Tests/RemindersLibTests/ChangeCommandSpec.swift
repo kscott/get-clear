@@ -305,6 +305,26 @@ struct ParseReminderChangesTests {
             let changes = try parseReminderChanges(opts, existingItem: noItem)
             #expect(changes.priority == .unchanged)
         }
+
+        @Test("throws unrecognizedPriority for invalid input and applies no changes")
+        func throwsUnrecognizedPriority() {
+            var opts = ParsedOptions()
+            opts.priority = "urgent"
+            opts.note = "buy milk"
+            #expect(throws: ReminderChangeError.unrecognizedPriority("urgent")) {
+                try parseReminderChanges(opts, existingItem: noItem)
+            }
+        }
+
+        @Test("applies a due none clear together with a priority change (SC-004)")
+        func priorityAndDueNoneBothApply() throws {
+            var opts = ParsedOptions()
+            opts.priority = "high"
+            opts.date = "none"
+            let changes = try parseReminderChanges(opts, existingItem: noItem)
+            #expect(changes.priority == .replaced(from: 0, to: 1))
+            #expect(changes.due == .cleared)
+        }
     }
 
     @Suite("note")

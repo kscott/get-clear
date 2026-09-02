@@ -4,19 +4,28 @@ import Foundation
 import GetClearKit
 
 public func handleAdd(args: [String], store: any ReminderStore) async throws -> String {
-    guard args.count > 1 else { throw ReminderHandlerError("provide a reminder title") }
-    let title = args[1]
+    let parsed: ParsedCommand
+    do {
+        parsed = try parseCommand(Array(args.dropFirst()), shape: ReminderCommandShapes.add)
+    } catch let e as ArgumentError {
+        throw ReminderHandlerError(e.errorDescription ?? "invalid arguments")
+    }
+    let title = parsed.identifiers[0]
     let allLists = try await store.fetchLists()
-    let (listName, rawOptions) = splitListAndOptions(
-        from: Array(args.dropFirst(2)), calendarTitles: allLists.map(\.title)
-    )
-    let targetList: ReminderList = if let match = try resolvedList(named: listName, from: allLists) {
+    let opts = parseOptions(from: parsed)
+    let targetList: ReminderList = if let match = try resolvedList(named: parsed.values["list"], from: allLists) {
         match
     } else {
         try await store.defaultList()
     }
-    let opts = parseOptions(rawOptions)
-    let parsedDate = opts.date.isEmpty ? nil : parseDate(opts.date)
+    let parsedDate: ParsedDate?
+    if opts.date.isEmpty {
+        parsedDate = nil
+    } else if let d = parseDate(opts.date) {
+        parsedDate = d
+    } else {
+        throw ReminderHandlerError("couldn't parse date: \(opts.date)")
+    }
     let recurrenceSpec: RecurrenceSpec? = try {
         guard !opts.recurrence.isEmpty else { return nil }
         guard let spec = parseRecurrence(opts.recurrence) else {
@@ -24,12 +33,20 @@ public func handleAdd(args: [String], store: any ReminderStore) async throws -> 
         }
         return spec
     }()
+    let priorityValue: Int
+    if opts.priority.isEmpty {
+        priorityValue = 0
+    } else if let p = parsePriority(opts.priority) {
+        priorityValue = p
+    } else {
+        throw ReminderHandlerError("unknown priority: \(opts.priority)")
+    }
     let dueDateComponents = parsedDate.map(dateComponents(from:))
     let item = ReminderItem(
         title: title, list: targetList,
         dueDateComponents: dueDateComponents,
         recurrenceSpec: recurrenceSpec,
-        priority: parsePriority(opts.priority) ?? 0,
+        priority: priorityValue,
         notes: opts.note.isEmpty ? nil : opts.note,
         url: opts.url.isEmpty ? nil : URL(string: opts.url)
     )

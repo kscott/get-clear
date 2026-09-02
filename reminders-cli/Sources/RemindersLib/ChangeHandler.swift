@@ -3,20 +3,25 @@
 import GetClearKit
 
 public func handleChange(args: [String], store: any ReminderStore) async throws -> String {
-    guard args.count > 1 else { throw ReminderHandlerError("provide a reminder title") }
-    let title = args[1]
+    let parsed: ParsedCommand
+    do {
+        parsed = try parseCommand(Array(args.dropFirst()), shape: ReminderCommandShapes.change)
+    } catch let e as ArgumentError {
+        throw ReminderHandlerError(e.errorDescription ?? "invalid arguments")
+    }
+    let title = parsed.identifiers[0]
     let allLists = try await store.fetchLists()
-    let (listName, rawOptions) = splitListAndOptions(
-        from: Array(args.dropFirst(2)), calendarTitles: allLists.map(\.title)
-    )
-    let list = try resolvedList(named: listName, from: allLists)
+    let list = try resolvedList(named: parsed.values["list"], from: allLists)
     let item: ReminderItem
     do {
         item = try await store.resolve(title: title, in: list)
     } catch let err as ReminderStoreError {
         throw storeError(title: title, list: list, cmd: "change", err)
     }
-    let opts = parseOptions(rawOptions)
+    let opts = parseOptions(from: parsed)
+    if !opts.date.isEmpty, opts.date.lowercased() != "none", parseDate(opts.date) == nil {
+        throw ReminderHandlerError("couldn't parse date: \(opts.date)")
+    }
     let changes: ReminderChanges
     do {
         changes = try parseReminderChanges(opts, existingItem: item)
@@ -24,6 +29,8 @@ public func handleChange(args: [String], store: any ReminderStore) async throws 
         throw ReminderHandlerError("nothing to change — specify a date, repeat, priority, note, url, or list")
     } catch let ReminderChangeError.unrecognizedRecurrence(s) {
         throw ReminderHandlerError("Unrecognised repeat: \"\(s)\"")
+    } catch let ReminderChangeError.unrecognizedPriority(s) {
+        throw ReminderHandlerError("unknown priority: \(s)")
     }
     try await store.update(identifier: item.identifier, changes: changes)
     var descs = changes.descriptions

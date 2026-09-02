@@ -3,10 +3,14 @@
 import GetClearKit
 
 public func handleDone(args: [String], store: any ReminderStore) async throws -> String {
-    guard args.count > 1 else { throw ReminderHandlerError("provide a reminder title") }
-    let title = args[1]
-    let listName = args.count > 2 ? args[2] : nil
-    let list = try await resolvedList(named: listName, from: store)
+    let parsed: ParsedCommand
+    do {
+        parsed = try parseCommand(Array(args.dropFirst()), shape: ReminderCommandShapes.done)
+    } catch let e as ArgumentError {
+        throw ReminderHandlerError(e.errorDescription ?? "invalid arguments")
+    }
+    let title = parsed.identifiers[0]
+    let list = try await resolvedList(named: parsed.values["list"], from: store)
     do {
         let item = try await store.complete(title: title, in: list)
         try? ActivityLog.write(tool: "reminders", cmd: "done", desc: title, container: item.list.title)

@@ -26,6 +26,14 @@ struct RenameHandlerTests {
         #expect(store.renamedItems[0].to == "Pay mortgage")
     }
 
+    @Test("filters by the named list")
+    func filtersByNamedList() async throws {
+        store.lists = [personalList, workList]
+        store.items = [makeItem(identifier: "id-1")]
+        _ = try await handleRename(args: ["rename", "Pay rent", "Pay mortgage", "list", "Personal"], store: store)
+        #expect(store.renamedItems.count == 1)
+    }
+
     @Test("throws when fewer than 2 title arguments are provided")
     func throwsWithFewerThanTwoTitles() async {
         await #expect(throws: ReminderHandlerError.self) {
@@ -49,5 +57,23 @@ struct RenameHandlerTests {
             try await handleRename(args: ["rename", "Pay rent", "Pay mortgage"], store: store)
         }
         #expect(err?.message.contains("rename") == true)
+    }
+
+    @Test("throws quote-it hint when 'list' is given bare where the new title belongs")
+    func throwsQuoteHintForBareListAsNewTitle() async {
+        let err = await #expect(throws: ReminderHandlerError.self) {
+            try await handleRename(args: ["rename", "Buy milk", "list"], store: store)
+        }
+        #expect(err?.message.contains("quote") == true)
+    }
+
+    @Test("throws for a stray token after both titles")
+    func throwsForStrayToken() async {
+        store.items = [makeItem(identifier: "id-1")]
+        let err = await #expect(throws: ReminderHandlerError.self) {
+            try await handleRename(args: ["rename", "Pay rent", "Pay mortgage", "Bills"], store: store)
+        }
+        #expect(err?.message.contains("quote") == true)
+        #expect(store.renamedItems.isEmpty)
     }
 }

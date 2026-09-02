@@ -25,6 +25,16 @@ struct ChangeHandlerTests {
         #expect(store.updatedItems[0].id == "id-1")
     }
 
+    @Test("filters by the named list")
+    func filtersByNamedList() async throws {
+        store.lists = [personalList, workList]
+        store.items = [makeItem(identifier: "id-1")]
+        _ = try await handleChange(
+            args: ["change", "Pay rent", "list", "Personal", "priority", "high"], store: store
+        )
+        #expect(store.updatedItems.count == 1)
+    }
+
     @Test("throws when no title argument is provided")
     func throwsWithoutTitle() async {
         await #expect(throws: ReminderHandlerError.self) {
@@ -90,5 +100,73 @@ struct ChangeHandlerTests {
         _ = try await handleChange(args: ["change", "Pay rent", "note", "new note"], store: store)
         let changes = store.updatedItems[0].changes
         #expect(changes.note == .replaced(from: "old note", to: "new note"))
+    }
+
+    @Test("throws unknownKeyword-derived message for a misspelled keyword")
+    func throwsForUnknownKeyword() async {
+        store.items = [makeItem(identifier: "id-1")]
+        let err = await #expect(throws: ReminderHandlerError.self) {
+            try await handleChange(args: ["change", "Pay rent", "priorty", "high"], store: store)
+        }
+        #expect(err?.message.contains("priorty") == true)
+    }
+
+    @Test("throws missingValue-derived message for a keyword with no value")
+    func throwsForMissingValue() async {
+        store.items = [makeItem(identifier: "id-1")]
+        let err = await #expect(throws: ReminderHandlerError.self) {
+            try await handleChange(args: ["change", "Pay rent", "priority"], store: store)
+        }
+        #expect(err?.message.contains("priority") == true)
+    }
+
+    @Test("throws duplicateKeyword-derived message when a keyword is given twice")
+    func throwsForDuplicateKeyword() async {
+        store.items = [makeItem(identifier: "id-1")]
+        store.lists = [personalList, workList]
+        let err = await #expect(throws: ReminderHandlerError.self) {
+            try await handleChange(
+                args: ["change", "Pay rent", "list", "Personal", "list", "Work"], store: store
+            )
+        }
+        #expect(err?.message.contains("list") == true)
+    }
+
+    @Test("throws quote-it hint when 'list' is given bare where the title belongs")
+    func throwsQuoteHintForBareListAsTitle() async {
+        let err = await #expect(throws: ReminderHandlerError.self) {
+            try await handleChange(args: ["change", "list"], store: store)
+        }
+        #expect(err?.message.contains("quote") == true)
+    }
+
+    @Test("throws dateGivenTwice-derived message and makes no change for date given two ways")
+    func throwsDateGivenTwiceMakesNoChange() async {
+        store.items = [makeItem(identifier: "id-1")]
+        let err = await #expect(throws: ReminderHandlerError.self) {
+            try await handleChange(args: ["change", "Pay rent", "march", "1", "due", "none"], store: store)
+        }
+        #expect(err?.message.contains("two ways") == true)
+        #expect(store.updatedItems.isEmpty)
+    }
+
+    @Test("throws couldn't-parse-date message and makes no change for an unparseable bare date")
+    func throwsUnparseableDateMakesNoChange() async {
+        store.items = [makeItem(identifier: "id-1")]
+        let err = await #expect(throws: ReminderHandlerError.self) {
+            try await handleChange(args: ["change", "Pay rent", "blurgh"], store: store)
+        }
+        #expect(err?.message.contains("blurgh") == true)
+        #expect(store.updatedItems.isEmpty)
+    }
+
+    @Test("throws unknown priority message and makes no change")
+    func throwsUnknownPriorityMakesNoChange() async {
+        store.items = [makeItem(identifier: "id-1")]
+        let err = await #expect(throws: ReminderHandlerError.self) {
+            try await handleChange(args: ["change", "Pay rent", "priority", "urgent"], store: store)
+        }
+        #expect(err?.message.contains("urgent") == true)
+        #expect(store.updatedItems.isEmpty)
     }
 }

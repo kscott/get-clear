@@ -1,10 +1,16 @@
 // ShowHandler.swift
 
+import GetClearKit
+
 public func handleShow(args: [String], store: any ReminderStore) async throws -> String {
-    guard args.count > 1 else { throw ReminderHandlerError("provide a reminder title") }
-    let title = args[1]
-    let listName = args.count > 2 ? args[2] : nil
-    let list = try await resolvedList(named: listName, from: store)
+    let parsed: ParsedCommand
+    do {
+        parsed = try parseCommand(Array(args.dropFirst()), shape: ReminderCommandShapes.show)
+    } catch let e as ArgumentError {
+        throw ReminderHandlerError(e.errorDescription ?? "invalid arguments")
+    }
+    let title = parsed.identifiers[0]
+    let list = try await resolvedList(named: parsed.values["list"], from: store)
     do {
         let item = try await store.resolve(title: title, in: list)
         return formatShow(item: item)

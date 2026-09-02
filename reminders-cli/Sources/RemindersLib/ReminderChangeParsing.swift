@@ -24,6 +24,7 @@ public struct ReminderChanges {
 public enum ReminderChangeError: Error, Equatable {
     case nothingToChange
     case unrecognizedRecurrence(String)
+    case unrecognizedPriority(String)
 }
 
 /// Converts a priority string to an EventKit priority integer.
@@ -57,6 +58,8 @@ public func parseReminderChanges(
     var list: ValueChange<String> = .unchanged
     var descriptions: [String] = []
 
+    // `due none` clears the date independently of every other field below — it arrives via the
+    // `due` keyword now, so it is never dropped when another keyword precedes it (FR-012).
     if !opts.date.isEmpty {
         if opts.date.lowercased() == "none" {
             due = .cleared
@@ -100,7 +103,10 @@ public func parseReminderChanges(
         }
     }
 
-    if !opts.priority.isEmpty, let p = parsePriority(opts.priority) {
+    if !opts.priority.isEmpty {
+        guard let p = parsePriority(opts.priority) else {
+            throw ReminderChangeError.unrecognizedPriority(opts.priority)
+        }
         priority = .replaced(from: existingItem.priority, to: p)
         descriptions.append(p == 0 ? "priority cleared" : "priority → \(opts.priority)")
     }

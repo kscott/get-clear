@@ -45,7 +45,7 @@ struct RemoveHandlerTests {
     func filtersByNamedList() async throws {
         store.lists = [personalList, workList]
         store.items = [makeItem(identifier: "id-1")]
-        _ = try await handleRemove(args: ["remove", "Pay rent", "Personal"], store: store)
+        _ = try await handleRemove(args: ["remove", "Pay rent", "list", "Personal"], store: store)
         #expect(store.deletedIds == ["id-1"])
     }
 
@@ -54,8 +54,45 @@ struct RemoveHandlerTests {
         store.lists = [personalList]
         store.items = [makeItem(identifier: "id-1")]
         let err = await #expect(throws: ReminderHandlerError.self) {
-            try await handleRemove(args: ["remove", "Pay rent", "Nonexistent"], store: store)
+            try await handleRemove(args: ["remove", "Pay rent", "list", "Nonexistent"], store: store)
         }
         #expect(err?.message.contains("Nonexistent") == true)
+    }
+
+    @Test("throws for a stray unquoted token where the list keyword belongs")
+    func throwsForStrayToken() async {
+        store.items = [makeItem(identifier: "id-1")]
+        let err = await #expect(throws: ReminderHandlerError.self) {
+            try await handleRemove(args: ["remove", "Pay rent", "Household", "Bills"], store: store)
+        }
+        #expect(err?.message.contains("quote") == true)
+        #expect(store.deletedIds.isEmpty)
+    }
+
+    @Test("throws when no title argument is provided")
+    func throwsWithoutTitle() async {
+        let err = await #expect(throws: ReminderHandlerError.self) {
+            try await handleRemove(args: ["remove"], store: store)
+        }
+        #expect(err != nil)
+    }
+
+    @Test("throws quote-it hint when 'list' is given bare where the title belongs")
+    func throwsQuoteHintForBareListAsTitle() async {
+        let err = await #expect(throws: ReminderHandlerError.self) {
+            try await handleRemove(args: ["remove", "list"], store: store)
+        }
+        #expect(err?.message.contains("quote") == true)
+    }
+
+    @Test("throws with the unknown-list message and removes nothing")
+    func throwsUnknownListRemovesNothing() async {
+        store.lists = [personalList]
+        store.items = [makeItem(identifier: "id-1")]
+        let err = await #expect(throws: ReminderHandlerError.self) {
+            try await handleRemove(args: ["remove", "Pay rent", "list", "No Such List"], store: store)
+        }
+        #expect(err?.message.contains("No Such List") == true)
+        #expect(store.deletedIds.isEmpty)
     }
 }

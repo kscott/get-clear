@@ -1,19 +1,9 @@
 // OptionsParsing.swift
 //
-// Parses the combined options string (everything after <title> [list]) into individual fields.
+// Maps a ParsedCommand (from GetClearKit's shared parser) onto the reminders domain DTO.
 // No EventKit dependency — lives in RemindersLib so it can be unit tested.
-//
-// Recognised keywords (case-insensitive, word boundaries):
-//   repeat / repeats / repeating / repeated  → recurrence frequency
-//   priority                                  → high / medium / low / none
-//   url                                       → a URL string
-//   note / notes                              → free text; must come last — captures to end of string
-//
-// Keyword order: repeat, priority, and url can appear in any order relative to each other
-// and to the date. note must be last — everything after it is treated as note text,
-// including any words that would otherwise be recognised as keywords.
 
-import Foundation
+import GetClearKit
 
 public struct ParsedOptions {
     public var date: String = ""
@@ -26,71 +16,14 @@ public struct ParsedOptions {
     public init() {}
 }
 
-/// Splits the args after the title into an optional list name and an options string.
-/// If the first arg matches a known calendar title, it is consumed as the list name and
-/// the remainder is joined as the options string. Otherwise all args form the options string.
-public func splitListAndOptions(
-    from args: [String],
-    calendarTitles: [String]
-) -> (list: String?, optionsString: String) {
-    guard !args.isEmpty else { return (nil, "") }
-    if calendarTitles.contains(args[0]) {
-        return (args[0], args.dropFirst().joined(separator: " "))
-    }
-    return (nil, args.joined(separator: " "))
-}
-
-public func parseOptions(_ s: String) -> ParsedOptions {
+/// Maps a shared-parser result onto the reminders domain fields.
+public func parseOptions(from parsed: ParsedCommand) -> ParsedOptions {
     var result = ParsedOptions()
-    var work = s.trimmingCharacters(in: .whitespaces)
-
-    // Extract note first — it captures everything from the keyword to end of string,
-    // so keywords inside note text are not misread.
-    if let r = work.range(of: #"\bnotes?\b"#, options: .regularExpression) {
-        result.note = String(work[r.upperBound...]).trimmingCharacters(in: .whitespaces)
-        work = String(work[..<r.lowerBound]).trimmingCharacters(in: .whitespaces)
-    }
-
-    // Find remaining keywords in whatever order they appear.
-    struct KwMatch {
-        let field: String
-        let range: Range<String.Index>
-    }
-    let patterns: [(String, String)] = [
-        ("repeat", #"\brepeat(?:s|ing|ed)?\b"#),
-        ("priority", #"\bpriority\b"#),
-        ("url", #"\burl\b"#),
-        ("list", #"\blist\b"#)
-    ]
-    var matches: [KwMatch] = []
-    for (field, pattern) in patterns {
-        if let r = work.range(of: pattern, options: .regularExpression) {
-            matches.append(KwMatch(field: field, range: r))
-        }
-    }
-    matches.sort { $0.range.lowerBound < $1.range.lowerBound }
-
-    // Everything before the first keyword is the date.
-    // Strip a leading "due" or "date" if present — natural to say "due friday" or "date wednesday"
-    // but neither is part of the date specification itself.
-    result.date = (matches.first.map { String(work[..<$0.range.lowerBound]) } ?? work)
-        .trimmingCharacters(in: .whitespaces)
-        .replacingOccurrences(of: #"(?i)^(?:due|date)\s+"#, with: "", options: .regularExpression)
-        .trimmingCharacters(in: .whitespaces)
-
-    // Each keyword's value runs from its end to the start of the next keyword (or end of string).
-    for (i, match) in matches.enumerated() {
-        let start = match.range.upperBound
-        let end = i + 1 < matches.count ? matches[i + 1].range.lowerBound : work.endIndex
-        let value = String(work[start ..< end]).trimmingCharacters(in: .whitespaces)
-        switch match.field {
-        case "repeat": result.recurrence = value
-        case "priority": result.priority = value
-        case "url": result.url = value
-        case "list": result.list = value
-        default: break
-        }
-    }
-
+    result.date = parsed.bareDate ?? parsed.values["due"] ?? ""
+    result.recurrence = parsed.values["repeat"] ?? ""
+    result.priority = parsed.values["priority"] ?? ""
+    result.url = parsed.values["url"] ?? ""
+    result.list = parsed.values["list"] ?? ""
+    result.note = parsed.trailingText ?? ""
     return result
 }
