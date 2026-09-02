@@ -1,28 +1,35 @@
 import GetClearKit
-import Nimble
-import Quick
+import Testing
 
-final class ValueChangeSpec: QuickSpec {
-    override class func spec() {
-        describe("ValueChange") {
-            it("unchanged is equal to unchanged") {
-                expect(ValueChange<String>.unchanged) == .unchanged
-            }
-            it("cleared is equal to cleared") {
-                expect(ValueChange<String>.cleared) == .cleared
-            }
-            it("added carries its value") {
-                expect(ValueChange.added("a")) == .added("a")
-            }
-            it("removed carries its value") {
-                expect(ValueChange.removed("a")) == .removed("a")
-            }
-            it("replaced carries from and to") {
-                expect(ValueChange.replaced(from: "a", to: "b")) == .replaced(from: "a", to: "b")
-            }
-            it("distinct cases are not equal") {
-                expect(ValueChange<String>.unchanged) != .cleared
-            }
-        }
+@Suite("ValueChange")
+struct ValueChangeTests {
+    @Test("unchanged is equal to unchanged")
+    func unchangedEqualsUnchanged() {
+        #expect(ValueChange<String>.unchanged == .unchanged)
+    }
+
+    @Test("cleared is equal to cleared")
+    func clearedEqualsCleared() {
+        #expect(ValueChange<String>.cleared == .cleared)
+    }
+
+    @Test("added carries its value")
+    func addedCarriesValue() {
+        #expect(ValueChange.added("a") == .added("a"))
+    }
+
+    @Test("removed carries its value")
+    func removedCarriesValue() {
+        #expect(ValueChange.removed("a") == .removed("a"))
+    }
+
+    @Test("replaced carries from and to")
+    func replacedCarriesFromAndTo() {
+        #expect(ValueChange.replaced(from: "a", to: "b") == .replaced(from: "a", to: "b"))
+    }
+
+    @Test("distinct cases are not equal")
+    func distinctCasesNotEqual() {
+        #expect(ValueChange<String>.unchanged != .cleared)
     }
 }

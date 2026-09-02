@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+# test — run the suite with the Swift Testing framework path wired in.
+#
+# SwiftPM 6.x on the Command Line Tools (no Xcode) doesn't wire up the bundled
+# Testing.framework: it passes `-I` where it needs `-F` at compile time
+# ("no such module 'Testing'"), and the test binary's rpath doesn't cover it at
+# run time ("Library not loaded: @rpath/Testing.framework"). This adds both
+# search paths. Harmless with a full Xcode (Testing resolves on its own) and on CI.
+#
+# Usage: ./scripts/test [any swift test args, e.g. --filter Foo]
+
+set -uo pipefail
+cd "$(dirname "$0")/.."
+
+DEV="$(xcode-select -p)/Library/Developer"
+FRAMEWORKS="$DEV/Frameworks"      # Testing.framework, _Testing_*.framework
+INTEROP_LIB="$DEV/usr/lib"        # lib_TestingInterop.dylib (different dir)
+
+# -F: compile-time framework search. -rpath (both dirs): bake the paths into the
+# test binary so @rpath/Testing.framework and @rpath/lib_TestingInterop.dylib
+# resolve at run time. DYLD_* env vars are stripped from the Apple-signed
+# swiftpm-testing-helper by SIP, so rpaths are the only option.
+exec swift test \
+    -Xswiftc -F -Xswiftc "$FRAMEWORKS" \
+    -Xlinker -rpath -Xlinker "$FRAMEWORKS" \
+    -Xlinker -rpath -Xlinker "$INTEROP_LIB" \
+    "$@"

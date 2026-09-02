@@ -37,13 +37,29 @@ Instead: Quick + Nimble removed entirely (dependencies + all 9 testTargets) in t
 
 ---
 
+## The pilot — GetClearKitTests (commit pending)
+
+**Result: `Test run with 212 tests in 58 suites passed` on this CLT-only machine.** Exact parity with the 212 `it()` baseline — zero consolidations. Five consecutive runs identical; `--no-parallel` also 212/212. `ActivityLogSpec` did **not** flake under parallel execution — the per-instance `UUID()` temp dirs hold — so **no `@Suite(.serialized)` needed** (trust-but-verify: verified). SwiftFormat clean (`0/7`).
+
+### D2 — Swift Testing needs framework + rpath flags on the CLT
+
+SwiftPM 6.x on the Command Line Tools does not wire up the toolchain's bundled `Testing.framework`:
+1. **Compile:** it passes `-I <…/Library/Developer/Frameworks>` where it needs `-F` → `error: no such module 'Testing'`.
+2. **Link/run:** the test binary references `@rpath/Testing.framework/…` and `@rpath/lib_TestingInterop.dylib` (the latter in a *different* dir, `…/Library/Developer/usr/lib/`), and neither rpath is baked in. `DYLD_FRAMEWORK_PATH` can't help — SIP strips `DYLD_*` from the Apple-signed `swiftpm-testing-helper`.
+
+**Fix: `scripts/test`** (new) — `swift test` with `-Xswiftc -F -Xswiftc <frameworks>` plus `-Xlinker -rpath` for both `<frameworks>` and `<…/usr/lib>`. Devs, and any future test hook, call `scripts/test`. Harmless on CI (full Xcode resolves `Testing` natively) — `.github/workflows/ci.yml` stays `swift test`, unchanged.
+
+### D3 — `swift test --filter` still compiles every test target
+
+Confirmed: `swift test --filter GetClearKitTests` compiles all 9 test targets, so it fails on the 8 not-yet-migrated ones (`import Quick`). **`swift build --target <TestTarget>` DOES compile one in isolation** (with `-Xswiftc -F …`), so each Phase-4 target's *compilation* is locally checkable as it lands — but *running* it needs the full migration done (or the sibling test targets temporarily commented out, which is how the pilot was executed and stability-checked).
+
 ## Canonical forms for the fiddly buckets (research R3 — validated in the pilot)
 
-*To be filled in by T016 during the GetClearKitTests pilot.*
-
-- **Bucket 3 — `fail()` in `guard case`**: `Issue.record("…")` in the `else` branch, then `return`. (GetClearKitSpec `parseArgs` tests.)
-- **Bucket 2 — error-inspecting closure**: `let err = #expect(throws: T.self) { … }; #expect(err?.message.contains(…) == true)`.
-- **Bucket 1 — specific error value**: `#expect(throws: E.case) { … }` (needs `Equatable`; `ReminderChangeError` gains it — see D-below).
+- **Bucket 3 — `fail()` in `guard case`**: `Issue.record("…")` in the `else` branch, then `return` (or `continue` in a loop). Used in `GetClearKitSpec` (`parseArgs`) and `DateParserSpec` (weekday loop).
+- **Bucket 2 — error-inspecting closure**: `let err = #expect(throws: T.self) { … }; #expect(err?.message.contains(…) == true)`. (Not exercised in the pilot — RemindersLibTests.)
+- **Bucket 1 — specific error value**: `#expect(throws: E.case) { … }` (needs `Equatable`; `ReminderChangeError` gains it). (Not in the pilot.)
+- **Force-unwrap of `cal.date(byAdding:…)`** → `try #require(…)` with the `@Test func` marked `throws` — SwiftFormat's `wrapConditionalBodies`/require conversion applied it; kept, it's the better idiom and behaviour-equivalent (clean failure vs crash).
+- **`context` with a single `it`** → still nested as a `@Suite` struct (faithful; the context string carries real information in the test tree).
 
 ## The one `Sources/` change
 
@@ -55,7 +71,7 @@ Instead: Quick + Nimble removed entirely (dependencies + all 9 testTargets) in t
 
 | Target | `it` baseline | `@Test` after | Consolidations |
 |---|---|---|---|
-| GetClearKitTests | 212 | _ | _ |
+| GetClearKitTests | 212 | **212** ✓ | none |
 | AppleEventKitSupportTests | 11 | _ | _ |
 | AppleContactKitTests | 14 | _ | _ |
 | ContactKitTests | 26 | _ | _ |
