@@ -19,8 +19,8 @@ Parses:
 reminders add "Pay rent"
 reminders add "Pay rent" march 1
 reminders add "Pay rent" due march 1
-reminders add "Pay rent" due on march 1                     # "on friday" → date parser strips "on"; same as "march 1"
-reminders add "Pay rent" on march 1                         # same
+reminders add "Pay rent" due on march 1                     # date parser strips leading "on"; same as "march 1"
+reminders add "Pay rent" on march 1                         # same (bare)
 reminders add "Pay rent" "march 1" list "Bills" repeat monthly priority high
 reminders add "Pay rent" list "Household Bills" due "next friday" url https://x.com
 reminders add "Call dentist" friday note "ask about the crown"
@@ -37,8 +37,11 @@ reminders add "Pay rent" priorty high           # unknownKeyword("priorty")
 reminders add "Pay rent" priority               # missingValue(keyword: "priority")
 reminders add "Pay rent" priority urgent        # parses; handler rejects "urgent" — "unknown priority: urgent" (FR-024)
 reminders add "Pay rent" list A list B          # duplicateKeyword("list")
-reminders add list                              # missingIdentifier(name: "title") — "list" is a keyword; quote it: add "list"
-reminders add                                   # missingIdentifier(name: "title")
+reminders add list                              # missingIdentifier(name: "title") — "list" is a keyword; quote it ("list") to use it as the title
+reminders add                                   # missingIdentifier(name: "title") — provide a title
+reminders change "Pay rent" blurgh              # bareDate = "blurgh" → date parse fails → "couldn't parse date: blurgh", no change (FR-024)
+reminders change "Pay rent" priority urgent     # parses; handler rejects "urgent" — "unknown priority: urgent" (FR-024, via ReminderChangeError.unrecognizedPriority)
+reminders change "Pay rent" march 1 due none    # dateGivenTwice
 ```
 
 ## `rename` — `[req "title", req "new title"]`, `.none`, keywords `[list]`
@@ -103,4 +106,4 @@ reminders find                                   # missingIdentifier(name: "quer
 ## Not given a shape
 
 - **`what`** — `#40` lifts its arg handling into `GetClearKit.runWhatCommand`; `#197` questions tool-level `what`. Untouched by spec 015.
-- **`lists` / `open`** — no arguments. `handleLists`/`handleOpen` don't receive the args array today and `.open` dispatches before the switch, so rejecting `reminders open junk` needs extra plumbing — deferred as a small follow-up. Extra tokens are currently ignored (harmless, not a silent wrong action).
+- **`lists` / `open`** — no arguments. `handleLists`/`handleOpen` don't receive the args array today and `.open` dispatches before the switch, so rejecting `reminders open junk` needs extra plumbing — deferred to **#201**. Extra tokens are currently ignored (harmless, not a silent wrong action).

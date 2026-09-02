@@ -17,7 +17,7 @@ Introduce one shared command-line argument parser in GetClearKit — pure, token
 **Project Type**: CLI suite (monorepo) — new pure code in `GetClearKit`, consumers in `RemindersLib`
 **Performance Goals**: N/A — parses a handful of argv tokens per invocation
 **Constraints**: GetClearKit stays free of framework imports; the parser is a pure function; no new package targets; no new flags
-**Scale/Scope**: Phase 1 wires 1 tool / 8 commands; Phase 2 wires 4 more tools. 1 new source + 1 new test file in GetClearKit; 1 new shape + 1 new test file in RemindersLib; ~9 RemindersLib files updated; `design.md` + constitution + `ARCHITECTURE.md` updated.
+**Scale/Scope**: Phase 1 wires 1 tool / 8 commands; Phase 2 wires 4 more tools. 1 new source + 1 new test file in GetClearKit (`CommandArguments.swift`); 1 new shape + 1 new test file in RemindersLib; ~12 RemindersLib files updated (`OptionsParsing`, `ReminderChangeParsing`, the 8 handlers, `UsageText`, + their specs) plus `DateParser.swift` in GetClearKit; `design.md` + constitution + `ARCHITECTURE.md` updated.
 
 ## Constitution Check
 
@@ -38,6 +38,7 @@ Introduce one shared command-line argument parser in GetClearKit — pure, token
 | Color has exactly three levels | ✓ N/A | Usage text rewritten, not recolored |
 | GetClearKit first | ✓ PASS | FR-022 — parser + types in GetClearKit; RemindersLib holds only reminders shape definitions |
 | Timestamps from the system clock | ✓ N/A | |
+| Tests are Swift Testing, and they are code | ✓ PASS | Added by spec 016 (merged). Every new/updated test in `tasks.md` is `@Suite`/`@Test`/`#expect` in a `*Spec.swift`; new source + its spec ship in one commit; the parser is pure (no store, no order dependence) |
 
 **No violations. Complexity Tracking omitted.**
 
@@ -125,7 +126,7 @@ Package.swift                     NO CHANGE — GetClearKit ⇄ RemindersLib dep
 
 **Not given a shape:**
 - `what` — its arg handling is being lifted into `GetClearKit.runWhatCommand` by #40, and #197 questions whether tool-level `what` should exist. Untouched here.
-- `lists` / `open` — take no arguments. Their handlers (`handleLists(store:)`, `handleOpen(opener:)`) don't currently receive the args array, and `.open` is dispatched before the command switch. Rejecting `reminders open junk` would need args plumbed into those handlers or a nullary check in `runCLI` — deferred as a small follow-up. Current behavior (extra tokens ignored) is harmless; this is not a silent *wrong* action.
+- `lists` / `open` — take no arguments. Their handlers (`handleLists(store:)`, `handleOpen(opener:)`) don't currently receive the args array, and `.open` is dispatched before the command switch. Rejecting `reminders open junk` would need args plumbed into those handlers or a nullary check in `runCLI` — deferred to **#201**. Current behavior (extra tokens ignored) is harmless; this is not a silent *wrong* action.
 
 This is every command the parser is *for*. One rule — an identifier is one token, quoted if spaced — with the sole exception of the trailing text field (`note`).
 

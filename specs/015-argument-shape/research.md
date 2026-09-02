@@ -133,6 +133,14 @@ Every doc example and every handler spec using a now-rejected form is updated in
 `/speckit.analyze` (second pass) plus review with Ken settled four points the planning pass left loose:
 
 1. **`reminders add list` is an error, not a reminder titled "list".** The keyword check applies to *every* identifier, required or optional — a bare unquoted keyword word is never consumed as a name. `missingIdentifier` names the token and says to quote it. The spec edge case that said otherwise was the defect. Quoting forces it: `reminders add "list"`.
-2. **The `on` filler moves into `DateParser`.** `GetClearKit/DateParser.swift` strips a leading `on` exactly as it already strips a leading `at` before a time. `due on friday` (a `due` keyword whose value is `"on friday"`), `on march 1` (bare), and `march 1` (bare) then resolve identically with zero argument-parser special-casing. FR-013 reworded accordingly.
-3. **FR-024 — a bad value errors, it is not swallowed.** `parsePriority` returning nil, an unknown `by` sort key, and an unparseable date on the `add` path currently drop silently or default. All three now throw an error naming the value, matching how recurrence already behaves. Live "no silent failures" holes, closed here.
+2. **The `on` filler moves into `DateParser`.** `GetClearKit/DateParser.swift` strips a leading `on`. `due on friday` (a `due` keyword whose value is `"on friday"`), `on march 1` (bare), and `march 1` (bare) then resolve identically with zero argument-parser special-casing. FR-013 reworded accordingly.
+3. **FR-024 — a bad value errors, it is not swallowed.** `parsePriority` returning nil, an unknown `by` sort key, and an unparseable date currently drop silently or default. All now throw an error naming the value, matching how recurrence already behaves. Live "no silent failures" holes, closed here.
 4. **Scope is all eight argument-taking commands** (`add`, `change`, `rename`, `remove`, `done`, `show`, `list`, `find`) — the spec body was tightened from its `add`/`change`-centric wording to match the plan's locked scope. "No half-assed migration" (Ken).
+
+## Post-analyze refinements (2026-09-01, third pass — after spec 016 merged)
+
+5. **FR-024 covers `change`'s bare date too**, not just `add`. `reminders change "X" blurgh` → `blurgh` reaches the date field, fails to parse → `ReminderHandlerError("couldn't parse date: blurgh")`. Same treatment, same message as `add`.
+6. **`change`'s unknown-priority error is `ReminderChangeError.unrecognizedPriority(String)`** — a new enum case mirroring `.unrecognizedRecurrence(String)`. `handleChange` catches it → `ReminderHandlerError("unknown priority: <value>")`. The `add` path checks `parsePriority` itself and throws `ReminderHandlerError` directly.
+7. **The `on` strip is a *new* leading-token addition** at the top of `parseDate`, not a copy of an existing pattern — `at` is handled inside the time-pattern regex today, not as a leading strip. ~2 lines.
+8. **`dateGivenTwice` is tested at the handler level** (`ChangeHandlerSpec`, T016), not in `ChangeCommandSpec` (T017) — it is thrown by `parseCommand` and never reaches `parseReminderChanges`.
+9. **`lists` / `open` stray-token guard → issue #201** (was "a deferred follow-up"). The reminders Claude skill guidance (dotfiles, out of repo) → task T038 flag.
