@@ -82,15 +82,20 @@ let query = parsed.identifiers[0]      // `reminders find` already threw missing
 `<Tool>LibTests/<Tool>CommandShapesSpec.swift`:
 
 ```swift
-describe("the remove shape") {
-    it("parses a quoted list keyword") {
-        let p = try! parseCommand(["Pay rent", "list", "House Stuff"], shape: ReminderCommandShapes.remove)
-        expect(p.identifiers) == ["Pay rent"]
-        expect(p.values["list"]) == "House Stuff"
+@Suite("the remove shape")
+struct RemoveShapeTests {
+    @Test("parses a quoted list keyword")
+    func parsesQuotedListKeyword() throws {
+        let p = try parseCommand(["Pay rent", "list", "House Stuff"], shape: ReminderCommandShapes.remove)
+        #expect(p.identifiers == ["Pay rent"])
+        #expect(p.values["list"] == "House Stuff")
     }
-    it("rejects a stray token where the name should have been quoted") {
-        expect { try parseCommand(["Pay", "rent"], shape: ReminderCommandShapes.remove) }
-            .to(throwError(ArgumentError.unexpectedTokens(["rent"])))
+
+    @Test("rejects a stray token where the name should have been quoted")
+    func rejectsStrayToken() {
+        #expect(throws: ArgumentError.unexpectedTokens(["rent"])) {
+            try parseCommand(["Pay", "rent"], shape: ReminderCommandShapes.remove)
+        }
     }
 }
 ```
@@ -98,7 +103,7 @@ describe("the remove shape") {
 ## Verify
 
 ```bash
-swift test 2>&1 | tail -20
+./scripts/test 2>&1 | tail -20
 swift build -c release 2>&1 | tail -10
-swiftformat --lint . && swiftlint lint --quiet
+./scripts/lint
 ```

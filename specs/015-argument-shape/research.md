@@ -8,7 +8,7 @@ All open questions from the spec checklist, resolved.
 
 **Decision**: `Sources/GetClearKit/CommandArguments.swift`. Pure Swift, Foundation only, no framework imports.
 
-**Rationale**: Constitution "GetClearKit first" — the parser is suite infrastructure with no tool-specific knowledge. GetClearKit already holds the parsing precedent: `ArgParsing.swift` (command dispatch), `RangeParser.swift` (`parseRange` → `ParsedRange`), `DateParser.swift` (`parseDate` → `ParsedDate`). Each is a pure `String(s) -> typed struct?` (or `throws`) function with a Quick spec. `parseCommand` follows the identical mould, one level up: it consumes the token array `ArgParsing` already produced and hands back a typed `ParsedCommand`.
+**Rationale**: Constitution "GetClearKit first" — the parser is suite infrastructure with no tool-specific knowledge. GetClearKit already holds the parsing precedent: `ArgParsing.swift` (command dispatch), `RangeParser.swift` (`parseRange` → `ParsedRange`), `DateParser.swift` (`parseDate` → `ParsedDate`). Each is a pure `String(s) -> typed struct?` (or `throws`) function with a Swift Testing spec. `parseCommand` follows the identical mould, one level up: it consumes the token array `ArgParsing` already produced and hands back a typed `ParsedCommand`.
 
 **Alternatives considered**:
 - *Per-tool parsers* — rejected by FR-022 and by the Phase 2 issues, which are only cheap if the parser is shared.

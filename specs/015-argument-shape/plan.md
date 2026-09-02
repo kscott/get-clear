@@ -9,10 +9,10 @@ Introduce one shared command-line argument parser in GetClearKit — pure, token
 
 ## Technical Context
 
-**Language/Version**: Swift 5.9 (swift-tools-version: 5.9)
-**Primary Dependencies**: GetClearKit (new parser lives here); Quick + Nimble (testing)
+**Language/Version**: Swift 6.0 (swift-tools-version: 6.0, language mode v5)
+**Primary Dependencies**: GetClearKit (new parser lives here); Swift Testing (toolchain-bundled)
 **Storage**: N/A
-**Testing**: Quick + Nimble via `swift test`; the parser and all shape definitions are pure — no store, no permissions
+**Testing**: Swift Testing via `./scripts/test`; the parser and all shape definitions are pure — no store, no permissions
 **Target Platform**: macOS 14+
 **Project Type**: CLI suite (monorepo) — new pure code in `GetClearKit`, consumers in `RemindersLib`
 **Performance Goals**: N/A — parses a handful of argv tokens per invocation
@@ -149,7 +149,7 @@ Quotes never reach this function (argv is tokenized) → fully-quoted ≡ minima
 
 ### Step 2 — GetClearKitTests: `CommandArgumentsSpec.swift`
 
-`describe("parseCommand")`, one assertion per `it`: required vs optional identifiers; a required identifier blocked by a keyword word → `missingIdentifier`; an optional identifier skips a leading keyword word; `.none` rejects a stray token; `.bareDate` captured verbatim; keyword order-independence (two permutations → equal `ParsedCommand`); trailing text captured to end incl. later keywords; fully-quoted ≡ minimal; one `it` per `ArgumentError` case. Separately, `DateParserSpec` covers the leading `on`.
+`@Suite("parseCommand")`, one assertion per `@Test`: required vs optional identifiers; a required identifier blocked by a keyword word → `missingIdentifier`; an optional identifier skips a leading keyword word; `.none` rejects a stray token; `.bareDate` captured verbatim; keyword order-independence (two permutations → equal `ParsedCommand`); trailing text captured to end incl. later keywords; fully-quoted ≡ minimal; one `@Test` per `ArgumentError` case. Separately, `DateParserSpec` covers the leading `on`.
 
 ### Step 3 — RemindersLib: `ReminderCommandShapes.swift`
 
@@ -191,8 +191,8 @@ Shared notation: `<name>` quoted identifier, `keyword <value>`, `note "…"` las
 
 - `.specify/scripts/bash/update-agent-context.sh claude`
 - `swift build -c release 2>&1 | tail -20`
-- `swift test 2>&1 | tail -30` — 0 failures
-- `swiftformat --lint . && swiftlint lint --quiet` — clean (pre-push gate)
+- `./scripts/test 2>&1 | tail -30` — 0 failures
+- `./scripts/lint` — clean (pre-push gate)
 
 ## Complexity Tracking
 
