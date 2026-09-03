@@ -20,8 +20,7 @@ public func handleNext(
     }
     let now = Date()
     let ids = try await resolvedIdentifiers(calFilter: calFilter, config: config, store: store)
-    if ids?.isEmpty == true { fail("No calendars matched filter '\(calFilter!)'") }
-    let upcoming = try await store.fetchEvents(in: parseRange("90d")!.interval, calendarIdentifiers: ids)
+    let upcoming = try await store.fetchEvents(in: literalRange("90d").interval, calendarIdentifiers: ids)
         .filter { ($0.endDate ?? $0.startDate) > now }
         .prefix(n)
     if upcoming.isEmpty { return "No upcoming events in the next 90 days" }

@@ -49,4 +49,12 @@ struct ListHandlerTests {
         let out = try await handleList(args: ["list", "today"], store: store, calFilter: nil, config: config)
         #expect(out.contains("Standup"))
     }
+
+    @Test("throws naming the filter when calFilter matches no calendars")
+    func throwsForUnmatchedCalFilter() async {
+        let err = await #expect(throws: CalendarHandlerError.self) {
+            try await handleList(args: ["list", "7d"], store: store, calFilter: "nonexistent", config: config)
+        }
+        #expect(err?.description.contains("nonexistent") == true)
+    }
 }

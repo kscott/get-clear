@@ -49,7 +49,72 @@ public func numberCalendars(_ calendars: [CalendarItem]) -> [(number: Int, title
     return sorted.enumerated().map { (number: $0.offset + 1, title: $0.element.title) }
 }
 
-// MARK: - Interactive entry point (not unit tested)
+/// Outcome of prompting for one subset name.
+public enum SetupNameOutcome: Equatable {
+    /// EOF (e.g. Ctrl-D) while reading the name.
+    case cancelled
+    /// The user pressed Enter with no name — the normal way to end the session.
+    case finished
+    /// A non-empty name was given; ready to prompt for its calendars.
+    case proceed(subsetName: String)
+}
+
+/// Decides the outcome of a subset-name prompt. Pure — no I/O.
+public func setupNameOutcome(_ rawInput: String?) -> SetupNameOutcome {
+    guard let rawInput else { return .cancelled }
+    let subsetName = sanitize(rawInput).lowercased()
+    guard !subsetName.isEmpty else { return .finished }
+    return .proceed(subsetName: subsetName)
+}
+
+/// Outcome of prompting for one subset's calendars.
+public enum SetupCalendarOutcome: Equatable {
+    /// EOF (e.g. Ctrl-D) while reading the calendar list.
+    case cancelled
+    /// The input was empty (or whitespace-only) after trimming.
+    case emptyInput
+    /// None of the given tokens matched a calendar.
+    case noValidCalendars(unmatched: [String])
+    /// At least one token matched; `unmatched` lists any that didn't (may be empty).
+    case subsetAdded(calendars: [String], unmatched: [String])
+}
+
+/// Decides the outcome of a calendar-list prompt, given the raw (unsanitized) input and the
+/// available calendars for token matching. Pure — no I/O.
+public func setupCalendarOutcome(
+    _ rawInput: String?,
+    numbered: [(number: Int, title: String)],
+    all: [CalendarItem]
+) -> SetupCalendarOutcome {
+    guard let rawInput else { return .cancelled }
+    let calInput = sanitize(rawInput)
+    guard !calInput.trimmingCharacters(in: .whitespaces).isEmpty else { return .emptyInput }
+
+    let tokens = calInput.components(separatedBy: ",")
+        .map { $0.trimmingCharacters(in: .whitespaces) }
+        .filter { !$0.isEmpty }
+
+    let (calNames, unmatched) = parseCalendarTokens(tokens: tokens, numbered: numbered, all: all)
+    guard !calNames.isEmpty else { return .noValidCalendars(unmatched: unmatched) }
+    return .subsetAdded(calendars: calNames, unmatched: unmatched)
+}
+
+/// Writes the subset TOML to `configURL` (creating `configDir` if needed) and returns the
+/// confirmation message. `configURL`/`configDir` are parameters — never the hardcoded
+/// `~/.config/calendar-cli/config.toml` global directly — so this is testable against a
+/// temp directory without ever touching a real user config.
+public func writeSetupConfig(
+    subsets: [(name: String, calendars: [String])], configURL: URL, configDir: URL
+) throws -> String {
+    let toml = buildSubsetTOML(subsets: subsets)
+    try FileManager.default.createDirectory(at: configDir, withIntermediateDirectories: true)
+    try toml.write(to: configURL, atomically: true, encoding: .utf8)
+    var result = "Config written to \(configURL.path)"
+    if let first = subsets.first { result += "\nTry it: calendar \(first.name) today" }
+    return result
+}
+
+// MARK: - Interactive entry point (not unit tested — readLine/print/SIGINT are process-level)
 
 @discardableResult
 public func handleSetup(args: [String], store: any CalendarStore) async throws -> String {
@@ -66,6 +131,30 @@ public func handleSetup(args: [String], store: any CalendarStore) async throws -
     }
 
     let numbered = numberCalendars(all)
+    printAvailableCalendars(all, numbered: numbered)
+
+    print("\nCreate subsets to group calendars (e.g. \"work\", \"personal\").")
+    print("Enter calendar names or numbers, comma-separated. Press Enter with no name to finish.\n")
+
+    signal(SIGINT) { _ in print("\nCancelled.")
+        exit(0)
+    }
+
+    let subsets = runInteractiveSetupLoop(numbered: numbered, all: all)
+
+    guard !subsets.isEmpty else {
+        return "\nNo subsets defined — nothing written."
+    }
+
+    do {
+        return try writeSetupConfig(subsets: subsets, configURL: configURL, configDir: configDir)
+    } catch {
+        throw CalendarHandlerError("Could not write config: \(error.localizedDescription)")
+    }
+}
+
+/// Prints the numbered "Available calendars" listing, grouped by source.
+private func printAvailableCalendars(_ all: [CalendarItem], numbered: [(number: Int, title: String)]) {
     let grouped = Dictionary(grouping: all) { $0.source ?? "" }
     print("Available calendars:\n")
     var idx = 0
@@ -76,68 +165,55 @@ public func handleSetup(args: [String], store: any CalendarStore) async throws -
             print(String(format: "    %2d  \(calendarDot(hex: cal.color))\(cal.title)", idx))
         }
     }
+}
 
-    print("\nCreate subsets to group calendars (e.g. \"work\", \"personal\").")
-    print("Enter calendar names or numbers, comma-separated. Press Enter with no name to finish.\n")
-
+/// Drives the readLine/print loop that prompts for one subset at a time, using
+/// `setupNameOutcome`/`setupCalendarOutcome` for the actual decisions. Returns the subsets
+/// the user defined.
+private func runInteractiveSetupLoop(
+    numbered: [(number: Int, title: String)], all: [CalendarItem]
+) -> [(name: String, calendars: [String])] {
     var subsets: [(name: String, calendars: [String])] = []
-    signal(SIGINT) { _ in print("\nCancelled.")
-        exit(0)
-    }
 
-    while true {
+    setupLoop: while true {
         print("Subset name: ", terminator: "")
         fflush(stdout)
-        guard let rawNameInput = readLine() else { print("\nCancelled.")
-            break
+        let subsetName: String
+        switch setupNameOutcome(readLine()) {
+        case .cancelled:
+            print("\nCancelled.")
+            break setupLoop
+        case .finished:
+            break setupLoop
+        case let .proceed(name):
+            subsetName = name
         }
-        let subsetName = sanitize(rawNameInput).lowercased()
-        guard !subsetName.isEmpty else { break }
 
         print("Calendars for \"\(subsetName)\": ", terminator: "")
         fflush(stdout)
-        guard let rawCalInput = readLine() else { print("\nCancelled.")
-            break
-        }
-        let calInput = sanitize(rawCalInput)
-        guard !calInput.trimmingCharacters(in: .whitespaces).isEmpty else {
+        switch setupCalendarOutcome(readLine(), numbered: numbered, all: all) {
+        case .cancelled:
+            print("\nCancelled.")
+            break setupLoop
+        case .emptyInput:
             print("  No calendars entered — skipping\n")
-            continue
-        }
-
-        let tokens = calInput.components(separatedBy: ",")
-            .map { $0.trimmingCharacters(in: .whitespaces) }
-            .filter { !$0.isEmpty }
-
-        let (calNames, unmatched) = parseCalendarTokens(tokens: tokens, numbered: numbered, all: all)
-
-        if !unmatched.isEmpty {
-            print("  Not found: \(unmatched.joined(separator: ", ")) — skipping those")
-        }
-        guard !calNames.isEmpty else {
+        case let .noValidCalendars(unmatched):
+            printUnmatched(unmatched)
             print("  No valid calendars — skipping\n")
-            continue
+        case let .subsetAdded(calNames, unmatched):
+            printUnmatched(unmatched)
+            let quoted = calNames.map { "\"\($0)\"" }.joined(separator: ", ")
+            print("  → \(subsetName) = [\(quoted)]\n")
+            subsets.append((name: subsetName, calendars: calNames))
         }
-
-        let quoted = calNames.map { "\"\($0)\"" }.joined(separator: ", ")
-        print("  → \(subsetName) = [\(quoted)]\n")
-        subsets.append((name: subsetName, calendars: calNames))
     }
 
-    guard !subsets.isEmpty else {
-        return "\nNo subsets defined — nothing written."
-    }
+    return subsets
+}
 
-    let toml = buildSubsetTOML(subsets: subsets)
-    do {
-        try FileManager.default.createDirectory(at: configDir, withIntermediateDirectories: true)
-        try toml.write(to: configURL, atomically: true, encoding: .utf8)
-        var result = "Config written to \(configURL.path)"
-        if let first = subsets.first { result += "\nTry it: calendar \(first.name) today" }
-        return result
-    } catch {
-        fail("Could not write config: \(error.localizedDescription)")
-    }
+private func printUnmatched(_ unmatched: [String]) {
+    guard !unmatched.isEmpty else { return }
+    print("  Not found: \(unmatched.joined(separator: ", ")) — skipping those")
 }
 
 private func sanitize(_ s: String) -> String {

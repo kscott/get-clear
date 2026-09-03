@@ -55,4 +55,13 @@ struct AddHandlerTests {
         _ = try await handleAdd(args: ["add", "Meeting", "tomorrow 2pm"], store: store, calFilter: nil, config: config)
         #expect(store.addedItems.first?.isAllDay == false)
     }
+
+    @Test("throws naming the filter when calFilter matches no calendars, and adds nothing")
+    func throwsForUnmatchedCalFilter() async {
+        let err = await #expect(throws: CalendarHandlerError.self) {
+            try await handleAdd(args: ["add", "Meeting"], store: store, calFilter: "nonexistent", config: config)
+        }
+        #expect(err?.description.contains("nonexistent") == true)
+        #expect(store.addedItems.isEmpty)
+    }
 }

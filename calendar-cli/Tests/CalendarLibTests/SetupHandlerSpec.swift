@@ -1,6 +1,7 @@
 // SetupHandlerSpec.swift
 // Tests for the pure helper functions extracted from SetupHandler.
-// handleSetup itself is not tested (interactive I/O).
+// handleSetup itself is not unit tested — it's thin glue around these pieces
+// (readLine/print/signal(SIGINT) are process-level, not unit-testable).
 
 import CalendarLib
 import Foundation
@@ -133,5 +134,126 @@ struct BuildSubsetTOMLTests {
         let toml = buildSubsetTOML(subsets: [("work", ["Work", "Meetings"])])
         let config = parseConfig(toml)
         #expect(config.subsets["work"] == ["Work", "Meetings"])
+    }
+}
+
+// MARK: - setupNameOutcome
+
+@Suite("setupNameOutcome")
+struct SetupNameOutcomeTests {
+    @Test("returns cancelled for nil input (EOF)")
+    func cancelledOnNil() {
+        #expect(setupNameOutcome(nil) == .cancelled)
+    }
+
+    @Test("returns finished for empty input")
+    func finishedOnEmpty() {
+        #expect(setupNameOutcome("") == .finished)
+    }
+
+    @Test("returns finished for whitespace-only input")
+    func finishedOnWhitespace() {
+        #expect(setupNameOutcome("   ") == .finished)
+    }
+
+    @Test("returns proceed with the lowercased name")
+    func proceedsWithLowercasedName() {
+        #expect(setupNameOutcome("Work") == .proceed(subsetName: "work"))
+    }
+
+    @Test("strips control characters via sanitize")
+    func stripsControlCharacters() {
+        #expect(setupNameOutcome("wo\u{07}rk") == .proceed(subsetName: "work"))
+    }
+}
+
+// MARK: - setupCalendarOutcome
+
+@Suite("setupCalendarOutcome")
+struct SetupCalendarOutcomeTests {
+    @Test("returns cancelled for nil input (EOF)")
+    func cancelledOnNil() {
+        #expect(setupCalendarOutcome(nil, numbered: numbered, all: cals) == .cancelled)
+    }
+
+    @Test("returns emptyInput for whitespace-only input")
+    func emptyInputOnWhitespace() {
+        #expect(setupCalendarOutcome("   ", numbered: numbered, all: cals) == .emptyInput)
+    }
+
+    @Test("returns noValidCalendars when no tokens match")
+    func noValidCalendarsWhenNoneMatch() {
+        #expect(
+            setupCalendarOutcome("nope", numbered: numbered, all: cals)
+                == .noValidCalendars(unmatched: ["nope"])
+        )
+    }
+
+    @Test("returns subsetAdded with a calendar matched by number")
+    func subsetAddedByNumber() {
+        #expect(
+            setupCalendarOutcome("1", numbered: numbered, all: cals)
+                == .subsetAdded(calendars: ["Meetings"], unmatched: [])
+        )
+    }
+
+    @Test("returns subsetAdded with a calendar matched by name")
+    func subsetAddedByName() {
+        #expect(
+            setupCalendarOutcome("Work", numbered: numbered, all: cals)
+                == .subsetAdded(calendars: ["Work"], unmatched: [])
+        )
+    }
+
+    @Test("returns subsetAdded with unmatched tokens listed alongside matched ones")
+    func subsetAddedWithPartialMatch() {
+        #expect(
+            setupCalendarOutcome("Work, bogus", numbered: numbered, all: cals)
+                == .subsetAdded(calendars: ["Work"], unmatched: ["bogus"])
+        )
+    }
+}
+
+// MARK: - writeSetupConfig
+
+@Suite("writeSetupConfig")
+struct WriteSetupConfigTests {
+    /// A fresh, unique temp directory per test — never the real ~/.config/calendar-cli/config.toml.
+    private func tempConfigURL() -> (configURL: URL, configDir: URL) {
+        let dir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        return (dir.appendingPathComponent("config.toml"), dir)
+    }
+
+    @Test("creates the config directory and writes the file")
+    func createsDirectoryAndWritesFile() throws {
+        let (configURL, configDir) = tempConfigURL()
+        defer { try? FileManager.default.removeItem(at: configDir) }
+        _ = try writeSetupConfig(subsets: [("work", ["Work"])], configURL: configURL, configDir: configDir)
+        #expect(FileManager.default.fileExists(atPath: configURL.path))
+    }
+
+    @Test("writes valid subset TOML that round-trips through parseConfig")
+    func writesValidTOML() throws {
+        let (configURL, configDir) = tempConfigURL()
+        defer { try? FileManager.default.removeItem(at: configDir) }
+        _ = try writeSetupConfig(subsets: [("work", ["Work", "Meetings"])], configURL: configURL, configDir: configDir)
+        let content = try String(contentsOf: configURL, encoding: .utf8)
+        #expect(parseConfig(content).subsets["work"] == ["Work", "Meetings"])
+    }
+
+    @Test("includes a 'Try it' hint naming the first subset")
+    func includesTryItHint() throws {
+        let (configURL, configDir) = tempConfigURL()
+        defer { try? FileManager.default.removeItem(at: configDir) }
+        let result = try writeSetupConfig(subsets: [("work", ["Work"])], configURL: configURL, configDir: configDir)
+        #expect(result.contains("Try it: calendar work today"))
+    }
+
+    @Test("includes the written path in the confirmation message")
+    func includesPathInMessage() throws {
+        let (configURL, configDir) = tempConfigURL()
+        defer { try? FileManager.default.removeItem(at: configDir) }
+        let result = try writeSetupConfig(subsets: [("work", ["Work"])], configURL: configURL, configDir: configDir)
+        #expect(result.contains(configURL.path))
     }
 }

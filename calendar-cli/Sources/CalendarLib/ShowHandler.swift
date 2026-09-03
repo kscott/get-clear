@@ -12,7 +12,6 @@ public func handleShow(
     let title = parsed.identifiers[0]
     let range = try resolvedRange(parsed.bareDateRange)
     let ids = try await resolvedIdentifiers(calFilter: calFilter, config: config, store: store)
-    if ids?.isEmpty == true { fail("No calendars matched filter '\(calFilter!)'") }
     let event: EventItem
     do {
         event = try await store.resolve(title: title, in: range.interval, calendarIdentifiers: ids)
