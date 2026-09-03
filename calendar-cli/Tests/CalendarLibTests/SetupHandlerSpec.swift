@@ -116,6 +116,26 @@ struct FormatAvailableCalendarsTests {
     }
 }
 
+// MARK: - formatUnmatched
+
+@Suite("formatUnmatched")
+struct FormatUnmatchedTests {
+    @Test("returns nil for no unmatched tokens")
+    func nilForEmpty() {
+        #expect(formatUnmatched([]) == nil)
+    }
+
+    @Test("names a single unmatched token")
+    func namesSingleToken() {
+        #expect(formatUnmatched(["bogus"]) == "  Not found: bogus — skipping those")
+    }
+
+    @Test("joins multiple unmatched tokens with a comma")
+    func joinsMultipleTokens() {
+        #expect(formatUnmatched(["bogus", "nope"]) == "  Not found: bogus, nope — skipping those")
+    }
+}
+
 // MARK: - setupNameOutcome
 
 @Suite("setupNameOutcome")

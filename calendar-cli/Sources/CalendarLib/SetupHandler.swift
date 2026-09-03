@@ -165,10 +165,10 @@ private func runInteractiveSetupLoop(
         case .emptyInput:
             print("  No calendars entered — skipping\n")
         case let .noValidCalendars(unmatched):
-            printUnmatched(unmatched)
+            if let msg = formatUnmatched(unmatched) { print(msg) }
             print("  No valid calendars — skipping\n")
         case let .subsetAdded(calNames, unmatched):
-            printUnmatched(unmatched)
+            if let msg = formatUnmatched(unmatched) { print(msg) }
             let quoted = calNames.map { "\"\($0)\"" }.joined(separator: ", ")
             print("  → \(subsetName) = [\(quoted)]\n")
             subsets.append((name: subsetName, calendars: calNames))
@@ -178,7 +178,8 @@ private func runInteractiveSetupLoop(
     return subsets
 }
 
-private func printUnmatched(_ unmatched: [String]) {
-    guard !unmatched.isEmpty else { return }
-    print("  Not found: \(unmatched.joined(separator: ", ")) — skipping those")
+/// Formats the "Not found: ..." line for unmatched tokens, or nil when there are none.
+public func formatUnmatched(_ unmatched: [String]) -> String? {
+    guard !unmatched.isEmpty else { return nil }
+    return "  Not found: \(unmatched.joined(separator: ", ")) — skipping those"
 }
