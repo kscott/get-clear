@@ -17,7 +17,7 @@ struct ReminderCommandShapesTests {
                 ["Pay rent", "march 1", "list", "Bills", "repeat", "monthly", "priority", "high"],
                 shape: ReminderCommandShapes.add
             )
-            #expect(parsed.identifiers == ["Pay rent"] && parsed.bareDate == "march 1")
+            #expect(parsed.identifiers == ["Pay rent"] && parsed.bareDateRange == "march 1")
         }
 
         @Test("a reordered-keyword variant parses identically")
@@ -45,10 +45,10 @@ struct ReminderCommandShapesTests {
             }
         }
 
-        @Test("a stray phrase in the leading region lands in bareDate, not an error")
+        @Test("a stray phrase in the leading region lands in bareDateRange, not an error")
         func strayPhraseLandsInBareDate() throws {
             let parsed = try parseCommand(["Pay rent", "Bills", "march", "1"], shape: ReminderCommandShapes.add)
-            #expect(parsed.bareDate == "Bills march 1")
+            #expect(parsed.bareDateRange == "Bills march 1")
         }
 
         @Test("note captures to end of line, quoted or not")
@@ -71,7 +71,7 @@ struct ReminderCommandShapesTests {
         }
 
         @Test("a bare date and the due keyword together throw dateGivenTwice")
-        func bareDateAndDueThrowsDateGivenTwice() {
+        func bareDateRangeAndDueThrowsDateGivenTwice() {
             #expect(throws: ArgumentError.dateGivenTwice) {
                 try parseCommand(["Pay rent", "march", "1", "due", "none"], shape: ReminderCommandShapes.change)
             }

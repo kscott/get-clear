@@ -9,7 +9,7 @@ import GetClearKit
 public enum ReminderCommandShapes {
     public static let add = CommandShape(
         identifiers: [Identifier("title")],
-        leading: .bareDate,
+        leading: .bareDateRange,
         keywords: [
             Keyword("list"),
             Keyword("priority"),
@@ -22,7 +22,7 @@ public enum ReminderCommandShapes {
 
     public static let change = CommandShape(
         identifiers: [Identifier("title")],
-        leading: .bareDate,
+        leading: .bareDateRange,
         keywords: [
             Keyword("list"),
             Keyword("priority"),

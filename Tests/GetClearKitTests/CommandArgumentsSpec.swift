@@ -11,9 +11,9 @@ private let titleShape = CommandShape(
     keywords: [Keyword("list"), Keyword("priority")]
 )
 
-private let bareDateShape = CommandShape(
+private let bareDateRangeShape = CommandShape(
     identifiers: [Identifier("title")],
-    leading: .bareDate,
+    leading: .bareDateRange,
     keywords: [Keyword("due", aliases: ["date"]), Keyword("list")],
     trailingTextKeyword: "note"
 )
@@ -77,16 +77,16 @@ struct CommandArgumentsTests {
             }
         }
 
-        @Test(".bareDate captures the leading phrase verbatim")
+        @Test(".bareDateRange captures the leading phrase verbatim")
         func bareDateCapturedVerbatim() throws {
-            let parsed = try parseCommand(["Pay rent", "march", "1"], shape: bareDateShape)
-            #expect(parsed.bareDate == "march 1")
+            let parsed = try parseCommand(["Pay rent", "march", "1"], shape: bareDateRangeShape)
+            #expect(parsed.bareDateRange == "march 1")
         }
 
-        @Test(".bareDate is nil when nothing precedes the first keyword")
+        @Test(".bareDateRange is nil when nothing precedes the first keyword")
         func bareDateNilWhenAbsent() throws {
-            let parsed = try parseCommand(["Pay rent", "list", "Bills"], shape: bareDateShape)
-            #expect(parsed.bareDate == nil)
+            let parsed = try parseCommand(["Pay rent", "list", "Bills"], shape: bareDateRangeShape)
+            #expect(parsed.bareDateRange == nil)
         }
     }
 
@@ -100,7 +100,7 @@ struct CommandArgumentsTests {
 
         @Test("the due keyword's value is space-joined up to the next keyword, unlike other keywords")
         func multiTokenValue() throws {
-            let parsed = try parseCommand(["Pay rent", "due", "next", "friday"], shape: bareDateShape)
+            let parsed = try parseCommand(["Pay rent", "due", "next", "friday"], shape: bareDateRangeShape)
             #expect(parsed.values["due"] == "next friday")
         }
 
@@ -112,14 +112,14 @@ struct CommandArgumentsTests {
 
         @Test("an alias resolves to its canonical keyword")
         func aliasResolvesToCanonical() throws {
-            let parsed = try parseCommand(["Pay rent", "date", "friday"], shape: bareDateShape)
+            let parsed = try parseCommand(["Pay rent", "date", "friday"], shape: bareDateRangeShape)
             #expect(parsed.values["due"] == "friday")
         }
 
         @Test("keyword order does not affect the parsed result")
         func keywordOrderIndependence() throws {
-            let a = try parseCommand(["Pay rent", "list", "Bills", "due", "friday"], shape: bareDateShape)
-            let b = try parseCommand(["Pay rent", "due", "friday", "list", "Bills"], shape: bareDateShape)
+            let a = try parseCommand(["Pay rent", "list", "Bills", "due", "friday"], shape: bareDateRangeShape)
+            let b = try parseCommand(["Pay rent", "due", "friday", "list", "Bills"], shape: bareDateRangeShape)
             #expect(a == b)
         }
     }
@@ -129,14 +129,14 @@ struct CommandArgumentsTests {
         @Test("trailing text captures everything to end, including later keyword words")
         func trailingTextCapturesToEnd() throws {
             let parsed = try parseCommand(
-                ["Pay rent", "note", "ask", "about", "list", "pricing"], shape: bareDateShape
+                ["Pay rent", "note", "ask", "about", "list", "pricing"], shape: bareDateRangeShape
             )
             #expect(parsed.trailingText == "ask about list pricing")
         }
 
         @Test("trailingText is nil when the trailing keyword never appears")
         func trailingTextNilWhenAbsent() throws {
-            let parsed = try parseCommand(["Pay rent"], shape: bareDateShape)
+            let parsed = try parseCommand(["Pay rent"], shape: bareDateRangeShape)
             #expect(parsed.trailingText == nil)
         }
     }
@@ -145,8 +145,8 @@ struct CommandArgumentsTests {
     struct QuotingInvariance {
         @Test("a fully-quoted token stream parses identically to its minimally-quoted equivalent")
         func fullyQuotedEqualsMinimallyQuoted() throws {
-            let fullyQuoted = try parseCommand(["Pay rent", "due", "next friday"], shape: bareDateShape)
-            let minimallyQuoted = try parseCommand(["Pay rent", "due", "next", "friday"], shape: bareDateShape)
+            let fullyQuoted = try parseCommand(["Pay rent", "due", "next friday"], shape: bareDateRangeShape)
+            let minimallyQuoted = try parseCommand(["Pay rent", "due", "next", "friday"], shape: bareDateRangeShape)
             #expect(fullyQuoted == minimallyQuoted)
         }
     }
@@ -216,7 +216,7 @@ struct CommandArgumentsTests {
         @Test("dateGivenTwice fires when a bare date and the due keyword both appear")
         func dateGivenTwiceCase() {
             #expect(throws: ArgumentError.dateGivenTwice) {
-                try parseCommand(["Pay rent", "march", "1", "due", "none"], shape: bareDateShape)
+                try parseCommand(["Pay rent", "march", "1", "due", "none"], shape: bareDateRangeShape)
             }
         }
     }

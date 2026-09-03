@@ -19,7 +19,7 @@ public struct ParsedOptions {
 /// Maps a shared-parser result onto the reminders domain fields.
 public func parseOptions(from parsed: ParsedCommand) -> ParsedOptions {
     var result = ParsedOptions()
-    result.date = parsed.bareDate ?? parsed.values["due"] ?? ""
+    result.date = parsed.bareDateRange ?? parsed.values["due"] ?? ""
     result.recurrence = parsed.values["repeat"] ?? ""
     result.priority = parsed.values["priority"] ?? ""
     result.url = parsed.values["url"] ?? ""

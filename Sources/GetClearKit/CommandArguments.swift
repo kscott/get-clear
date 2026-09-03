@@ -25,8 +25,8 @@ public struct Identifier: Sendable, Equatable {
 public enum LeadingRegion: Sendable, Equatable {
     /// No tokens permitted between the identifiers and the first keyword.
     case none
-    /// Optional date, captured verbatim; guards "date given two ways" against a due/date keyword.
-    case bareDate
+    /// Optional bare date or range, captured verbatim; guards "date given two ways" against a due/date keyword.
+    case bareDateRange
 }
 
 public struct Keyword: Sendable, Equatable {
@@ -61,14 +61,14 @@ public struct CommandShape: Sendable {
 public struct ParsedCommand: Equatable, Sendable {
     /// One entry per identifier that was present — optional identifiers may be absent.
     public let identifiers: [String]
-    public let bareDate: String?
+    public let bareDateRange: String?
     /// Keyed by keyword canonical, space-joined value.
     public let values: [String: String]
     public let trailingText: String?
 
-    public init(identifiers: [String], bareDate: String?, values: [String: String], trailingText: String?) {
+    public init(identifiers: [String], bareDateRange: String?, values: [String: String], trailingText: String?) {
         self.identifiers = identifiers
-        self.bareDate = bareDate
+        self.bareDateRange = bareDateRange
         self.values = values
         self.trailingText = trailingText
     }
@@ -134,15 +134,17 @@ public func parseCommand(_ tokens: [String], shape: CommandShape) throws -> Pars
     let keywordWords = commandKeywordWords(shape)
 
     let identifiers = try consumeIdentifiers(from: &remaining, shape: shape, keywordWords: keywordWords)
-    let bareDate = try consumeLeadingRegion(from: &remaining, shape: shape, keywordWords: keywordWords)
+    let bareDateRange = try consumeLeadingRegion(from: &remaining, shape: shape, keywordWords: keywordWords)
     let (values, trailingText) = try consumeKeywordPairs(from: &remaining, shape: shape, keywordWords: keywordWords)
 
-    // A bare date and a due/date keyword can't both be given.
-    if bareDate != nil, values["due"] != nil {
+    // A bare date/range and a due/date keyword can't both be given.
+    if bareDateRange != nil, values["due"] != nil {
         throw ArgumentError.dateGivenTwice
     }
 
-    return ParsedCommand(identifiers: identifiers, bareDate: bareDate, values: values, trailingText: trailingText)
+    return ParsedCommand(
+        identifiers: identifiers, bareDateRange: bareDateRange, values: values, trailingText: trailingText
+    )
 }
 
 /// Consumes one token per `Identifier` in order; a bare keyword word is never taken as a name.
@@ -182,7 +184,7 @@ private func consumeLeadingRegion(
     switch shape.leading {
     case .none:
         throw ArgumentError.unexpectedTokens(leadingTokens)
-    case .bareDate:
+    case .bareDateRange:
         return leadingTokens.joined(separator: " ")
     }
 }
@@ -191,7 +193,7 @@ private func consumeLeadingRegion(
 ///
 /// A keyword's value is exactly one token (quoted if it has a space) — the same rule as an
 /// identifier — with one exception: the due/date keyword's value is free-form, collected
-/// greedily like the bareDate region, because it is the same field (FR-013). This also keeps
+/// greedily like the bareDateRange region, because it is the same field (FR-013). This also keeps
 /// unknownKeyword reachable: a single-token value collector leaves a stray trailing word
 /// exposed at the top of the next iteration instead of silently absorbing it into the
 /// previous value.
@@ -240,8 +242,8 @@ private func isKeywordWord(_ token: String, in keywordWords: Set<String>) -> Boo
     keywordWords.contains(token.lowercased())
 }
 
-/// The one keyword whose value is free-form multi-token, mirroring the `.bareDate` region —
-/// `due`/`date` names the same field the bare date fills, just introduced explicitly (FR-013).
+/// The one keyword whose value is free-form multi-token, mirroring the `.bareDateRange` region —
+/// `due`/`date` names the same field the bare date/range fills, just introduced explicitly (FR-013).
 private let dateKeywordCanonical = "due"
 
 private func commandKeywordWords(_ shape: CommandShape) -> Set<String> {
