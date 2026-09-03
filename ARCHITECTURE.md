@@ -66,7 +66,9 @@ The threshold: if exercising a branch requires a permission dialog or a file to 
 
 **`bareDate` renamed to `bareDateRange`** (same day, discovered starting this issue) — see the entry below.
 
-**Left alone:** `ListHandler.swift`'s `handleDefault` (bare range shorthand with no command word, e.g. typing `calendar 7d` directly) is dead code — defined, unit-tested, but never called from `main.swift`'s dispatch. Not touched here; flagged for Ken to decide whether to wire it up or remove it. calFilter resolution (`calendar work today`) is a separate, pre-existing subsystem — parsed before `parseCommand` ever sees the args — and untouched by this issue.
+**`handleDefault` removed.** `ListHandler.swift` had a bare range shorthand (`calendar 7d` working without the `list` command word) that was live before the #140 three-tier migration (April 2026) — `main.swift`'s old `default:` case called it — but the migration's dispatch rewrite dropped the wiring while carrying the function and its tests forward untouched, so it had been dead code (defined, unit-tested, unreachable) for months with zero reports. Deleted rather than restored: it worked by guessing whether an unrecognized first token happened to parse as a range, the exact silent-inference pattern this issue (and spec 015 generally) removes everywhere else — reviving it would have reintroduced ambiguous dispatch into the one tool this issue just made explicit. It was also never documented (no README/usage-text mention) and had no equivalent in any other tool. `reminders <unrecognized-token>` already takes the same path calendar now takes uniformly: shared `runCLI` prints usage and exits 0.
+
+calFilter resolution (`calendar work today`) is a separate, pre-existing subsystem — parsed before `parseCommand` ever sees the args — and untouched by this issue.
 
 ### 2026-09-02 — Shared command-argument parser (spec 015)
 

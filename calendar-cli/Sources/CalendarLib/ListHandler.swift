@@ -1,5 +1,5 @@
 // ListHandler.swift
-// Handlers for: list, today, week, next (bare range shorthands).
+// Handlers for: list, today, week.
 
 import Foundation
 import GetClearKit
@@ -52,17 +52,6 @@ public func handleWeek(
     let evts = try await store.fetchEvents(in: range.interval, calendarIdentifiers: ids)
     if evts.isEmpty { return "No events this week" }
     return formatGrouped(evts)
-}
-
-// MARK: - handleDefault (bare range shorthands)
-
-/// Returns a formatted string if args parse as a range; returns nil otherwise.
-public func handleDefault(
-    args: [String], store: any CalendarStore, calFilter: String?, config: CalendarConfig
-) async throws -> String? {
-    let rangeStr = args.joined(separator: " ")
-    guard let range = parseRange(rangeStr) else { return nil }
-    return try await fetchAndFormat(store: store, calFilter: calFilter, config: config, range: range)
 }
 
 // MARK: - Shared
