@@ -137,6 +137,44 @@ struct BuildSubsetTOMLTests {
     }
 }
 
+// MARK: - formatAvailableCalendars
+
+@Suite("formatAvailableCalendars")
+struct FormatAvailableCalendarsTests {
+    @Test("starts with the 'Available calendars' header")
+    func startsWithHeader() {
+        #expect(formatAvailableCalendars(cals).hasPrefix("Available calendars:"))
+    }
+
+    @Test("contains every calendar title")
+    func containsEveryTitle() {
+        let out = formatAvailableCalendars(cals)
+        #expect(out.contains("Work"))
+        #expect(out.contains("Meetings"))
+        #expect(out.contains("Home"))
+    }
+
+    @Test("groups calendars under their source heading")
+    func groupsUnderSourceHeading() {
+        let out = formatAvailableCalendars(cals)
+        #expect(out.contains("iCloud"))
+        #expect(out.contains("Personal"))
+    }
+
+    @Test("numbers calendars sequentially starting at 1 across all groups")
+    func numbersSequentially() {
+        let out = formatAvailableCalendars(cals)
+        #expect(out.contains(" 1  "))
+        #expect(out.contains(" 2  "))
+        #expect(out.contains(" 3  "))
+    }
+
+    @Test("returns just the header for no calendars")
+    func emptyForNoCalendars() {
+        #expect(formatAvailableCalendars([]) == "Available calendars:\n")
+    }
+}
+
 // MARK: - setupNameOutcome
 
 @Suite("setupNameOutcome")

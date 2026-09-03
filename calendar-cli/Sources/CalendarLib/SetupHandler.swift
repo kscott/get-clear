@@ -131,7 +131,7 @@ public func handleSetup(args: [String], store: any CalendarStore) async throws -
     }
 
     let numbered = numberCalendars(all)
-    printAvailableCalendars(all, numbered: numbered)
+    print(formatAvailableCalendars(all))
 
     print("\nCreate subsets to group calendars (e.g. \"work\", \"personal\").")
     print("Enter calendar names or numbers, comma-separated. Press Enter with no name to finish.\n")
@@ -153,18 +153,19 @@ public func handleSetup(args: [String], store: any CalendarStore) async throws -
     }
 }
 
-/// Prints the numbered "Available calendars" listing, grouped by source.
-private func printAvailableCalendars(_ all: [CalendarItem], numbered: [(number: Int, title: String)]) {
+/// Formats the numbered "Available calendars" listing, grouped by source.
+public func formatAvailableCalendars(_ all: [CalendarItem]) -> String {
     let grouped = Dictionary(grouping: all) { $0.source ?? "" }
-    print("Available calendars:\n")
+    var lines = ["Available calendars:\n"]
     var idx = 0
     for source in grouped.keys.sorted() {
-        if !source.isEmpty { print("  \(source)") }
+        if !source.isEmpty { lines.append("  \(source)") }
         for cal in (grouped[source] ?? []).sorted(by: { $0.title < $1.title }) {
             idx += 1
-            print(String(format: "    %2d  \(calendarDot(hex: cal.color))\(cal.title)", idx))
+            lines.append(String(format: "    %2d  \(calendarDot(hex: cal.color))\(cal.title)", idx))
         }
     }
+    return lines.joined(separator: "\n")
 }
 
 /// Drives the readLine/print loop that prompts for one subset at a time, using
