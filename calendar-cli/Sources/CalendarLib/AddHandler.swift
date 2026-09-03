@@ -6,9 +6,11 @@ import GetClearKit
 public func handleAdd(
     args: [String], store: any CalendarStore, calFilter: String?, config: CalendarConfig
 ) async throws -> String {
-    guard args.count > 1 else { throw CalendarHandlerError("provide an event title") }
-    let title = args[1]
-    let dStr = Array(args.dropFirst(2)).joined(separator: " ")
+    let parsed = try parseCommand(
+        Array(args.dropFirst()), shape: CalendarCommandShapes.add, wrapError: CalendarHandlerError.init
+    )
+    let title = parsed.identifiers[0]
+    let dStr = parsed.bareDateRange ?? ""
     guard let edt = parseEventDateTime(dStr.isEmpty ? "today" : dStr) else {
         throw CalendarHandlerError("unrecognised date/time: \(dStr)")
     }

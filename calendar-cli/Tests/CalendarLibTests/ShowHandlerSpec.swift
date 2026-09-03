@@ -79,4 +79,27 @@ struct ShowHandlerTests {
         let out = try await handleShow(args: ["show", "Planning"], store: store, calFilter: nil, config: config)
         #expect(out.contains("Review Q2 goals"))
     }
+
+    @Test("includes every non-empty line of a multi-line note")
+    func includesMultiLineNotes() async throws {
+        store.events = [makeEvent(title: "Planning", notes: "Review Q2 goals\nBring the deck")]
+        let out = try await handleShow(args: ["show", "Planning"], store: store, calFilter: nil, config: config)
+        #expect(out.contains("Review Q2 goals"))
+        #expect(out.contains("Bring the deck"))
+    }
+
+    @Test("throws an unrecognised-range message instead of silently falling back to the default")
+    func throwsForUnrecognisedRange() async {
+        let err = await #expect(throws: CalendarHandlerError.self) {
+            try await handleShow(args: ["show", "Planning", "notarange"], store: store, calFilter: nil, config: config)
+        }
+        #expect(err?.description.contains("notarange") == true)
+    }
+
+    @Test("accepts an explicit valid range")
+    func acceptsExplicitValidRange() async throws {
+        store.events = [makeEvent(title: "Planning")]
+        let out = try await handleShow(args: ["show", "Planning", "30d"], store: store, calFilter: nil, config: config)
+        #expect(out.contains("Planning"))
+    }
 }

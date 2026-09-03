@@ -6,10 +6,11 @@ import GetClearKit
 public func handleRemove(
     args: [String], store: any CalendarStore, calFilter: String?, config: CalendarConfig
 ) async throws -> String {
-    guard args.count > 1 else { throw CalendarHandlerError("provide an event title") }
-    let title = args[1]
-    let rangeStr = args.count > 2 ? args.dropFirst(2).joined(separator: " ") : nil
-    let range = rangeStr.flatMap { parseRange($0) } ?? parseRange("30d")!
+    let parsed = try parseCommand(
+        Array(args.dropFirst()), shape: CalendarCommandShapes.remove, wrapError: CalendarHandlerError.init
+    )
+    let title = parsed.identifiers[0]
+    let range = try resolvedRange(parsed.bareDateRange)
     let ids = try await resolvedIdentifiers(calFilter: calFilter, config: config, store: store)
     if ids?.isEmpty == true { fail("No calendars matched filter '\(calFilter!)'") }
     let event: EventItem

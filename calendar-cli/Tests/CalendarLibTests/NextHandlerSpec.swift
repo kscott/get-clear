@@ -43,4 +43,19 @@ struct NextHandlerTests {
         let out = try await handleNext(args: ["next"], store: store, calFilter: nil, config: config)
         #expect(out.contains("Building 2"))
     }
+
+    @Test("throws an invalid-count message for a non-numeric count, instead of silently defaulting")
+    func throwsForNonNumericCount() async {
+        let err = await #expect(throws: CalendarHandlerError.self) {
+            try await handleNext(args: ["next", "many"], store: store, calFilter: nil, config: config)
+        }
+        #expect(err?.description.contains("many") == true)
+    }
+
+    @Test("throws for a stray token after the count")
+    func throwsForStrayToken() async {
+        await #expect(throws: CalendarHandlerError.self) {
+            try await handleNext(args: ["next", "3", "extra"], store: store, calFilter: nil, config: config)
+        }
+    }
 }

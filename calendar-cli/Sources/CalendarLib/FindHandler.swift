@@ -6,18 +6,17 @@ import GetClearKit
 public func handleFind(
     args: [String], store: any CalendarStore, calFilter: String?, config: CalendarConfig
 ) async throws -> String {
-    guard args.count > 1 else { throw CalendarHandlerError("provide a search query") }
-    let rem = Array(args.dropFirst())
-    let query: String
+    let parsed = try parseCommand(
+        Array(args.dropFirst()), shape: CalendarCommandShapes.find, wrapError: CalendarHandlerError.init
+    )
+    let query = parsed.identifiers[0]
     let range: ParsedRange
-    if rem.count > 1, let r = parseRange(rem.dropFirst().joined(separator: " ")) {
-        query = rem[0]
-        range = r
-    } else if rem.count > 1, let r = parseRange(rem.last!) {
-        query = rem.dropLast().joined(separator: " ")
+    if let rangeStr = parsed.bareDateRange {
+        guard let r = parseRange(rangeStr) else {
+            throw CalendarHandlerError("unrecognised range: \(rangeStr)")
+        }
         range = r
     } else {
-        query = rem.joined(separator: " ")
         range = parseRange("30d")!
     }
     let lower = query.lowercased()

@@ -43,4 +43,16 @@ struct RemoveHandlerTests {
         let out = try await handleRemove(args: ["remove", "All Hands"], store: store, calFilter: nil, config: config)
         #expect(out.contains("Multiple events match"))
     }
+
+    @Test("throws an unrecognised-range message and removes nothing")
+    func throwsForUnrecognisedRange() async {
+        store.events = [makeEvent(identifier: "evt-99", title: "Old Meeting")]
+        let err = await #expect(throws: CalendarHandlerError.self) {
+            try await handleRemove(
+                args: ["remove", "Old Meeting", "notarange"], store: store, calFilter: nil, config: config
+            )
+        }
+        #expect(err?.description.contains("notarange") == true)
+        #expect(store.removedIds.isEmpty)
+    }
 }

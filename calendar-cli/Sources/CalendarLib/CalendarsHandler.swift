@@ -3,7 +3,10 @@
 import Foundation
 import GetClearKit
 
-public func handleCalendars(store: any CalendarStore) async throws -> String {
+public func handleCalendars(args: [String], store: any CalendarStore) async throws -> String {
+    _ = try parseCommand(
+        Array(args.dropFirst()), shape: CalendarCommandShapes.calendars, wrapError: CalendarHandlerError.init
+    )
     let all = try await store.fetchCalendars()
     let grouped = Dictionary(grouping: all) { $0.source ?? "" }
     return grouped.keys.sorted().map { source in

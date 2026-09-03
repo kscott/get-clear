@@ -42,4 +42,11 @@ struct ListHandlerTests {
         #expect(out.contains("Day 1"))
         #expect(out.contains("Day 2"))
     }
+
+    @Test("returns flat output with a day header for a single-day range")
+    func flatOutputSingleDay() async throws {
+        store.events = [makeEvent(title: "Standup")]
+        let out = try await handleList(args: ["list", "today"], store: store, calFilter: nil, config: config)
+        #expect(out.contains("Standup"))
+    }
 }

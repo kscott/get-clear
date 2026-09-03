@@ -52,7 +52,10 @@ public func numberCalendars(_ calendars: [CalendarItem]) -> [(number: Int, title
 // MARK: - Interactive entry point (not unit tested)
 
 @discardableResult
-public func handleSetup(store: any CalendarStore) async throws -> String {
+public func handleSetup(args: [String], store: any CalendarStore) async throws -> String {
+    _ = try parseCommand(
+        Array(args.dropFirst()), shape: CalendarCommandShapes.setup, wrapError: CalendarHandlerError.init
+    )
     let all = try await store.fetchCalendars()
 
     let configURL = CalendarConfig.configURL

@@ -34,4 +34,19 @@ struct FindHandlerTests {
         let out = try await handleFind(args: ["find", "budget"], store: store, calFilter: nil, config: config)
         #expect(out.contains("1:1"))
     }
+
+    @Test("matches a quoted multi-word query with no range")
+    func matchesQuotedMultiWordQuery() async throws {
+        store.events = [makeEvent(title: "Lunch with Alice")]
+        let out = try await handleFind(args: ["find", "Lunch with Alice"], store: store, calFilter: nil, config: config)
+        #expect(out.contains("Lunch with Alice"))
+    }
+
+    @Test("throws an unrecognised-range message instead of absorbing it into the query")
+    func throwsForUnrecognisedRange() async {
+        let err = await #expect(throws: CalendarHandlerError.self) {
+            try await handleFind(args: ["find", "dentist", "not", "a", "range"], store: store, calFilter: nil, config: config)
+        }
+        #expect(err?.description.contains("not a range") == true)
+    }
 }

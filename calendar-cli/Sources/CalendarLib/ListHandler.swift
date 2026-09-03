@@ -9,18 +9,26 @@ import GetClearKit
 public func handleList(
     args: [String], store: any CalendarStore, calFilter: String?, config: CalendarConfig
 ) async throws -> String {
-    guard args.count > 1 else {
+    let parsed = try parseCommand(
+        Array(args.dropFirst()), shape: CalendarCommandShapes.list, wrapError: CalendarHandlerError.init
+    )
+    guard let rangeStr = parsed.bareDateRange else {
         throw CalendarHandlerError("provide a range (e.g. today, week, 7d, \"march 15 to march 20\")")
     }
-    let range = try parseRange(trailingArgs: args, default: "")
+    guard let range = parseRange(rangeStr) else {
+        throw CalendarHandlerError("unrecognised range: \(rangeStr)")
+    }
     return try await fetchAndFormat(store: store, calFilter: calFilter, config: config, range: range)
 }
 
 // MARK: - handleToday
 
 public func handleToday(
-    store: any CalendarStore, calFilter: String?, config: CalendarConfig
+    args: [String], store: any CalendarStore, calFilter: String?, config: CalendarConfig
 ) async throws -> String {
+    _ = try parseCommand(
+        Array(args.dropFirst()), shape: CalendarCommandShapes.today, wrapError: CalendarHandlerError.init
+    )
     let range = parseRange("today")!
     let ids = try await resolvedIdentifiers(calFilter: calFilter, config: config, store: store)
     if ids?.isEmpty == true { fail("No calendars matched filter '\(calFilter!)'") }
@@ -33,8 +41,11 @@ public func handleToday(
 // MARK: - handleWeek
 
 public func handleWeek(
-    store: any CalendarStore, calFilter: String?, config: CalendarConfig
+    args: [String], store: any CalendarStore, calFilter: String?, config: CalendarConfig
 ) async throws -> String {
+    _ = try parseCommand(
+        Array(args.dropFirst()), shape: CalendarCommandShapes.week, wrapError: CalendarHandlerError.init
+    )
     let range = parseRange("week")!
     let ids = try await resolvedIdentifiers(calFilter: calFilter, config: config, store: store)
     if ids?.isEmpty == true { fail("No calendars matched filter '\(calFilter!)'") }
@@ -73,4 +84,15 @@ func resolvedIdentifiers(calFilter: String?, config: CalendarConfig, store: any 
     guard calFilter != nil else { return nil }
     let cals = try await store.fetchCalendars()
     return resolveCalendarIdentifiers(filter: calFilter, calendars: cals, config: config)
+}
+
+/// Resolves an optional bareDateRange string to a ParsedRange, defaulting to 30 days when
+/// absent. Throws, naming the string, when it's present but unparseable (FR-024) — never
+/// silently falls back to the default.
+func resolvedRange(_ rangeStr: String?) throws -> ParsedRange {
+    guard let rangeStr else { return parseRange("30d")! }
+    guard let r = parseRange(rangeStr) else {
+        throw CalendarHandlerError("unrecognised range: \(rangeStr)")
+    }
+    return r
 }

@@ -6,7 +6,18 @@ import GetClearKit
 public func handleNext(
     args: [String], store: any CalendarStore, calFilter: String?, config: CalendarConfig
 ) async throws -> String {
-    let n = args.count > 1 ? (Int(args[1]) ?? 5) : 5
+    let parsed = try parseCommand(
+        Array(args.dropFirst()), shape: CalendarCommandShapes.next, wrapError: CalendarHandlerError.init
+    )
+    let n: Int
+    if let countStr = parsed.identifiers.first {
+        guard let count = Int(countStr) else {
+            throw CalendarHandlerError("invalid count: \(countStr)")
+        }
+        n = count
+    } else {
+        n = 5
+    }
     let now = Date()
     let ids = try await resolvedIdentifiers(calFilter: calFilter, config: config, store: store)
     if ids?.isEmpty == true { fail("No calendars matched filter '\(calFilter!)'") }
