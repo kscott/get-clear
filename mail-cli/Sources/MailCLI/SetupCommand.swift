@@ -13,9 +13,7 @@ func handleSetup(args: [String]) async throws {
     } else if let existing = loadMailCredential() {
         token = existing
     } else {
-        print("Enter your Fastmail JMAP token: ", terminator: "")
-        fflush(stdout)
-        guard let t = readLine(strippingNewline: true), !t.isEmpty else {
+        guard let t = promptLine("Enter your Fastmail JMAP token: "), !t.isEmpty else {
             throw MailError.jmapError("No token provided")
         }
         token = t
@@ -33,9 +31,7 @@ func handleSetup(args: [String]) async throws {
         for (i, id) in identities.enumerated() {
             print("  \(i + 1)  \(id.displayLabel)")
         }
-        print("\nDefault identity [1]: ", terminator: "")
-        fflush(stdout)
-        let input = readLine(strippingNewline: true)?.trimmingCharacters(in: .whitespaces) ?? ""
+        let input = promptLine("\nDefault identity [1]: ")?.trimmingCharacters(in: .whitespaces) ?? ""
         let choice = Int(input) ?? 1
         defaultFrom = selectIdentityEmail(from: identities, choice: choice)
     }

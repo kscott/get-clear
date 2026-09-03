@@ -5,29 +5,6 @@ import GetClearKit
 
 // MARK: - Pure helpers (testable)
 
-/// Parses user-supplied comma-separated tokens into matched calendar titles and unmatched tokens.
-/// Tokens may be numeric (referring to position in `numbered`) or calendar-title strings.
-public func parseCalendarTokens(
-    tokens: [String],
-    numbered: [(number: Int, title: String)],
-    all: [CalendarItem]
-) -> (matched: [String], unmatched: [String]) {
-    var matched: [String] = []
-    var unmatched: [String] = []
-    for token in tokens {
-        if let num = Int(token),
-           let entry = numbered.first(where: { $0.number == num })
-        {
-            matched.append(entry.title)
-        } else if let cal = all.first(where: { $0.title.lowercased() == token.lowercased() }) {
-            matched.append(cal.title)
-        } else {
-            unmatched.append(token)
-        }
-    }
-    return (matched, unmatched)
-}
-
 /// Serializes subset definitions to a TOML [subsets] block.
 public func buildSubsetTOML(subsets: [(name: String, calendars: [String])]) -> String {
     var toml = "[subsets]\n"
@@ -62,7 +39,7 @@ public enum SetupNameOutcome: Equatable {
 /// Decides the outcome of a subset-name prompt. Pure — no I/O.
 public func setupNameOutcome(_ rawInput: String?) -> SetupNameOutcome {
     guard let rawInput else { return .cancelled }
-    let subsetName = sanitize(rawInput).lowercased()
+    let subsetName = sanitizeLine(rawInput).lowercased()
     guard !subsetName.isEmpty else { return .finished }
     return .proceed(subsetName: subsetName)
 }
@@ -87,14 +64,11 @@ public func setupCalendarOutcome(
     all: [CalendarItem]
 ) -> SetupCalendarOutcome {
     guard let rawInput else { return .cancelled }
-    let calInput = sanitize(rawInput)
-    guard !calInput.trimmingCharacters(in: .whitespaces).isEmpty else { return .emptyInput }
+    let calInput = sanitizeLine(rawInput)
+    guard !calInput.isEmpty else { return .emptyInput }
 
-    let tokens = calInput.components(separatedBy: ",")
-        .map { $0.trimmingCharacters(in: .whitespaces) }
-        .filter { !$0.isEmpty }
-
-    let (calNames, unmatched) = parseCalendarTokens(tokens: tokens, numbered: numbered, all: all)
+    let tokens = splitCommaTokens(calInput)
+    let (calNames, unmatched) = matchNumberedTokens(tokens, numbered: numbered, items: all, titleOf: \.title)
     guard !calNames.isEmpty else { return .noValidCalendars(unmatched: unmatched) }
     return .subsetAdded(calendars: calNames, unmatched: unmatched)
 }
@@ -106,12 +80,25 @@ public func setupCalendarOutcome(
 public func writeSetupConfig(
     subsets: [(name: String, calendars: [String])], configURL: URL, configDir: URL
 ) throws -> String {
-    let toml = buildSubsetTOML(subsets: subsets)
-    try FileManager.default.createDirectory(at: configDir, withIntermediateDirectories: true)
-    try toml.write(to: configURL, atomically: true, encoding: .utf8)
+    try writeConfigFile(buildSubsetTOML(subsets: subsets), to: configURL, configDir: configDir)
     var result = "Config written to \(configURL.path)"
     if let first = subsets.first { result += "\nTry it: calendar \(first.name) today" }
     return result
+}
+
+/// Formats the numbered "Available calendars" listing, grouped by source.
+public func formatAvailableCalendars(_ all: [CalendarItem]) -> String {
+    let grouped = Dictionary(grouping: all) { $0.source ?? "" }
+    var lines = ["Available calendars:\n"]
+    var idx = 0
+    for source in grouped.keys.sorted() {
+        if !source.isEmpty { lines.append("  \(source)") }
+        for cal in (grouped[source] ?? []).sorted(by: { $0.title < $1.title }) {
+            idx += 1
+            lines.append(String(format: "    %2d  \(calendarDot(hex: cal.color))\(cal.title)", idx))
+        }
+    }
+    return lines.joined(separator: "\n")
 }
 
 // MARK: - Interactive entry point (not unit tested — readLine/print/SIGINT are process-level)
@@ -136,9 +123,7 @@ public func handleSetup(args: [String], store: any CalendarStore) async throws -
     print("\nCreate subsets to group calendars (e.g. \"work\", \"personal\").")
     print("Enter calendar names or numbers, comma-separated. Press Enter with no name to finish.\n")
 
-    signal(SIGINT) { _ in print("\nCancelled.")
-        exit(0)
-    }
+    installCancelOnInterrupt()
 
     let subsets = runInteractiveSetupLoop(numbered: numbered, all: all)
 
@@ -153,21 +138,6 @@ public func handleSetup(args: [String], store: any CalendarStore) async throws -
     }
 }
 
-/// Formats the numbered "Available calendars" listing, grouped by source.
-public func formatAvailableCalendars(_ all: [CalendarItem]) -> String {
-    let grouped = Dictionary(grouping: all) { $0.source ?? "" }
-    var lines = ["Available calendars:\n"]
-    var idx = 0
-    for source in grouped.keys.sorted() {
-        if !source.isEmpty { lines.append("  \(source)") }
-        for cal in (grouped[source] ?? []).sorted(by: { $0.title < $1.title }) {
-            idx += 1
-            lines.append(String(format: "    %2d  \(calendarDot(hex: cal.color))\(cal.title)", idx))
-        }
-    }
-    return lines.joined(separator: "\n")
-}
-
 /// Drives the readLine/print loop that prompts for one subset at a time, using
 /// `setupNameOutcome`/`setupCalendarOutcome` for the actual decisions. Returns the subsets
 /// the user defined.
@@ -177,10 +147,8 @@ private func runInteractiveSetupLoop(
     var subsets: [(name: String, calendars: [String])] = []
 
     setupLoop: while true {
-        print("Subset name: ", terminator: "")
-        fflush(stdout)
         let subsetName: String
-        switch setupNameOutcome(readLine()) {
+        switch setupNameOutcome(promptLine("Subset name: ")) {
         case .cancelled:
             print("\nCancelled.")
             break setupLoop
@@ -190,9 +158,7 @@ private func runInteractiveSetupLoop(
             subsetName = name
         }
 
-        print("Calendars for \"\(subsetName)\": ", terminator: "")
-        fflush(stdout)
-        switch setupCalendarOutcome(readLine(), numbered: numbered, all: all) {
+        switch setupCalendarOutcome(promptLine("Calendars for \"\(subsetName)\": "), numbered: numbered, all: all) {
         case .cancelled:
             print("\nCancelled.")
             break setupLoop
@@ -215,9 +181,4 @@ private func runInteractiveSetupLoop(
 private func printUnmatched(_ unmatched: [String]) {
     guard !unmatched.isEmpty else { return }
     print("  Not found: \(unmatched.joined(separator: ", ")) — skipping those")
-}
-
-private func sanitize(_ s: String) -> String {
-    String(s.unicodeScalars.filter { $0.value >= 32 && $0.value < 127 })
-        .trimmingCharacters(in: .whitespaces)
 }

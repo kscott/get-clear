@@ -39,71 +39,12 @@ struct NumberCalendarsTests {
     }
 }
 
-// MARK: - parseCalendarTokens
-
+/// Token-matching (numeric or name) now lives in GetClearKit.matchNumberedTokens, tested in
+/// Tests/GetClearKitTests/SetupKitSpec.swift. This fixture is still used by setupCalendarOutcome
+/// tests below, which cover the calendar-specific integration.
 private let numbered = [(number: 1, title: "Meetings"),
                         (number: 2, title: "Work"),
                         (number: 3, title: "Home")]
-
-@Suite("parseCalendarTokens")
-struct ParseCalendarTokensTests {
-    @Suite("numeric tokens")
-    struct NumericTokens {
-        @Test("matches a calendar by its number")
-        func matchesByNumber() {
-            let (matched, _) = parseCalendarTokens(tokens: ["1"], numbered: numbered, all: cals)
-            #expect(matched == ["Meetings"])
-        }
-
-        @Test("matches multiple calendars by number")
-        func matchesMultipleByNumber() {
-            let (matched, _) = parseCalendarTokens(tokens: ["1", "2"], numbered: numbered, all: cals)
-            #expect(matched == ["Meetings", "Work"])
-        }
-    }
-
-    @Suite("name tokens")
-    struct NameTokens {
-        @Test("matches a calendar by exact name (case-insensitive)")
-        func matchesByExactName() {
-            let (matched, _) = parseCalendarTokens(tokens: ["work"], numbered: numbered, all: cals)
-            #expect(matched == ["Work"])
-        }
-
-        @Test("matches an uppercase name token")
-        func matchesUppercaseName() {
-            let (matched, _) = parseCalendarTokens(tokens: ["WORK"], numbered: numbered, all: cals)
-            #expect(matched == ["Work"])
-        }
-    }
-
-    @Suite("unmatched tokens")
-    struct UnmatchedTokens {
-        @Test("records unmatched tokens")
-        func recordsUnmatched() {
-            let (_, unmatched) = parseCalendarTokens(tokens: ["999", "NotACal"], numbered: numbered, all: cals)
-            #expect(unmatched.contains("999"))
-            #expect(unmatched.contains("NotACal"))
-        }
-
-        @Test("does not include unmatched tokens in matched list")
-        func unmatchedNotInMatched() {
-            let (matched, _) = parseCalendarTokens(tokens: ["NotACal"], numbered: numbered, all: cals)
-            #expect(matched.isEmpty)
-        }
-    }
-
-    @Suite("mixed tokens")
-    struct MixedTokens {
-        @Test("handles a mix of valid numbers and names")
-        func handlesMix() {
-            let (matched, unmatched) = parseCalendarTokens(tokens: ["1", "work", "oops"], numbered: numbered, all: cals)
-            #expect(matched.contains("Meetings"))
-            #expect(matched.contains("Work"))
-            #expect(unmatched == ["oops"])
-        }
-    }
-}
 
 // MARK: - buildSubsetTOML
 
@@ -199,7 +140,7 @@ struct SetupNameOutcomeTests {
         #expect(setupNameOutcome("Work") == .proceed(subsetName: "work"))
     }
 
-    @Test("strips control characters via sanitize")
+    @Test("strips control characters via sanitizeLine")
     func stripsControlCharacters() {
         #expect(setupNameOutcome("wo\u{07}rk") == .proceed(subsetName: "work"))
     }

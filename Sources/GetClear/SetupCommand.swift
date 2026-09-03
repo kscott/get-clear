@@ -15,9 +15,7 @@ func handleSetup() async {
 func pickAndSaveCalendars() async -> Bool {
     // Install SIGINT handler here rather than at the call site — setup is the only command
     // that blocks on user input, so this is the only place where Ctrl-C needs clean handling.
-    signal(SIGINT) { _ in print("\nCancelled.")
-        exit(0)
-    }
+    installCancelOnInterrupt()
     let store = EKEventStore()
 
     guard await (try? store.requestFullAccessToEvents()) == true else {
@@ -32,51 +30,33 @@ func pickAndSaveCalendars() async -> Bool {
         print("Existing config found — running setup will overwrite it.\n")
     }
 
-    var numberedCals: [(Int, EKCalendar)] = []
+    var numbered: [(number: Int, title: String)] = []
     var n = 1
     print("Available calendars:\n")
     for source in grouped.keys.sorted() {
         print("  \(source)")
         for cal in (grouped[source] ?? []).sorted(by: { $0.title < $1.title }) {
             print(String(format: "    %2d  \(calendarDot(cal))\(cal.title)", n))
-            numberedCals.append((n, cal))
+            numbered.append((number: n, title: cal.title))
             n += 1
         }
     }
 
     print("\nChoose calendars to include in recap.")
     print("Enter numbers or names, comma-separated:\n")
-    print("Recap calendars: ", terminator: "")
-    fflush(stdout)
 
-    guard let rawInput = readLine() else { print("\nCancelled.")
+    guard let rawInput = promptLine("Recap calendars: ") else {
+        print("\nCancelled.")
         return false
     }
-    let input = String(rawInput.unicodeScalars.filter { $0.value >= 32 && $0.value < 127 })
-    guard !input.trimmingCharacters(in: .whitespaces).isEmpty else {
+    let input = sanitizeLine(rawInput)
+    guard !input.isEmpty else {
         print("No calendars entered — nothing written.")
         return false
     }
 
-    let tokens = input.components(separatedBy: ",")
-        .map { $0.trimmingCharacters(in: .whitespaces) }
-        .filter { !$0.isEmpty }
-
-    var calNames: [String] = []
-    var unmatched: [String] = []
-    for token in tokens {
-        if let num = Int(token),
-           let match = numberedCals.first(where: { $0.0 == num })
-        {
-            calNames.append(match.1.title)
-        } else if let match = all.first(where: {
-            $0.title.lowercased() == token.lowercased()
-        }) {
-            calNames.append(match.title)
-        } else {
-            unmatched.append(token)
-        }
-    }
+    let tokens = splitCommaTokens(input)
+    let (calNames, unmatched) = matchNumberedTokens(tokens, numbered: numbered, items: all, titleOf: \.title)
 
     if !unmatched.isEmpty {
         print("Not found: \(unmatched.joined(separator: ", ")) — skipping those")
@@ -92,8 +72,7 @@ func pickAndSaveCalendars() async -> Bool {
     let toml = "[recap]\ncalendars = [\(quoted)]\n"
     let configDir = configURL.deletingLastPathComponent()
     do {
-        try FileManager.default.createDirectory(at: configDir, withIntermediateDirectories: true)
-        try toml.write(to: configURL, atomically: true, encoding: .utf8)
+        try writeConfigFile(toml, to: configURL, configDir: configDir)
         print("Config saved.")
         return true
     } catch {
