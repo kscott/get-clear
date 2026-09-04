@@ -31,9 +31,7 @@ public enum ContactCommandShapes {
 
     public static let list = CommandShape(identifiers: [Identifier("group")])
 
-    /// No identifiers, no keywords — any token at all is a stray token.
-    public static let lists = CommandShape()
+    public static let lists = CommandShape.empty
 
-    /// No identifiers, no keywords — any token at all is a stray token.
-    public static let open = CommandShape()
+    public static let open = CommandShape.empty
 }

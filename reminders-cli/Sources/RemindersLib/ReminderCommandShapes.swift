@@ -68,9 +68,7 @@ public enum ReminderCommandShapes {
         leading: .none
     )
 
-    /// No identifiers, no keywords — any token at all is a stray token (#201).
-    public static let lists = CommandShape()
+    public static let lists = CommandShape.empty
 
-    /// No identifiers, no keywords — any token at all is a stray token (#201).
-    public static let open = CommandShape()
+    public static let open = CommandShape.empty
 }

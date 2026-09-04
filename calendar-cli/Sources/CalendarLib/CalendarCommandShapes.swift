@@ -37,18 +37,13 @@ public enum CalendarCommandShapes {
         identifiers: [Identifier("count", required: false)]
     )
 
-    /// No identifiers, no keywords — any token at all is a stray token.
-    public static let today = CommandShape()
+    public static let today = CommandShape.empty
 
-    /// No identifiers, no keywords — any token at all is a stray token.
-    public static let week = CommandShape()
+    public static let week = CommandShape.empty
 
-    /// No identifiers, no keywords — any token at all is a stray token.
-    public static let calendars = CommandShape()
+    public static let calendars = CommandShape.empty
 
-    /// No identifiers, no keywords — any token at all is a stray token.
-    public static let setup = CommandShape()
+    public static let setup = CommandShape.empty
 
-    /// No identifiers, no keywords — any token at all is a stray token.
-    public static let open = CommandShape()
+    public static let open = CommandShape.empty
 }

@@ -56,6 +56,12 @@ public struct CommandShape: Sendable {
         self.keywords = keywords
         self.trailingTextKeyword = trailingTextKeyword
     }
+
+    /// No identifiers, no keywords — any token at all is a stray token. The shape for every
+    /// command that takes no arguments (reminders' `lists`/`open`, calendar's `today`/`week`/
+    /// `calendars`/`setup`/`open`, contacts' `lists`/`open`, …) — one shared constant instead of
+    /// each tool re-declaring an identical empty `CommandShape()`.
+    public static let empty = CommandShape()
 }
 
 public struct ParsedCommand: Equatable, Sendable {

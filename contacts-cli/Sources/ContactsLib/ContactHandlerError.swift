@@ -6,6 +6,8 @@ public enum ContactHandlerError: Error {
 
 extension ContactHandlerError: LocalizedError {
     public var errorDescription: String? {
-        switch self { case let .usage(msg): msg }
+        switch self {
+        case let .usage(msg): msg
+        }
     }
 }
