@@ -20,6 +20,7 @@ public enum Command: String {
     case list
     case lists
     case send
+    case draft // mail
     case setup
     // Tool-specific
     case done // reminders

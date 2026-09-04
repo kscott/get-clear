@@ -32,10 +32,17 @@ public enum LeadingRegion: Sendable, Equatable {
 public struct Keyword: Sendable, Equatable {
     public let canonical: String
     public let aliases: [String]
+    /// When true, this keyword may appear more than once — each occurrence's value is
+    /// collected into `ParsedCommand.repeatedValues[canonical]` in order, instead of the
+    /// second occurrence erroring as a duplicate. For a genuinely multi-value field (mail's
+    /// `cc`, `attach`) where every occurrence is the same kind of value, not a different
+    /// operation on it — see contacts' `change` for the latter, which stays off this parser.
+    public let repeatable: Bool
 
-    public init(_ canonical: String, aliases: [String] = []) {
+    public init(_ canonical: String, aliases: [String] = [], repeatable: Bool = false) {
         self.canonical = canonical
         self.aliases = aliases
+        self.repeatable = repeatable
     }
 }
 
@@ -74,14 +81,22 @@ public struct ParsedCommand: Equatable, Sendable {
     /// One entry per identifier that was present — optional identifiers may be absent.
     public let identifiers: [String]
     public let bareDateRange: String?
-    /// Keyed by keyword canonical, space-joined value.
+    /// Keyed by keyword canonical, space-joined value. Keywords declared `repeatable` are
+    /// never stored here — see `repeatedValues`.
     public let values: [String: String]
+    /// Keyed by keyword canonical, one entry per occurrence, in order. Only populated for
+    /// keywords declared `repeatable`; absent (not an empty array) for one that never appeared.
+    public let repeatedValues: [String: [String]]
     public let trailingText: String?
 
-    public init(identifiers: [String], bareDateRange: String?, values: [String: String], trailingText: String?) {
+    public init(
+        identifiers: [String], bareDateRange: String?, values: [String: String],
+        repeatedValues: [String: [String]] = [:], trailingText: String?
+    ) {
         self.identifiers = identifiers
         self.bareDateRange = bareDateRange
         self.values = values
+        self.repeatedValues = repeatedValues
         self.trailingText = trailingText
     }
 }
@@ -147,7 +162,9 @@ public func parseCommand(_ tokens: [String], shape: CommandShape) throws -> Pars
 
     let identifiers = try consumeIdentifiers(from: &remaining, shape: shape, keywordWords: keywordWords)
     let bareDateRange = try consumeLeadingRegion(from: &remaining, shape: shape, keywordWords: keywordWords)
-    let (values, trailingText) = try consumeKeywordPairs(from: &remaining, shape: shape, keywordWords: keywordWords)
+    let (values, repeatedValues, trailingText) = try consumeKeywordPairs(
+        from: &remaining, shape: shape, keywordWords: keywordWords
+    )
 
     // A bare date/range and a due/date keyword can't both be given.
     if bareDateRange != nil, values["due"] != nil {
@@ -160,7 +177,8 @@ public func parseCommand(_ tokens: [String], shape: CommandShape) throws -> Pars
     }
 
     return ParsedCommand(
-        identifiers: identifiers, bareDateRange: bareDateRange, values: values, trailingText: trailingText
+        identifiers: identifiers, bareDateRange: bareDateRange, values: values,
+        repeatedValues: repeatedValues, trailingText: trailingText
     )
 }
 
@@ -214,15 +232,21 @@ private func consumeLeadingRegion(
 /// unknownKeyword reachable: a single-token value collector leaves a stray trailing word
 /// exposed at the top of the next iteration instead of silently absorbing it into the
 /// previous value.
+///
+/// A keyword declared `repeatable` skips the duplicate check and appends to `repeatedValues`
+/// instead of `values` — every occurrence is the same kind of value, just more than one of it
+/// (mail's `cc`, `attach`), unlike a field whose repeated keyword changes what it means
+/// (contacts' `change`, which stays off this parser entirely).
 private func consumeKeywordPairs(
     from remaining: inout ArraySlice<String>, shape: CommandShape, keywordWords: Set<String>
-) throws -> (values: [String: String], trailingText: String?) {
+) throws -> (values: [String: String], repeatedValues: [String: [String]], trailingText: String?) {
     var values: [String: String] = [:]
+    var repeatedValues: [String: [String]] = [:]
     var trailingText: String?
 
     while let token = remaining.first {
         remaining = remaining.dropFirst()
-        guard let canonical = canonicalKeyword(for: token, in: shape) else {
+        guard let (canonical, isRepeatable) = resolveKeyword(for: token, in: shape) else {
             throw ArgumentError.unknownKeyword(token)
         }
 
@@ -232,7 +256,7 @@ private func consumeKeywordPairs(
             break
         }
 
-        if values[canonical] != nil {
+        if !isRepeatable, values[canonical] != nil {
             throw ArgumentError.duplicateKeyword(canonical)
         }
 
@@ -249,10 +273,15 @@ private func consumeKeywordPairs(
         guard !valueTokens.isEmpty else {
             throw ArgumentError.missingValue(keyword: canonical)
         }
-        values[canonical] = valueTokens.joined(separator: " ")
+        let value = valueTokens.joined(separator: " ")
+        if isRepeatable {
+            repeatedValues[canonical, default: []].append(value)
+        } else {
+            values[canonical] = value
+        }
     }
 
-    return (values, trailingText)
+    return (values, repeatedValues, trailingText)
 }
 
 private func isKeywordWord(_ token: String, in keywordWords: Set<String>) -> Bool {
@@ -277,14 +306,17 @@ private func commandKeywordWords(_ shape: CommandShape) -> Set<String> {
     return words
 }
 
-private func canonicalKeyword(for token: String, in shape: CommandShape) -> String? {
+/// Resolves a token to its canonical keyword name and whether that keyword is repeatable, in one
+/// pass over `shape.keywords` — callers used to re-scan the array separately just to read
+/// `repeatable` off the same `Keyword` this already matched.
+private func resolveKeyword(for token: String, in shape: CommandShape) -> (canonical: String, repeatable: Bool)? {
     let lower = token.lowercased()
-    if lower == shape.trailingTextKeyword?.lowercased() {
-        return shape.trailingTextKeyword
+    if let trailing = shape.trailingTextKeyword, trailing.lowercased() == lower {
+        return (trailing, false)
     }
     for keyword in shape.keywords {
         if keyword.canonical.lowercased() == lower || keyword.aliases.contains(where: { $0.lowercased() == lower }) {
-            return keyword.canonical
+            return (keyword.canonical, keyword.repeatable)
         }
     }
     return nil

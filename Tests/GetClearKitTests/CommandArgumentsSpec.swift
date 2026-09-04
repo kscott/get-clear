@@ -37,6 +37,11 @@ private let requiredTrailingTextShape = CommandShape(
     requiresTrailingText: true
 )
 
+private let repeatableKeywordShape = CommandShape(
+    identifiers: [Identifier("to")],
+    keywords: [Keyword("cc", repeatable: true), Keyword("subject")]
+)
+
 @Suite("parseCommand")
 struct CommandArgumentsTests {
     @Suite("identifiers")
@@ -127,6 +132,42 @@ struct CommandArgumentsTests {
             let a = try parseCommand(["Pay rent", "list", "Bills", "due", "friday"], shape: bareDateRangeShape)
             let b = try parseCommand(["Pay rent", "due", "friday", "list", "Bills"], shape: bareDateRangeShape)
             #expect(a == b)
+        }
+    }
+
+    @Suite("repeatable keyword")
+    struct RepeatableKeyword {
+        @Test("a single occurrence is collected into repeatedValues")
+        func singleOccurrence() throws {
+            let parsed = try parseCommand(["alice", "cc", "bob"], shape: repeatableKeywordShape)
+            #expect(parsed.repeatedValues["cc"] == ["bob"])
+        }
+
+        @Test("repeated occurrences are collected in order, not an error")
+        func repeatedOccurrencesInOrder() throws {
+            let parsed = try parseCommand(["alice", "cc", "bob", "cc", "carol"], shape: repeatableKeywordShape)
+            #expect(parsed.repeatedValues["cc"] == ["bob", "carol"])
+        }
+
+        @Test("a repeatable keyword that never appears is absent from repeatedValues")
+        func absentWhenNeverGiven() throws {
+            let parsed = try parseCommand(["alice"], shape: repeatableKeywordShape)
+            #expect(parsed.repeatedValues["cc"] == nil)
+        }
+
+        @Test("a repeatable keyword never appears in values")
+        func neverInValues() throws {
+            let parsed = try parseCommand(["alice", "cc", "bob"], shape: repeatableKeywordShape)
+            #expect(parsed.values["cc"] == nil)
+        }
+
+        @Test("a non-repeatable keyword given twice still throws duplicateKeyword")
+        func nonRepeatableStillThrows() {
+            #expect(throws: ArgumentError.duplicateKeyword("subject")) {
+                try parseCommand(
+                    ["alice", "subject", "Hi", "subject", "Bye"], shape: repeatableKeywordShape
+                )
+            }
         }
     }
 
