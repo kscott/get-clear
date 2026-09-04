@@ -6,7 +6,8 @@ import Foundation
 import GetClearKit
 
 /// Top-level dispatch for the setup command.
-func handleSetup() async {
+func handleSetup(args: [String]) async throws {
+    try validateNoArguments(args, shape: GetClearCommandShapes.setup)
     if await pickAndSaveCalendars() { print("Try it: get-clear recap") }
 }
 

@@ -75,50 +75,62 @@ func formatRecap(
         }
     }
 
-    var lines: [String] = []
-
     if range.isSingleDay {
+        var lines: [String] = []
         var header = ActivityLogFormatter.dateHeader(for: dateUsed)
         if let ts = result.timespan { header += " · \(TimespanFormatter.format(first: ts.start, last: ts.end))" }
         lines.append(header)
         lines.append("")
         lines += formatRecapGroups(result.groups)
-    } else {
-        // Multi-day: group by calendar day, skip empty days
-        var days: [Date] = []
-        var daySet = Set<Date>()
-        func registerDay(_ d: Date) {
-            let day = cal.startOfDay(for: d)
-            if daySet.insert(day).inserted { days.append(day) }
-        }
-        for group in result.groups {
-            switch group {
-            case let .fromCalendar(events): events.forEach { registerDay($0.startDate) }
-            case let .tasksCompleted(rems): rems.forEach { if let cd = $0.completionDate { registerDay(cd) } }
-            case let .sent(entries): entries.forEach { registerDay($0.ts) }
-            }
-        }
-        for (i, day) in days.sorted().enumerated() {
-            if i > 0 { lines.append("") }
-            lines.append(ActivityLogFormatter.dateHeader(for: day))
-            lines.append("")
-            var dayGroups: [RecapGroup] = []
-            for group in result.groups {
-                switch group {
-                case let .fromCalendar(events):
-                    let d = events.filter { cal.isDate($0.startDate, inSameDayAs: day) }
-                    if !d.isEmpty { dayGroups.append(.fromCalendar(d)) }
-                case let .tasksCompleted(rems):
-                    let d = rems.filter { $0.completionDate.map { cal.isDate($0, inSameDayAs: day) } ?? false }
-                    if !d.isEmpty { dayGroups.append(.tasksCompleted(d)) }
-                case let .sent(entries):
-                    let d = entries.filter { cal.isDate($0.ts, inSameDayAs: day) }
-                    if !d.isEmpty { dayGroups.append(.sent(d)) }
-                }
-            }
-            lines += formatRecapGroups(dayGroups)
+        return lines.joined(separator: "\n")
+    }
+
+    return formatMultiDayRecap(result.groups, cal: cal).joined(separator: "\n")
+}
+
+/// Groups recap items by calendar day (skipping empty days) and formats each day's block,
+/// separated by a blank line between days. Extracted from formatRecap to keep its cyclomatic
+/// complexity down — this is the multi-day-only branch.
+private func formatMultiDayRecap(_ groups: [RecapGroup], cal: Calendar) -> [String] {
+    var days: [Date] = []
+    var daySet = Set<Date>()
+    func registerDay(_ d: Date) {
+        let day = cal.startOfDay(for: d)
+        if daySet.insert(day).inserted { days.append(day) }
+    }
+    for group in groups {
+        switch group {
+        case let .fromCalendar(events): events.forEach { registerDay($0.startDate) }
+        case let .tasksCompleted(rems): rems.forEach { if let cd = $0.completionDate { registerDay(cd) } }
+        case let .sent(entries): entries.forEach { registerDay($0.ts) }
         }
     }
 
-    return lines.joined(separator: "\n")
+    var lines: [String] = []
+    for (i, day) in days.sorted().enumerated() {
+        if i > 0 { lines.append("") }
+        lines.append(ActivityLogFormatter.dateHeader(for: day))
+        lines.append("")
+        lines += formatRecapGroups(dayGroups(from: groups, on: day, cal: cal))
+    }
+    return lines
+}
+
+/// Filters each RecapGroup down to just the items that fall on `day`, dropping any group left empty.
+private func dayGroups(from allGroups: [RecapGroup], on day: Date, cal: Calendar) -> [RecapGroup] {
+    var filtered: [RecapGroup] = []
+    for group in allGroups {
+        switch group {
+        case let .fromCalendar(events):
+            let d = events.filter { cal.isDate($0.startDate, inSameDayAs: day) }
+            if !d.isEmpty { filtered.append(.fromCalendar(d)) }
+        case let .tasksCompleted(rems):
+            let d = rems.filter { $0.completionDate.map { cal.isDate($0, inSameDayAs: day) } ?? false }
+            if !d.isEmpty { filtered.append(.tasksCompleted(d)) }
+        case let .sent(entries):
+            let d = entries.filter { cal.isDate($0.ts, inSameDayAs: day) }
+            if !d.isEmpty { filtered.append(.sent(d)) }
+        }
+    }
+    return filtered
 }

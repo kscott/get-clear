@@ -5,7 +5,7 @@ import EventKit
 import Foundation
 import GetClearKit
 
-func handleRecap(args: [String]) async {
+func handleRecap(args: [String]) async throws {
     var config = loadGetClearConfig()
     if !config.isRecapConfigured {
         print("First, choose which calendars to include in recap.\n")
@@ -15,8 +15,11 @@ func handleRecap(args: [String]) async {
         print("")
     }
 
-    let rangeStr = args.count > 1 ? Array(args.dropFirst()).joined(separator: " ") : "today"
-    guard let range = parseRange(rangeStr) else { fail("Unrecognised range: \(rangeStr)") }
+    let parsed = try parseCommand(
+        Array(args.dropFirst()), shape: GetClearCommandShapes.recap, wrapError: GetClearError.init
+    )
+    let rangeStr = parsed.bareDateRange ?? "today"
+    guard let range = parseRange(rangeStr) else { throw GetClearError("Unrecognised range: \(rangeStr)") }
     let isToday = rangeStr == "today"
 
     // FR-018: early in the day there may be no log entries yet — show the last active day
@@ -29,8 +32,12 @@ func handleRecap(args: [String]) async {
         if !Calendar.current.isDateInToday(dateUsed) {
             let cal = Calendar.current
             let dayStart = cal.startOfDay(for: dateUsed)
-            let dayEnd = cal.date(byAdding: .day, value: 1, to: dayStart)!.addingTimeInterval(-1)
-            effectiveRange = dayStart ... dayEnd
+            // date(byAdding:) fails only on component overflow beyond Date's representable
+            // range — essentially never for "add 1 day" — but a real crash serves no one here,
+            // so fall back to the range already computed above instead of forcing it.
+            if let nextDayStart = cal.date(byAdding: .day, value: 1, to: dayStart) {
+                effectiveRange = dayStart ... nextDayStart.addingTimeInterval(-1)
+            }
         }
     }
 

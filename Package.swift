@@ -33,6 +33,13 @@ let package = Package(
             ],
             path: "Tests/GetClearKitTests"
         ),
+        .testTarget(
+            name: "GetClearTests",
+            dependencies: [
+                "GetClear"
+            ],
+            path: "Tests/GetClearTests"
+        ),
 
         // MARK: - ContactKit (pure shared contact types and matching)
 

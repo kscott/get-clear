@@ -4,14 +4,16 @@
 import Foundation
 import GetClearKit
 
-func handleCheckUpdate() async {
+func handleCheckUpdate(args: [String]) async throws {
+    try validateNoArguments(args, shape: GetClearCommandShapes.checkUpdate)
     if let release = UpdateChecker.fetchLatestRelease(userAgent: "get-clear/\(builtVersion)") {
         UpdateChecker.writeCache(version: release.version, url: release.url)
     }
     exit(0)
 }
 
-func handleUpdate() async {
+func handleUpdate(args: [String]) async throws {
+    try validateNoArguments(args, shape: GetClearCommandShapes.update)
     guard let installed = UpdateChecker.installedVersion() else {
         print("get-clear update is only available for PKG installs.")
         print("Download from https://github.com/kscott/get-clear/releases")
@@ -28,7 +30,7 @@ func handleUpdate() async {
     } else {
         print("Checking for latest version...")
         guard let fresh = UpdateChecker.fetchLatestRelease(userAgent: "get-clear/\(builtVersion)") else {
-            fail("Could not reach GitHub. Check your connection and try again.")
+            throw GetClearError("Could not reach GitHub. Check your connection and try again.")
         }
         UpdateChecker.writeCache(version: fresh.version, url: fresh.url)
         latestVersion = fresh.version
@@ -43,14 +45,16 @@ func handleUpdate() async {
     print("Updating get-clear \(installed) → \(latestVersion)...")
     print("Downloading get-clear \(latestVersion)...")
 
-    let pkgURL = URL(string: downloadURL)!
+    guard let pkgURL = URL(string: downloadURL) else {
+        throw GetClearError("Malformed download URL from GitHub: \(downloadURL)")
+    }
     let tempPkg = URL(fileURLWithPath: "/tmp/get-clear-\(latestVersion).pkg")
     do {
         let (data, _) = try await URLSession.shared.data(from: pkgURL)
         try data.write(to: tempPkg, options: .atomic)
     } catch {
         try? FileManager.default.removeItem(at: tempPkg)
-        fail("Download failed: \(error.localizedDescription)")
+        throw GetClearError("Download failed: \(error.localizedDescription)")
     }
 
     print("Download complete.")
