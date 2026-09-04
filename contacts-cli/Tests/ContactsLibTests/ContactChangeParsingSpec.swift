@@ -100,9 +100,9 @@ struct ContactChangeParsingTests {
 
     @Suite("company")
     struct CompanyChanges {
-        @Test("returns replaced for 'company Acme Corp'")
+        @Test("returns replaced for a quoted multi-word company value")
         func returnsReplacedForCompany() throws {
-            let c = try parseContactChanges(["company", "Acme", "Corp"])
+            let c = try parseContactChanges(["company", "Acme Corp"])
             #expect(c.company == .replaced(from: "", to: "Acme Corp"))
         }
 
@@ -110,6 +110,51 @@ struct ContactChangeParsingTests {
         func returnsClearedForCompanyNone() throws {
             let c = try parseContactChanges(["company", "none"])
             #expect(c.company == .cleared)
+        }
+
+        @Test("throws for an unquoted multi-word company value instead of joining it")
+        func throwsForUnquotedCompany() {
+            #expect(throws: (any Error).self) { try parseContactChanges(["company", "Acme", "Corp"]) }
+        }
+
+        @Test("throws when company has no value")
+        func throwsWhenCompanyMissingValue() {
+            #expect(throws: (any Error).self) { try parseContactChanges(["company"]) }
+        }
+    }
+
+    @Suite("unrecognized input")
+    struct UnrecognizedInput {
+        @Test("throws naming an unrecognized token")
+        func throwsForUnrecognizedToken() {
+            #expect(throws: (any Error).self) { try parseContactChanges(["birthday", "march 1"]) }
+        }
+
+        @Test("throws when email has no value")
+        func throwsWhenEmailMissingValue() {
+            #expect(throws: (any Error).self) { try parseContactChanges(["email"]) }
+        }
+
+        @Test("throws when add has no field")
+        func throwsWhenAddMissingField() {
+            #expect(throws: (any Error).self) { try parseContactChanges(["add"]) }
+        }
+
+        @Test("throws when add names an unsupported field")
+        func throwsWhenAddNamesUnsupportedField() {
+            #expect(throws: (any Error).self) { try parseContactChanges(["add", "company", "Acme"]) }
+        }
+
+        @Test("throws when add's field has no value")
+        func throwsWhenAddFieldMissingValue() {
+            #expect(throws: (any Error).self) { try parseContactChanges(["add", "email"]) }
+        }
+
+        @Test("throws when the same field is given twice")
+        func throwsForDuplicateField() {
+            #expect(throws: (any Error).self) {
+                try parseContactChanges(["email", "a@example.com", "add", "email", "b@example.com"])
+            }
         }
     }
 

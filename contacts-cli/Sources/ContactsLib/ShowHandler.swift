@@ -1,8 +1,10 @@
 import ContactKit
+import GetClearKit
 
 public func handleShow(args: [String], store: any ContactStore) async throws -> String {
-    guard args.count > 1 else { throw ContactHandlerError.usage("provide a contact name") }
-    let query = args.dropFirst().joined(separator: " ")
-    let contact = try await store.resolve(query: query)
+    let parsed = try parseCommand(
+        Array(args.dropFirst()), shape: ContactCommandShapes.show, wrapError: ContactHandlerError.usage
+    )
+    let contact = try await store.resolve(query: parsed.identifiers[0])
     return cardLines(for: contact).joined(separator: "\n")
 }

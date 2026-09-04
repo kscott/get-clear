@@ -2,8 +2,10 @@ import ContactKit
 import GetClearKit
 
 public func handleFind(args: [String], store: any ContactStore) async throws -> String {
-    guard args.count > 1 else { throw ContactHandlerError.usage("provide a search query") }
-    let query = args.dropFirst().joined(separator: " ")
+    let parsed = try parseCommand(
+        Array(args.dropFirst()), shape: ContactCommandShapes.find, wrapError: ContactHandlerError.usage
+    )
+    let query = parsed.identifiers[0]
     let all = try await store.fetchContacts(in: nil)
     let matched = matchContacts(query, in: all)
     guard !matched.isEmpty else { return "No contacts matching '\(query)'" }

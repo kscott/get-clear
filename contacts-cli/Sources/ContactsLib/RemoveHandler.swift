@@ -2,13 +2,12 @@ import ContactKit
 import GetClearKit
 
 public func handleRemove(args: [String], store: any ContactStore) async throws -> String {
-    guard args.count > 1 else { throw ContactHandlerError.usage("provide a contact name") }
-    let query = args[1]
-    let remaining = Array(args.dropFirst(2))
+    let parsed = try parseCommand(
+        Array(args.dropFirst()), shape: ContactCommandShapes.remove, wrapError: ContactHandlerError.usage
+    )
+    let query = parsed.identifiers[0]
 
-    if remaining.first?.lowercased() == "from" {
-        let groupName = remaining.dropFirst().joined(separator: " ")
-        guard !groupName.isEmpty else { throw ContactHandlerError.usage("provide a group name after 'from'") }
+    if let groupName = parsed.values["from"] {
         let contact = try await store.resolve(query: query)
         let group = try await store.resolveGroup(named: groupName)
         try await store.remove(identifier: contact.identifier, from: group)

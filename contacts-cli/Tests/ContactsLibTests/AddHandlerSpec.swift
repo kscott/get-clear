@@ -27,6 +27,20 @@ struct HandleAddCreateTests {
         let out = try await handleAdd(args: ["add", "Alice"], store: store)
         #expect(out.contains("Alice Smith"))
     }
+
+    @Test("throws when the same keyword is given twice")
+    func throwsForDuplicateKeyword() async {
+        await #expect(throws: (any Error).self) {
+            try await handleAdd(args: ["add", "Alice", "email", "a@x.com", "email", "b@x.com"], store: store)
+        }
+    }
+
+    @Test("throws naming an unrecognized keyword")
+    func throwsForUnrecognizedKeyword() async {
+        await #expect(throws: (any Error).self) {
+            try await handleAdd(args: ["add", "Alice", "birthday", "march 1"], store: store)
+        }
+    }
 }
 
 @Suite("handleAdd (to group)")
@@ -41,5 +55,14 @@ struct HandleAddToGroupTests {
         #expect(store.addedToGroup.count == 1)
         #expect(store.addedToGroup.first?.identifier == "alice-id")
         #expect(out.contains("Friends"))
+    }
+
+    @Test("throws when 'to' is combined with email")
+    func throwsWhenCombinedWithFields() async {
+        store.contacts = [aliceContact]
+        store.groups = [ContactGroup(identifier: "g1", name: "Friends")]
+        await #expect(throws: (any Error).self) {
+            try await handleAdd(args: ["add", "alice", "to", "Friends", "email", "alice@example.com"], store: store)
+        }
     }
 }

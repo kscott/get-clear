@@ -20,10 +20,11 @@ struct RenameHandlerTests {
         #expect(store.renamedItems.first?.to == "Alice Jones")
     }
 
-    @Test("joins multiple unquoted tokens into the new name")
-    func joinsUnquotedTokens() async throws {
+    @Test("throws for an unquoted multi-word new name instead of joining it")
+    func throwsForUnquotedNewName() async {
         store.contacts = [aliceContact]
-        _ = try await handleRename(args: ["rename", "alice", "Alice", "Jones"], store: store)
-        #expect(store.renamedItems.first?.to == "Alice Jones")
+        await #expect(throws: (any Error).self) {
+            try await handleRename(args: ["rename", "alice", "Alice", "Jones"], store: store)
+        }
     }
 }

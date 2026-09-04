@@ -58,6 +58,19 @@ The threshold: if exercising a branch requires a permission dialog or a file to 
 
 ## Decision log
 
+### 2026-09-04 — Contacts adopts the argument-shape rule (#193, spec 015 Phase 2)
+
+**Decision:** Contacts' seven dispatched commands (`add`, `find`, `show`, `remove`, `list`, `rename`, `lists`, `open`) go through `parseCommand` via `ContactCommandShapes.swift` — every identifier is a single quoted token, every keyword value is single-token and single-occurrence, unrecognized tokens error. `change` is the one exception: it does not route through the shared parser at all. Its email/phone fields are multi-value `ValueChange<String>` (a contact can hold several of each), needing a two-token replace form (`email OLD NEW`) and an `add`/`remove` prefix that a one-token-per-keyword parser can't express — a real semantic difference from every single-value keyword elsewhere in the suite, not an accident of implementation. `parseContactChanges` (`ContactChangeParsing.swift`) keeps its own tokenizer but now reuses GetClearKit's `ArgumentError` cases (`unknownKeyword`, `missingValue`, `duplicateKeyword`) for the errors it does share, instead of inventing its own wording — every previously-silent `default: i += 1` skip (an unrecognized token, a keyword missing its value, `add company` naming an unsupported field) is now one of these.
+
+**Behavior changes, confirmed with Ken before implementing:**
+- `add`'s `email`/`phone` are now single-occurrence — a second `email` keyword is a `duplicateKeyword` error instead of silently appending a second address. Usage text only ever showed one each; multiple emails at creation time is now `add` once, then `change "<name>" add email <second>`.
+- `change`'s `company` value is now a single quoted token (`company "Acme Corp"`), matching every other keyword's value in the suite, instead of free-joining unquoted tokens until the next keyword.
+- `add "<name>" to "<group>"` combined with `email`/`phone`/`company` in the same call is now a hard error naming the conflict — `to` assumes an existing contact, the other keywords create one, and combining them was previously just silently ignored (only `to` was ever looked at).
+
+**Why no shape for `change`:** Declaring `email`/`phone`/`company`/`add`/`remove` as `Keyword`s in a `CommandShape` would make `parseCommand` cap each value at one token and error on the second occurrence of a field name — exactly the behavior `change` needs to *not* have. Rather than force multi-value semantics through a parser built for single-value fields, `ContactCommandShapes.swift` documents the omission and `ChangeHandler.swift` extracts the name identifier manually (`args[1]`, already exactly one token, satisfying FR-001 without help from the shared parser).
+
+**`lists` and `open` gained the same zero-argument stray-token guard** reminders' got in #201 and calendar's got in #192 — main.swift wires `args` into `handleLists` and `handleOpen` (`handleOpen` didn't receive them before). `what` stays untouched, same precedent as calendar.
+
 ### 2026-09-02 — Calendar adopts the argument-shape rule (#192, spec 015 Phase 2)
 
 **Decision:** Calendar's eight dispatched commands (`add`, `find`, `show`, `remove`, `list`, `next`, `calendars`, `setup`, `open`; `today`/`week` too) now go through the shared `parseCommand`, via `CalendarCommandShapes.swift`. Calendar has no keyword fields at all yet (no `add`/`change` equivalent of `priority`/`repeat`/`url`) — every shape is just an identifier (or none) plus an optional `.bareDateRange` trailing phrase, so this migration is purely a strictness tightening, not a redesign. `today`, `week`, `calendars`, `setup`, and `open` gained the same zero-argument stray-token guard reminders' `lists`/`open` got in #201 — none of them received the `args` array before this. `what` stays untouched, matching spec 015 Phase 1's precedent (mid-migration under #40/#197, suite-wide not tool-specific).

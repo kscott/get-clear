@@ -1,6 +1,11 @@
 import ContactKit
 import GetClearKit
 
+/// Doesn't route through the shared parseCommand — its field syntax (add/remove
+/// email, the two-token replace form, multi-value ValueChange fields) doesn't fit
+/// the one-token-per-keyword model. See ContactCommandShapes.swift and
+/// ContactChangeParsing.swift. The name is still exactly one token, satisfying
+/// the same "quote it if it has a space" rule as every other identifier.
 public func handleChange(args: [String], store: any ContactStore) async throws -> String {
     guard args.count >= 2 else { throw ContactHandlerError.usage("provide a contact name") }
     let query = args[1]

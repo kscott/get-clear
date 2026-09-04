@@ -11,15 +11,20 @@ struct HandleListsTests {
     func returnsSortedGroupNames() async throws {
         store.groups = [ContactGroup(identifier: "b", name: "Work"),
                         ContactGroup(identifier: "a", name: "Personal")]
-        let out = try await handleLists(store: store)
+        let out = try await handleLists(args: ["lists"], store: store)
         #expect(out == "Personal\nWork")
     }
 
     @Test("returns empty string when there are no groups")
     func emptyWhenNoGroups() async throws {
         store.groups = []
-        let out = try await handleLists(store: store)
+        let out = try await handleLists(args: ["lists"], store: store)
         #expect(out == "")
+    }
+
+    @Test("throws for a stray token after the command name")
+    func throwsForStrayToken() async {
+        await #expect(throws: (any Error).self) { try await handleLists(args: ["lists", "extra"], store: store) }
     }
 }
 
