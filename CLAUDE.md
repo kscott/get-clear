@@ -59,8 +59,10 @@ One issue at a time on a local feature branch.
 git checkout -b issue-37       # start
 # work, commit...
                                # review DoD, pick nits until satisfied
-gh issue close 37              # close BEFORE merging — branch stays live until nothing is left to fix
-git checkout main && git merge issue-37 && git branch -d issue-37
+git checkout main && git merge issue-37 && git push
+                               # confirm CI is green on main (gh run list --branch main)
+git branch -d issue-37 && git push origin --delete issue-37
+gh issue close 37              # close LAST — not until everything is merged, pushed, and CI is clean
 ```
 
 ## Build and test
