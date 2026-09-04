@@ -9,22 +9,22 @@ Part of the [Get Clear](https://github.com/kscott/get-clear) suite.
 ## Commands
 
 ```
-text send <contact> <message...>     # Send an iMessage or SMS
-text open                            # Open Messages.app
+text send "<contact>" message "<text>"     # Send an iMessage or SMS
+text open                                  # Open Messages.app
 ```
 
 ## Examples
 
 ```bash
 # Send by contact name
-text send Alice Hey, are you free tonight?
-text send "Alice Smith" Dinner at 7?
+text send Alice message Hey, are you free tonight?
+text send "Alice Smith" message Dinner at 7?
 
 # Send to a phone number directly
-text send 555-867-5309 On my way
+text send 555-867-5309 message On my way
 
 # Send to an email address (iMessage)
-text send alice@example.com Can you call me?
+text send alice@example.com message Can you call me?
 
 # Open Messages.app
 text open

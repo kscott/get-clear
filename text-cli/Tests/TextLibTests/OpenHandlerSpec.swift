@@ -8,9 +8,18 @@ import TextLib
 @Suite("handleOpen")
 struct OpenHandlerTests {
     @Test("opens the Messages app URL")
-    func opensMessagesAppURL() {
+    func opensMessagesAppURL() throws {
         var opened: URL?
-        handleOpen(opener: { opened = $0 })
+        try handleOpen(args: ["open"], opener: { opened = $0 })
         #expect(opened?.path == "/System/Applications/Messages.app")
+    }
+
+    @Test("throws for a stray token after the command name and does not open")
+    func throwsForStrayToken() {
+        var opened: URL?
+        #expect(throws: (any Error).self) {
+            try handleOpen(args: ["open", "extra"], opener: { opened = $0 })
+        }
+        #expect(opened == nil)
     }
 }

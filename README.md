@@ -104,7 +104,7 @@ Name to inbox in one motion.
 > "Text Marcus I'm running a few minutes late"
 
 ```
-text send Marcus "Running a few minutes late, be right there"
+text send Marcus message "Running a few minutes late, be right there"
 ```
 ```
 Sent → Marcus Reyes

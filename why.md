@@ -125,7 +125,7 @@ You're heading into a meeting. Someone's waiting for you.
 > *"Text Marcus I'm running a few minutes late"*
 
 ```text
-text send Marcus "Running a few minutes late, be right there"
+text send Marcus message "Running a few minutes late, be right there"
 ```
 
 ```text

@@ -8,7 +8,7 @@ import TextLib
 struct UsageTextTests {
     @Test("contains the send command")
     func containsSendCommand() {
-        #expect(usageText().contains("text send <contact> <message...>"))
+        #expect(usageText().contains("text send \"<contact>\" message \"<text>\""))
     }
 
     @Test("contains the open command")

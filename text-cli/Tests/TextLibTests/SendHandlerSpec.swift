@@ -23,7 +23,7 @@ private final class SpyMessageSender: MessageSender {
 struct SendHandlerTests {
     @Suite("missing arguments")
     struct MissingArguments {
-        @Test("throws when no message follows the contact")
+        @Test("throws when no message keyword follows the contact")
         func throwsWithoutMessage() async {
             let sender = SpyMessageSender()
             await #expect(throws: (any Error).self) {
@@ -38,6 +38,22 @@ struct SendHandlerTests {
                 try await handleSend(args: ["send"], sender: sender)
             }
         }
+
+        @Test("throws when message is given with no value")
+        func throwsWithEmptyMessage() async {
+            let sender = SpyMessageSender()
+            await #expect(throws: (any Error).self) {
+                try await handleSend(args: ["send", "Alice", "message"], sender: sender)
+            }
+        }
+
+        @Test("throws for a stray token before the message keyword")
+        func throwsForStrayToken() async {
+            let sender = SpyMessageSender()
+            await #expect(throws: (any Error).self) {
+                try await handleSend(args: ["send", "Alice", "hey", "message", "hi"], sender: sender)
+            }
+        }
     }
 
     @Suite("successful send")
@@ -45,28 +61,28 @@ struct SendHandlerTests {
         @Test("passes the contact query to the sender")
         func passesContactQuery() async throws {
             let sender = SpyMessageSender()
-            _ = try await handleSend(args: ["send", "Alice", "hey there"], sender: sender)
+            _ = try await handleSend(args: ["send", "Alice", "message", "hey there"], sender: sender)
             #expect(sender.lastQuery == "Alice")
         }
 
-        @Test("joins multi-word message before passing to sender")
+        @Test("joins a multi-word message after the keyword before passing to sender")
         func joinsMultiWordMessage() async throws {
             let sender = SpyMessageSender()
-            _ = try await handleSend(args: ["send", "Alice", "hey", "there"], sender: sender)
+            _ = try await handleSend(args: ["send", "Alice", "message", "hey", "there"], sender: sender)
             #expect(sender.lastMessage == "hey there")
         }
 
         @Test("returns a confirmation containing the display name")
         func confirmationContainsDisplayName() async throws {
             let sender = SpyMessageSender()
-            let result = try await handleSend(args: ["send", "Alice", "hey"], sender: sender)
+            let result = try await handleSend(args: ["send", "Alice", "message", "hey"], sender: sender)
             #expect(result.contains("Alice Smith"))
         }
 
         @Test("returns a confirmation containing the address")
         func confirmationContainsAddress() async throws {
             let sender = SpyMessageSender()
-            let result = try await handleSend(args: ["send", "Alice", "hey"], sender: sender)
+            let result = try await handleSend(args: ["send", "Alice", "message", "hey"], sender: sender)
             #expect(result.contains("+15551234567"))
         }
     }
@@ -78,7 +94,7 @@ struct SendHandlerTests {
             let sender = SpyMessageSender()
             sender.shouldThrow = TextError.notFound("Nobody")
             await #expect(throws: TextError.notFound("Nobody")) {
-                try await handleSend(args: ["send", "Nobody", "hi"], sender: sender)
+                try await handleSend(args: ["send", "Nobody", "message", "hi"], sender: sender)
             }
         }
 
@@ -87,7 +103,7 @@ struct SendHandlerTests {
             let sender = SpyMessageSender()
             sender.shouldThrow = TextError.sendFailed("osascript error")
             await #expect(throws: TextError.sendFailed("osascript error")) {
-                try await handleSend(args: ["send", "Alice", "hi"], sender: sender)
+                try await handleSend(args: ["send", "Alice", "message", "hi"], sender: sender)
             }
         }
 
@@ -97,7 +113,7 @@ struct SendHandlerTests {
             let message = "\"Alice\" matches multiple contacts — be more specific:\n  Alice Smith (+15551234567)\n  Alice Jones (alice@example.com)"
             sender.shouldThrow = TextError.ambiguous(message)
             await #expect(throws: TextError.ambiguous(message)) {
-                try await handleSend(args: ["send", "Alice", "hi"], sender: sender)
+                try await handleSend(args: ["send", "Alice", "message", "hi"], sender: sender)
             }
         }
     }

@@ -10,7 +10,7 @@ let args = Array(CommandLine.arguments.dropFirst())
 
 await runCLI(args: args, identity: identity, usage: usage) { command, args in
     if command == .open {
-        handleOpen(opener: { NSWorkspace.shared.open($0) })
+        try handleOpen(args: args, opener: { NSWorkspace.shared.open($0) })
         return
     }
 
