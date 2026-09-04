@@ -6,8 +6,7 @@ public func groupedByList(
     sortedBy order: ReminderSortOrder
 ) -> [(list: ReminderList, items: [ReminderItem])] {
     let grouped = Dictionary(grouping: items, by: { $0.list.title })
-    return grouped.keys.sorted().map { title in
-        let groupItems = grouped[title]!
-        return (list: groupItems[0].list, items: sorted(groupItems, by: order))
-    }
+    return grouped
+        .sorted { $0.key < $1.key }
+        .map { _, groupItems in (list: groupItems[0].list, items: sorted(groupItems, by: order)) }
 }

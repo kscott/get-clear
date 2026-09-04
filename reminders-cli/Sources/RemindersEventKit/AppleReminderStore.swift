@@ -148,19 +148,28 @@ extension ReminderList {
 // MARK: - Recurrence conversion
 
 private func toEKRule(_ spec: RecurrenceSpec) -> EKRecurrenceRule {
-    let ekFreqs: [RecurrenceFrequency: EKRecurrenceFrequency] =
-        [.daily: .daily, .weekly: .weekly, .monthly: .monthly, .yearly: .yearly]
     if let ow = spec.ordinalWeekday {
-        let dow = EKRecurrenceDayOfWeek(
-            dayOfTheWeek: EKWeekday(rawValue: ow.weekday)!,
-            weekNumber: ow.weekNumber
-        )
+        // ow.weekday is always 1...7 (RecurrenceParsing.swift's weekdayNums), the same range
+        // EKWeekday accepts — a mismatch here is a programmer error in that invariant, not bad input.
+        guard let weekday = EKWeekday(rawValue: ow.weekday) else {
+            fatalError("RecurrenceSpec.OrdinalWeekday.weekday \(ow.weekday) is outside EKWeekday's 1...7 range")
+        }
+        let dow = EKRecurrenceDayOfWeek(dayOfTheWeek: weekday, weekNumber: ow.weekNumber)
         return monthlyEKRule(daysOfTheWeek: [dow])
     }
     if let day = spec.dayOfMonth {
         return monthlyEKRule(daysOfTheMonth: [NSNumber(value: day)])
     }
-    return EKRecurrenceRule(recurrenceWith: ekFreqs[spec.frequency]!, interval: spec.interval, end: nil)
+    return EKRecurrenceRule(recurrenceWith: ekFrequency(for: spec.frequency), interval: spec.interval, end: nil)
+}
+
+private func ekFrequency(for frequency: RecurrenceFrequency) -> EKRecurrenceFrequency {
+    switch frequency {
+    case .daily: .daily
+    case .weekly: .weekly
+    case .monthly: .monthly
+    case .yearly: .yearly
+    }
 }
 
 private func monthlyEKRule(

@@ -51,7 +51,9 @@ public func handleAdd(args: [String], store: any ReminderStore) async throws -> 
     try? ActivityLog.write(tool: "reminders", cmd: "add", desc: title, container: saved.list.title)
     return formatAddConfirmation(
         title: title, list: saved.list.title,
-        date: parsedDate, recurrence: recurrenceSpec,
-        priority: opts.priority, hasNote: !opts.note.isEmpty, url: opts.url
+        details: AddConfirmationDetails(
+            date: parsedDate, recurrence: recurrenceSpec,
+            priority: opts.priority, hasNote: !opts.note.isEmpty, url: opts.url
+        )
     )
 }

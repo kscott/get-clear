@@ -54,51 +54,65 @@ private let weekdayNums: [String: Int] = [
 ]
 private let weekdayPattern =
     #"sunday|monday|tuesday|wednesday|thursday|friday|saturday"#
-private let wordOrdinalRegex = try! NSRegularExpression(
+/// Patterns are hardcoded literals, never expected to fail to compile — try? (not try!) so a
+/// theoretical bad literal degrades to "never matches" instead of crashing the process.
+private let wordOrdinalRegex = try? NSRegularExpression(
     pattern: #"(first|second|third|fourth|last)\s+(\#(weekdayPattern))"#
 )
-private let numOrdinalWeekdayRegex = try! NSRegularExpression(
+private let numOrdinalWeekdayRegex = try? NSRegularExpression(
     pattern: #"(1st|2nd|3rd|4th)\s+(\#(weekdayPattern))"#
 )
-private let dayOfMonthRegex = try! NSRegularExpression(
+private let dayOfMonthRegex = try? NSRegularExpression(
     pattern: #"(?:on\s+)?(?:the\s+)?(\d{1,2})(?:st|nd|rd|th)(?:\s+of\s+(?:the\s+)?month)?"#
 )
-private let everyRegex = try! NSRegularExpression(
+private let everyRegex = try? NSRegularExpression(
     pattern: #"every\s+(\d+)\s+(day|week|month|year)s?"#
 )
+
+private let wordOrdinals: [String: Int] = ["first": 1, "second": 2, "third": 3, "fourth": 4, "last": -1]
+private let numOrdinals: [String: Int] = ["1st": 1, "2nd": 2, "3rd": 3, "4th": 4]
+
+/// Matches `regex` against `lower` and looks up its two capture groups (weekday, ordinal) in
+/// `weekdayNums`/`ordinals`. The groups can only be one of those dictionaries' literal
+/// alternatives — the regex that produced them embeds those exact words — so both lookups
+/// always succeed when the regex matches at all; returns nil otherwise, same as any non-match.
+private func matchOrdinalWeekday(
+    _ lower: String, regex: NSRegularExpression?, ordinals: [String: Int]
+) -> RecurrenceSpec? {
+    guard let m = regex?.firstMatch(in: lower, range: NSRange(lower.startIndex..., in: lower)) else {
+        return nil
+    }
+    let ord = (lower as NSString).substring(with: m.range(at: 1))
+    let day = (lower as NSString).substring(with: m.range(at: 2))
+    guard let weekdayNum = weekdayNums[day], let weekNumber = ordinals[ord] else { return nil }
+    return RecurrenceSpec(frequency: .monthly, interval: 1,
+                          ordinalWeekday: .init(weekday: weekdayNum, weekNumber: weekNumber))
+}
 
 public func parseRecurrence(_ s: String) -> RecurrenceSpec? {
     let lower = s.lowercased().trimmingCharacters(in: .whitespaces)
 
     // 1. Word ordinal weekday: "last tuesday", "first friday", "second monday", etc.
     //    Also handles leading articles: "the last wednesday", "on the first friday"
-    let wordOrdinals: [String: Int] = ["first": 1, "second": 2, "third": 3, "fourth": 4, "last": -1]
-    if let m = wordOrdinalRegex.firstMatch(in: lower, range: NSRange(lower.startIndex..., in: lower)) {
-        let ord = (lower as NSString).substring(with: m.range(at: 1))
-        let day = (lower as NSString).substring(with: m.range(at: 2))
-        return RecurrenceSpec(frequency: .monthly, interval: 1,
-                              ordinalWeekday: .init(weekday: weekdayNums[day]!, weekNumber: wordOrdinals[ord]!))
+    if let spec = matchOrdinalWeekday(lower, regex: wordOrdinalRegex, ordinals: wordOrdinals) {
+        return spec
     }
 
     // 2. Numeric ordinal weekday: "2nd wednesday", "3rd friday", "1st monday", "4th thursday"
-    let numOrdinals: [String: Int] = ["1st": 1, "2nd": 2, "3rd": 3, "4th": 4]
-    if let m = numOrdinalWeekdayRegex.firstMatch(in: lower, range: NSRange(lower.startIndex..., in: lower)) {
-        let ord = (lower as NSString).substring(with: m.range(at: 1))
-        let day = (lower as NSString).substring(with: m.range(at: 2))
-        return RecurrenceSpec(frequency: .monthly, interval: 1,
-                              ordinalWeekday: .init(weekday: weekdayNums[day]!, weekNumber: numOrdinals[ord]!))
+    if let spec = matchOrdinalWeekday(lower, regex: numOrdinalWeekdayRegex, ordinals: numOrdinals) {
+        return spec
     }
 
     // 3. Day of month: "the 15th", "on the 1st", "2nd of the month", "on the 22nd", etc.
     //    Matched after ordinal weekday checks so "2nd wednesday" is never treated as day 2.
-    if let m = dayOfMonthRegex.firstMatch(in: lower, range: NSRange(lower.startIndex..., in: lower)) {
+    if let m = dayOfMonthRegex?.firstMatch(in: lower, range: NSRange(lower.startIndex..., in: lower)) {
         if let day = Int((lower as NSString).substring(with: m.range(at: 1))), (1 ... 31).contains(day) {
             return RecurrenceSpec(frequency: .monthly, interval: 1, dayOfMonth: day)
         }
     }
 
     // 4. Interval: "every 2 weeks", "every 3 months", etc.
-    if let m = everyRegex.firstMatch(in: lower, range: NSRange(lower.startIndex..., in: lower)) {
+    if let m = everyRegex?.firstMatch(in: lower, range: NSRange(lower.startIndex..., in: lower)) {
         let interval = Int((lower as NSString).substring(with: m.range(at: 1))) ?? 1
         let freq: RecurrenceFrequency
         switch (lower as NSString).substring(with: m.range(at: 2)) {
@@ -166,9 +180,11 @@ public func describeRecurrence(_ spec: RecurrenceSpec) -> String {
     if let day = spec.dayOfMonth {
         return "repeat on the \(ordinalSuffix(day)) of the month"
     }
-    let freqNames: [RecurrenceFrequency: String] = [.daily: "daily", .weekly: "weekly", .monthly: "monthly", .yearly: "yearly"]
-    let unitNames: [RecurrenceFrequency: String] = [.daily: "day", .weekly: "week", .monthly: "month", .yearly: "year"]
-    let freqName = freqNames[spec.frequency]!
-    let unitName = unitNames[spec.frequency]!
+    let (freqName, unitName) = switch spec.frequency {
+    case .daily: ("daily", "day")
+    case .weekly: ("weekly", "week")
+    case .monthly: ("monthly", "month")
+    case .yearly: ("yearly", "year")
+    }
     return spec.interval > 1 ? "repeat every \(spec.interval) \(unitName)s" : "repeat \(freqName)"
 }

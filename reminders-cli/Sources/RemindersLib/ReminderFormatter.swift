@@ -103,22 +103,38 @@ public func formatShow(item: ReminderItem) -> String {
 
 // MARK: - Add confirmation
 
+/// The fields of a newly-added reminder that formatAddConfirmation reports beyond title/list —
+/// grouped so the function takes a data clump, not five parallel parameters (#198).
+public struct AddConfirmationDetails {
+    public let date: ParsedDate?
+    public let recurrence: RecurrenceSpec?
+    public let priority: String
+    public let hasNote: Bool
+    public let url: String
+
+    public init(
+        date: ParsedDate? = nil,
+        recurrence: RecurrenceSpec? = nil,
+        priority: String = "",
+        hasNote: Bool = false,
+        url: String = ""
+    ) {
+        self.date = date
+        self.recurrence = recurrence
+        self.priority = priority
+        self.hasNote = hasNote
+        self.url = url
+    }
+}
+
 /// Returns the confirmation line printed after a reminder is successfully added.
-public func formatAddConfirmation(
-    title: String,
-    list: String,
-    date: ParsedDate?,
-    recurrence: RecurrenceSpec?,
-    priority: String,
-    hasNote: Bool,
-    url: String
-) -> String {
+public func formatAddConfirmation(title: String, list: String, details: AddConfirmationDetails) -> String {
     var parts = ["Added: \(title) (in \(list))"]
-    if let pd = date { parts.append("due \(formatDate(pd.date, showTime: pd.hasTime))") }
-    if let s = recurrence { parts.append(describeRecurrence(s)) }
-    if !priority.isEmpty { parts.append("priority \(priority)") }
-    if hasNote { parts.append("+ note") }
-    if !url.isEmpty { parts.append("url \(url)") }
+    if let pd = details.date { parts.append("due \(formatDate(pd.date, showTime: pd.hasTime))") }
+    if let s = details.recurrence { parts.append(describeRecurrence(s)) }
+    if !details.priority.isEmpty { parts.append("priority \(details.priority)") }
+    if details.hasNote { parts.append("+ note") }
+    if !details.url.isEmpty { parts.append("url \(details.url)") }
     return parts.joined(separator: " · ")
 }
 

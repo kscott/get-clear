@@ -185,9 +185,7 @@ struct FormatAddConfirmationTests {
         @Test("includes 'Added:' prefix with title and list")
         func addedPrefix() {
             let result = formatAddConfirmation(
-                title: "Pay rent", list: "Personal",
-                date: nil, recurrence: nil,
-                priority: "", hasNote: false, url: ""
+                title: "Pay rent", list: "Personal", details: AddConfirmationDetails()
             )
             #expect(result == "Added: Pay rent (in Personal)")
         }
@@ -199,9 +197,7 @@ struct FormatAddConfirmationTests {
         func appendsDueSegment() {
             let pd = ParsedDate(date: Date(timeIntervalSince1970: 0), hasTime: false, hasDate: true)
             let result = formatAddConfirmation(
-                title: "Pay rent", list: "Personal",
-                date: pd, recurrence: nil,
-                priority: "", hasNote: false, url: ""
+                title: "Pay rent", list: "Personal", details: AddConfirmationDetails(date: pd)
             )
             #expect(result.contains("due"))
         }
@@ -213,9 +209,7 @@ struct FormatAddConfirmationTests {
         func appendsRecurrenceDescription() {
             let spec = RecurrenceSpec(frequency: .monthly, interval: 1)
             let result = formatAddConfirmation(
-                title: "Pay rent", list: "Personal",
-                date: nil, recurrence: spec,
-                priority: "", hasNote: false, url: ""
+                title: "Pay rent", list: "Personal", details: AddConfirmationDetails(recurrence: spec)
             )
             #expect(result.contains("repeat monthly"))
         }
@@ -226,9 +220,7 @@ struct FormatAddConfirmationTests {
         @Test("appends priority label")
         func appendsPriorityLabel() {
             let result = formatAddConfirmation(
-                title: "Pay rent", list: "Personal",
-                date: nil, recurrence: nil,
-                priority: "high", hasNote: false, url: ""
+                title: "Pay rent", list: "Personal", details: AddConfirmationDetails(priority: "high")
             )
             #expect(result.contains("priority high"))
         }
@@ -236,9 +228,7 @@ struct FormatAddConfirmationTests {
         @Test("omits priority segment when priority is empty")
         func omitsPriorityWhenEmpty() {
             let result = formatAddConfirmation(
-                title: "Pay rent", list: "Personal",
-                date: nil, recurrence: nil,
-                priority: "", hasNote: false, url: ""
+                title: "Pay rent", list: "Personal", details: AddConfirmationDetails()
             )
             #expect(!result.contains("priority"))
         }
@@ -249,9 +239,7 @@ struct FormatAddConfirmationTests {
         @Test("appends '+ note' when hasNote is true")
         func appendsPlusNote() {
             let result = formatAddConfirmation(
-                title: "Pay rent", list: "Personal",
-                date: nil, recurrence: nil,
-                priority: "", hasNote: true, url: ""
+                title: "Pay rent", list: "Personal", details: AddConfirmationDetails(hasNote: true)
             )
             #expect(result.contains("+ note"))
         }
@@ -259,9 +247,7 @@ struct FormatAddConfirmationTests {
         @Test("omits note segment when hasNote is false")
         func omitsNoteWhenFalse() {
             let result = formatAddConfirmation(
-                title: "Pay rent", list: "Personal",
-                date: nil, recurrence: nil,
-                priority: "", hasNote: false, url: ""
+                title: "Pay rent", list: "Personal", details: AddConfirmationDetails()
             )
             #expect(!result.contains("note"))
         }
@@ -272,9 +258,7 @@ struct FormatAddConfirmationTests {
         @Test("appends url value")
         func appendsURLValue() {
             let result = formatAddConfirmation(
-                title: "Pay rent", list: "Personal",
-                date: nil, recurrence: nil,
-                priority: "", hasNote: false, url: "https://example.com"
+                title: "Pay rent", list: "Personal", details: AddConfirmationDetails(url: "https://example.com")
             )
             #expect(result.contains("url https://example.com"))
         }
@@ -282,9 +266,7 @@ struct FormatAddConfirmationTests {
         @Test("omits url segment when url is empty")
         func omitsURLWhenEmpty() {
             let result = formatAddConfirmation(
-                title: "Pay rent", list: "Personal",
-                date: nil, recurrence: nil,
-                priority: "", hasNote: false, url: ""
+                title: "Pay rent", list: "Personal", details: AddConfirmationDetails()
             )
             #expect(!result.contains("url"))
         }
@@ -297,8 +279,9 @@ struct FormatAddConfirmationTests {
             let spec = RecurrenceSpec(frequency: .weekly, interval: 1)
             let result = formatAddConfirmation(
                 title: "Pay rent", list: "Personal",
-                date: nil, recurrence: spec,
-                priority: "high", hasNote: true, url: "https://example.com"
+                details: AddConfirmationDetails(
+                    recurrence: spec, priority: "high", hasNote: true, url: "https://example.com"
+                )
             )
             #expect(result.contains(" · "))
             #expect(result.contains("repeat weekly"))
