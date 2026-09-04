@@ -44,17 +44,23 @@ public struct CommandShape: Sendable {
     public let leading: LeadingRegion
     public let keywords: [Keyword]
     public let trailingTextKeyword: String?
+    /// When true, the trailing-text keyword must be present and non-empty — a command whose
+    /// trailing field *is* the point (text's `message`, mail's `body`) rather than an optional
+    /// extra (reminders' `note`). Ignored when `trailingTextKeyword` is nil.
+    public let requiresTrailingText: Bool
 
     public init(
         identifiers: [Identifier] = [],
         leading: LeadingRegion = .none,
         keywords: [Keyword] = [],
-        trailingTextKeyword: String? = nil
+        trailingTextKeyword: String? = nil,
+        requiresTrailingText: Bool = false
     ) {
         self.identifiers = identifiers
         self.leading = leading
         self.keywords = keywords
         self.trailingTextKeyword = trailingTextKeyword
+        self.requiresTrailingText = requiresTrailingText
     }
 
     /// No identifiers, no keywords — any token at all is a stray token. The shape for every
@@ -146,6 +152,11 @@ public func parseCommand(_ tokens: [String], shape: CommandShape) throws -> Pars
     // A bare date/range and a due/date keyword can't both be given.
     if bareDateRange != nil, values["due"] != nil {
         throw ArgumentError.dateGivenTwice
+    }
+    if shape.requiresTrailingText, let keyword = shape.trailingTextKeyword,
+       trailingText == nil || trailingText?.isEmpty == true
+    {
+        throw ArgumentError.missingValue(keyword: keyword)
     }
 
     return ParsedCommand(

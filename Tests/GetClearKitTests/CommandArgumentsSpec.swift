@@ -31,6 +31,12 @@ private let optionalFilterShape = CommandShape(
     keywords: [Keyword("by")]
 )
 
+private let requiredTrailingTextShape = CommandShape(
+    identifiers: [Identifier("contact")],
+    trailingTextKeyword: "message",
+    requiresTrailingText: true
+)
+
 @Suite("parseCommand")
 struct CommandArgumentsTests {
     @Suite("identifiers")
@@ -137,6 +143,36 @@ struct CommandArgumentsTests {
         @Test("trailingText is nil when the trailing keyword never appears")
         func trailingTextNilWhenAbsent() throws {
             let parsed = try parseCommand(["Pay rent"], shape: bareDateRangeShape)
+            #expect(parsed.trailingText == nil)
+        }
+    }
+
+    @Suite("required trailing text")
+    struct RequiredTrailingText {
+        @Test("parses when the trailing keyword has a value")
+        func parsesWithValue() throws {
+            let parsed = try parseCommand(["Marcus", "message", "running late"], shape: requiredTrailingTextShape)
+            #expect(parsed.trailingText == "running late")
+        }
+
+        @Test("missingValue fires when the trailing keyword never appears")
+        func missingValueWhenAbsent() {
+            #expect(throws: ArgumentError.missingValue(keyword: "message")) {
+                try parseCommand(["Marcus"], shape: requiredTrailingTextShape)
+            }
+        }
+
+        @Test("missingValue fires when the trailing keyword is given with no value")
+        func missingValueWhenEmpty() {
+            #expect(throws: ArgumentError.missingValue(keyword: "message")) {
+                try parseCommand(["Marcus", "message"], shape: requiredTrailingTextShape)
+            }
+        }
+
+        @Test("a shape with no trailingTextKeyword ignores requiresTrailingText")
+        func ignoredWithoutTrailingTextKeyword() throws {
+            let shape = CommandShape(identifiers: [Identifier("title")], requiresTrailingText: true)
+            let parsed = try parseCommand(["Pay rent"], shape: shape)
             #expect(parsed.trailingText == nil)
         }
     }
