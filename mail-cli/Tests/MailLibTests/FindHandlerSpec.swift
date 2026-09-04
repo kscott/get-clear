@@ -52,12 +52,20 @@ struct FindHandlerTests {
             #expect(result.contains("Meeting notes"))
         }
 
-        @Test("joins multi-word query into a single search string")
-        func joinsMultiWordQuery() async throws {
+        @Test("passes a quoted multi-word query through as a single search string")
+        func passesQuotedMultiWordQuery() async throws {
             let client = SpyMailClient()
             client.findResults = []
-            let result = try await handleFind(args: ["find", "quarterly", "report"], client: client)
+            let result = try await handleFind(args: ["find", "quarterly report"], client: client)
             #expect(result.contains("quarterly report"))
+        }
+
+        @Test("throws for an unquoted multi-word query instead of joining it")
+        func throwsForUnquotedQuery() async {
+            let client = SpyMailClient()
+            await #expect(throws: (any Error).self) {
+                try await handleFind(args: ["find", "quarterly", "report"], client: client)
+            }
         }
     }
 

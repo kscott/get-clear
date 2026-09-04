@@ -1,5 +1,5 @@
 // SendHandlerSpec.swift
-// Tests for MailLib handleSend.
+// Tests for MailLib handleSend and handleDraft.
 
 import ContactKit
 import ContactTestSupport
@@ -87,26 +87,6 @@ struct SendHandlerTests {
         }
     }
 
-    @Suite("draft flag")
-    struct DraftFlag {
-        @Test("calls saveDraft instead of send when --draft is present")
-        func callsSaveDraft() async throws {
-            let client = SpyMailClient()
-            _ = try await handleSend(args: ["send", "alice@example.com", "body", "Hello", "--draft"],
-                                     config: testConfig, client: client, contactStore: SpyContactStore())
-            #expect(client.savedDrafts.count == 1)
-            #expect(client.sentEmails.isEmpty)
-        }
-
-        @Test("confirms draft was saved in the output")
-        func confirmsDraftSaved() async throws {
-            let client = SpyMailClient()
-            let result = try await handleSend(args: ["send", "alice@example.com", "body", "Hello", "--draft"],
-                                              config: testConfig, client: client, contactStore: SpyContactStore())
-            #expect(result.contains("draft"))
-        }
-    }
-
     @Suite("contact name resolution")
     struct ContactNameResolution {
         @Test("resolves a contact name to an email address")
@@ -151,6 +131,31 @@ struct SendHandlerTests {
             )
             #expect(client.sentEmails.first?.cc.first?.email == "bob@jones.org")
         }
+
+        @Test("resolves multiple cc recipients from repeated keyword")
+        func resolvesMultipleCcRecipients() async throws {
+            let client = SpyMailClient()
+            let store = SpyContactStore()
+            store.contacts = [aliceContact, bobContact]
+            _ = try await handleSend(
+                args: ["send", "alice@example.com", "cc", "bob@jones.org", "cc", "carol@example.com", "body", "Hi"],
+                config: testConfig, client: client, contactStore: store
+            )
+            #expect(client.sentEmails.first?.cc.map(\.email) == ["bob@jones.org", "carol@example.com"])
+        }
+    }
+
+    @Suite("attach field")
+    struct AttachField {
+        @Test("attaches multiple files from repeated keyword")
+        func attachesMultipleFiles() async throws {
+            let client = SpyMailClient()
+            _ = try await handleSend(
+                args: ["send", "alice@example.com", "attach", "/tmp/a.pdf", "attach", "/tmp/b.pdf", "body", "Hi"],
+                config: testConfig, client: client, contactStore: SpyContactStore()
+            )
+            #expect(client.sentEmails.first?.attachmentPaths == ["/tmp/a.pdf", "/tmp/b.pdf"])
+        }
     }
 
     @Suite("client throws")
@@ -163,6 +168,34 @@ struct SendHandlerTests {
                 try await handleSend(args: ["send", "alice@example.com", "body", "Hello"],
                                      config: testConfig, client: client, contactStore: SpyContactStore())
             }
+        }
+    }
+}
+
+@Suite("handleDraft")
+struct DraftHandlerTests {
+    @Test("calls saveDraft instead of send")
+    func callsSaveDraft() async throws {
+        let client = SpyMailClient()
+        _ = try await handleDraft(args: ["draft", "alice@example.com", "body", "Hello"],
+                                  config: testConfig, client: client, contactStore: SpyContactStore())
+        #expect(client.savedDrafts.count == 1)
+        #expect(client.sentEmails.isEmpty)
+    }
+
+    @Test("confirms draft was saved in the output")
+    func confirmsDraftSaved() async throws {
+        let client = SpyMailClient()
+        let result = try await handleDraft(args: ["draft", "alice@example.com", "body", "Hello"],
+                                           config: testConfig, client: client, contactStore: SpyContactStore())
+        #expect(result.contains("draft"))
+    }
+
+    @Test("throws when no body is provided, same as send")
+    func throwsWhenNoBody() async {
+        await #expect(throws: (any Error).self) {
+            try await handleDraft(args: ["draft", "alice@example.com"], config: testConfig,
+                                  client: SpyMailClient(), contactStore: SpyContactStore())
         }
     }
 }

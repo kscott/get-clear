@@ -103,10 +103,10 @@ Every flag temptation is a command trying to be born. The flag is a shortcut aro
 
 ```bash
 # Wrong
-mail send Alice subject "Lunch?" --draft
+mail send Alice subject "Lunch?" body "Free at noon?" --draft
 
 # Right — name the thing
-mail draft Alice subject "Lunch?"
+mail draft Alice subject "Lunch?" body "Free at noon?"
 ```
 
 The test: would you say the flag word in conversation? *"Send this with dash-dash-draft"* — no. *"Save this as a draft"* — yes. When the word works in conversation, it works as a command.
@@ -125,7 +125,7 @@ The test: would you say the flag word in conversation? *"Send this with dash-das
 
 **The history:** `--name` was the original flag in `edit`. The right answer turned out to be `rename` — a distinct command with its own semantic meaning that `--name` never had. The flag was a symptom of an incomplete design. Every flag in this suite's history has pointed to a missing command.
 
-`--draft` in mail is the current open violation. It exists; it should not. The fix is `mail draft` as a first-class command.
+`--draft` in mail was the suite's one flag violation; fixed by adding `mail draft` as a first-class command (#194).
 
 When reviewing code: if a flag appears in a diff, stop. Ask what command the flag is trying to be. If you can't name it, the design isn't ready and the implementation shouldn't proceed.
 

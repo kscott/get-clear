@@ -1,19 +1,31 @@
 // SendHandler.swift
-// Handles the `mail send` and implicit draft-save commands.
+// Handles the `mail send` and `mail draft` commands — compose is shared, only the final
+// action (send vs. saveDraft) and confirmation wording differ.
 
 import ContactKit
 import Foundation
 import GetClearKit
 
 public func handleSend(
-    args: [String],
-    config: MailConfig,
-    client: any MailClient,
-    contactStore: any ContactStore
+    args: [String], config: MailConfig, client: any MailClient, contactStore: any ContactStore
 ) async throws -> String {
-    guard let msg = parseSendArgs(Array(args.dropFirst())), !msg.to.isEmpty else {
-        throw MailError.sendFailed("provide a recipient")
-    }
+    try await compose(args: args, config: config, client: client, contactStore: contactStore, isDraft: false)
+}
+
+public func handleDraft(
+    args: [String], config: MailConfig, client: any MailClient, contactStore: any ContactStore
+) async throws -> String {
+    try await compose(args: args, config: config, client: client, contactStore: contactStore, isDraft: true)
+}
+
+/// send and draft share one shape (MailCommandShapes.draft == .send) — no need to pass which.
+private func compose(
+    args: [String], config: MailConfig, client: any MailClient, contactStore: any ContactStore, isDraft: Bool
+) async throws -> String {
+    let parsed = try parseCommand(
+        Array(args.dropFirst()), shape: MailCommandShapes.send, wrapError: MailError.badArguments
+    )
+    let msg = composeMessage(from: parsed)
 
     guard let identity = config.identity(for: config.defaultFrom) else {
         throw MailError.noMatchingIdentity(config.defaultFrom)
@@ -30,18 +42,14 @@ public func handleSend(
         throw MailError.sendFailed("Could not resolve recipient: \(msg.to)")
     }
 
-    let bodyText = msg.body
-    guard !bodyText.isEmpty else {
-        throw MailError.sendFailed("body is empty — use 'body <text>' to provide one")
-    }
     let email = OutboundEmail(from: identity, to: toAddrs, cc: ccAddrs,
-                              subject: msg.subject, body: bodyText,
+                              subject: msg.subject, body: msg.body,
                               attachmentPaths: msg.attachments)
 
     let toStr = toAddrs.map(\.formatted).joined(separator: ", ")
-    if msg.isDraft {
+    if isDraft {
         try await client.saveDraft(email)
-        try? ActivityLog.write(tool: "mail", cmd: "send", desc: "draft: \(toStr)", container: nil)
+        try? ActivityLog.write(tool: "mail", cmd: "draft", desc: "draft: \(toStr)", container: nil)
         return formatSendConfirmation(to: toStr, cc: ccAddrs, subject: msg.subject, isDraft: true)
     }
 
@@ -66,8 +74,8 @@ public func loadGroupMembers(from store: any ContactStore) async throws -> [Stri
             }
         }
         var result: [String: [AddressEntry]] = [:]
-        for try await (name, addrs) in taskGroup {
-            if !addrs.isEmpty { result[name] = addrs }
+        for try await (name, addrs) in taskGroup where !addrs.isEmpty {
+            result[name] = addrs
         }
         return result
     }

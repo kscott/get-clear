@@ -36,4 +36,9 @@ struct MailErrorsTests {
     func describesJmapError() {
         #expect(MailError.jmapError("bad response").errorDescription?.contains("bad response") == true)
     }
+
+    @Test("describes badArguments with the message, verbatim")
+    func describesBadArguments() {
+        #expect(MailError.badArguments("provide a recipient").errorDescription == "provide a recipient")
+    }
 }

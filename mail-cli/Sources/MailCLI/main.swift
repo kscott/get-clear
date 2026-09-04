@@ -11,7 +11,7 @@ let config = (try? loadConfig()) ?? MailConfig(defaultFrom: "", identities: [])
 
 await runCLI(args: args, identity: identity, usage: usage) { command, args in
     if command == .open {
-        handleOpen(opener: { NSWorkspace.shared.open($0) }, config: config)
+        try handleOpen(args: args, opener: { NSWorkspace.shared.open($0) }, config: config)
         return
     }
     if command == .what {
@@ -31,6 +31,9 @@ await runCLI(args: args, identity: identity, usage: usage) { command, args in
     case .send:
         let store = await makeStore()
         try await print(handleSend(args: args, config: config, client: client, contactStore: store))
+    case .draft:
+        let store = await makeStore()
+        try await print(handleDraft(args: args, config: config, client: client, contactStore: store))
     default:
         print(usage())
     }

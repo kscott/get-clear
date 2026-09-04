@@ -44,30 +44,33 @@ mail setup
 ## Command reference
 
 ```
-mail setup [token]                   # Store JMAP token, discover identities
-mail send <to> [keywords...]         # Send an email
-mail find <query>                    # Find messages for context before composing
-mail open                            # Open Fastmail in browser
+mail setup [token]                                 # Store JMAP token, discover identities
+mail send "<to>" [keywords...] body "<text>"       # Send an email
+mail draft "<to>" [keywords...] body "<text>"       # Compose and save as a draft
+mail find "<query>"                                # Find messages for context before composing
+mail open                                          # Open Fastmail in browser
 ```
 
 ### send examples
 
 ```bash
 # Basic send
-mail send alice@example.com subject Hello body Hi there
+mail send alice@example.com subject Hello body "Hi there"
 
-# Multi-word recipient (no quoting needed)
-mail send Alice Smith subject Lunch?
+# Multi-word recipient (quote it)
+mail send "Alice Smith" subject "Lunch?" body "Free at noon?"
 
 # Contact group → all members
-mail send "Board Members" subject "Q1 Update" body See attached
+mail send "Board Members" subject "Q1 Update" body "See attached"
 
-# With cc, from override, attachment, draft mode
-mail send alice cc bob from ken@optikos.net subject Contract attach ~/docs/contract.pdf body Please review
-mail send alice subject Draft --draft
+# With cc and an attachment — cc and attach can each repeat
+mail send alice cc bob cc carol attach ~/docs/contract.pdf body "Please review"
+
+# Save as a draft instead of sending
+mail draft alice subject Draft body "Just a draft for now"
 ```
 
-Keywords can appear in any order except `body` — it captures everything to end of string and must come last.
+Keywords can appear in any order except `body` — it's required, and captures everything to end of string, so it must come last. `cc` and `attach` may each be given more than once; every other keyword's value is quoted if it contains a space, same as everywhere else in the suite.
 
 ### Recipient resolution
 
@@ -92,7 +95,8 @@ mail-cli/
 ├── Package.swift
 ├── Sources/
 │   ├── MailLib/                        # Pure Swift — no framework deps, fully testable
-│   │   ├── ArgumentParser.swift        # Parses send args into ComposedMessage
+│   │   ├── MailCommandShapes.swift     # Argument shapes for send/draft/find/open
+│   │   ├── ArgumentParser.swift        # Maps a ParsedCommand into ComposedMessage
 │   │   └── RecipientResolver.swift     # Resolves recipient strings to AddressEntry values
 │   └── MailCLI/
 │       └── main.swift                  # CLI entry point (Keychain, JMAP, Contacts)

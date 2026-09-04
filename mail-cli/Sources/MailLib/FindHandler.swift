@@ -5,8 +5,10 @@ import Foundation
 import GetClearKit
 
 public func handleFind(args: [String], client: any MailClient) async throws -> String {
-    guard args.count > 1 else { throw MailError.notFound("provide a search query") }
-    let query = args.dropFirst().joined(separator: " ")
+    let parsed = try parseCommand(
+        Array(args.dropFirst()), shape: MailCommandShapes.find, wrapError: MailError.badArguments
+    )
+    let query = parsed.identifiers[0]
     let emails = try await client.find(query: query, limit: 20)
     guard !emails.isEmpty else { return "No messages matching '\(query)'." }
     return emails.enumerated().map { i, email in
