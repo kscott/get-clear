@@ -46,4 +46,12 @@ struct HandleListTests {
         #expect(lines.first?.contains("Alice") == true)
         #expect(lines.last?.contains("Bob") == true)
     }
+
+    @Test("shows a placeholder for a contact with no email")
+    func showsPlaceholderForNoEmail() async throws {
+        store.groups = [ContactGroup(identifier: "g1", name: "Friends")]
+        store.contacts = [noEmailContact]
+        let out = try await handleList(args: ["list", "Friends"], store: store)
+        #expect(out.contains("(no email)"))
+    }
 }

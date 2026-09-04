@@ -25,4 +25,11 @@ struct FindHandlerTests {
         let out = try await handleFind(args: ["find", "xyzzy"], store: store)
         #expect(out.contains("No contacts matching"))
     }
+
+    @Test("omits the email suffix for a contact with no email")
+    func omitsEmailSuffixForNoEmail() async throws {
+        store.contacts = [noEmailContact]
+        let out = try await handleFind(args: ["find", "Dana"], store: store)
+        #expect(!out.contains("<"))
+    }
 }

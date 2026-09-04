@@ -28,6 +28,14 @@ struct HandleAddCreateTests {
         #expect(out.contains("Alice Smith"))
     }
 
+    @Test("passes phone and company through to the draft")
+    func passesPhoneAndCompanyToDraft() async throws {
+        store.addResult = aliceContact
+        _ = try await handleAdd(args: ["add", "Alice", "phone", "555-1234", "company", "Acme"], store: store)
+        #expect(store.addedDrafts.first?.phones == ["555-1234"])
+        #expect(store.addedDrafts.first?.company == "Acme")
+    }
+
     @Test("throws when the same keyword is given twice")
     func throwsForDuplicateKeyword() async {
         await #expect(throws: (any Error).self) {
