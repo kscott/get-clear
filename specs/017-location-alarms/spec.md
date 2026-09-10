@@ -73,7 +73,7 @@ The same attribute in the other direction. The person says `leaving` instead of 
 
 1. **Given** the person's own contact card carries a labelled home address, **When** they use `Home` as the place, **Then** the alarm is set at that address and the output names it.
 2. **Given** the person's own contact card carries a labelled work address, **When** they use `Work` as the place, **Then** the alarm is set at that address.
-3. **Given** the person's own contact card exists but carries no address under the requested label, **When** they use that personal place name, **Then** the tool falls through to a general address lookup and, if that also yields nothing, fails with a message naming both the label it looked for and the lookup it attempted.
+3. **Given** the person's own contact card exists but carries no address under the requested label, **When** they use that personal place name, **Then** the tool fails with a message naming the label it looked for, sets no alarm, and does **not** fall through to a general address lookup.
 4. **Given** any place name that is not one of the personal place names, **When** it is used, **Then** the tool goes straight to the general address lookup without consulting the contact card.
 
 ---
@@ -135,7 +135,7 @@ The person types the conjugation that comes naturally and includes the small con
 - **A place name that is also a filler word or the literal word `none`.** A person who genuinely wants a place called "none" is indistinguishable from one clearing the alarm; `none` is reserved for clearing, consistent with every other clearable attribute in the suite.
 - **Both directions in one command** (`arriving "A" leaving "B"`). A reminder has one location alarm; naming two directions at once is an error, not a last-one-wins.
 - **The same direction twice** (`arriving "A" arriving "B"`). A duplicate keyword, already an error under the suite argument-shape rule.
-- **No contact card for the person at all.** Personal place names fall through to the general lookup and, failing that, produce an error naming what was attempted — the tool never silently substitutes an unrelated address.
+- **No contact card for the person at all.** Personal place names fail with a message saying no personal card was found, and name the label that was wanted. The tool never silently substitutes an unrelated address.
 - **A place that resolves, but to somewhere absurdly far away.** The tool reports the resolved address in its output precisely so this is visible immediately rather than discovered weeks later when the reminder never fires.
 - **The person has not granted Reminders location access on any device.** The alarm is still recorded correctly; it simply will not fire until they do. The tool says so rather than letting silence imply success.
 - **A reminder that already has a time-based alarm.** Untouched. Location alarms and date alarms coexist.
@@ -166,7 +166,7 @@ The person types the conjugation that comes naturally and includes the small con
 
 - **FR-012**: A place named `Home`, `Work`, or `School` MUST first be resolved from the addresses recorded on the person's own contact card, matched by that label.
 - **FR-013**: A place name that is not one of the personal place names MUST be resolved by general address lookup, without consulting the contact card.
-- **FR-014**: A personal place name with no matching labelled address on the person's own card MUST fall through to general address lookup rather than failing immediately.
+- **FR-014**: A personal place name with no matching labelled address on the person's own card MUST fail, naming the label it looked for, and MUST NOT fall through to general address lookup. Looking `Home` up as a business name risks silently geofencing an unrelated place, which is exactly the failure this feature is built to avoid.
 - **FR-015**: When resolution yields exactly one address, the tool MUST use it and MUST name the resolved address in its output so the person can confirm it picked the right place.
 - **FR-016**: When resolution yields several candidate addresses, the tool MUST list them, MUST make no change of any kind, and MUST exit non-zero.
 - **FR-017**: When resolution yields no address, the tool MUST fail with a message naming the place that could not be resolved, and MUST make no change.
@@ -177,15 +177,17 @@ The person types the conjugation that comes naturally and includes the small con
 ### Functional Requirements — Output
 
 - **FR-021**: `reminders show` MUST display a reminder's location alarm — both the place and the direction — alongside its other attributes.
-- **FR-022**: Any command that sets a location alarm MUST state that the alarm fires only on a device where Reminders itself has been granted location access. This is stated once per such command, as a single line.
-- **FR-023**: Output MUST observe the suite's three-level colour hierarchy: the place is supporting metadata, not a primary identifier.
-- **FR-024**: Every failure in this feature MUST go to stderr and exit non-zero, per the constitution.
+- **FR-022**: The **first** time a location alarm is set, the tool MUST state, as a single line, that the alarm fires only on a device where Reminders itself has been granted location access.
+- **FR-023**: Having shown that notice once, the tool MUST record the fact in `~/.config/get-clear/config.toml` and MUST NOT show it again. Clearing or editing that value MUST bring the notice back — the config file stays the source of truth, consistent with how the constitution already treats it.
+- **FR-024**: Output MUST observe the suite's three-level colour hierarchy: the place is supporting metadata, not a primary identifier.
+- **FR-025**: Every failure in this feature MUST go to stderr and exit non-zero, per the constitution.
 
 ### Functional Requirements — Scope
 
-- **FR-025**: This feature MUST NOT depend on, or be gated behind, the consent-gated private-metadata capability (spec 014). It requires no consent prompt and no elevated access.
-- **FR-026**: The vocabulary MUST conform to the suite argument-shape rule established in spec 015 — one identifier first, every other value introduced by a keyword taking a single quoted token, order-independent.
-- **FR-027**: No new command-line flag may be introduced. The suite's only flags remain `--help` / `-h` and `--version` / `-v`.
+- **FR-026**: This feature MUST NOT depend on, or be gated behind, the consent-gated private-metadata capability (spec 014). It requires no consent prompt and no elevated access.
+- **FR-027**: The vocabulary MUST conform to the suite argument-shape rule established in spec 015 — one identifier first, every other value introduced by a keyword taking a single quoted token, order-independent.
+- **FR-028**: No new command-line flag may be introduced. The suite's only flags remain `--help` / `-h` and `--version` / `-v`.
+- **FR-029**: The proximity radius MUST NOT be settable from the command line in this feature. No new keyword is introduced for it.
 
 ### Key Entities
 
@@ -218,13 +220,20 @@ The person types the conjugation that comes naturally and includes the small con
 5. **Public capability, not private.** Location alarms are independent of spec 014 and must not wait on it.
 6. **`show` displays it.** A person must be able to read back what they set.
 
+### Answered 2026-09-09
+
+7. **A missing personal address is a hard error, not a fallthrough.** If `Home` is not labelled on the person's own card, the tool fails naming the label it wanted. It does not try `Home` as a business name — resolving a personal place to an unrelated address is worse than refusing.
+8. **The permission notice is shown once and remembered** in `~/.config/get-clear/config.toml`, rather than printing on every command or being relegated to the help text.
+9. **A failed place resolution aborts the whole command.** Other changes named in the same line do not land. The command either fully happened or fully didn't.
+10. **The radius stays fixed at the default.** No keyword, no configuration, revisit as its own feature only if it proves annoying in use.
+
 ---
 
 ## Assumptions
 
-- **Default radius.** A default proximity radius of roughly 100 metres is applied to every resolved place. It is not configurable in this feature; the platform's own geofencing floor makes anything tighter unreliable. If a per-place radius is ever wanted, it is a separate feature with its own vocabulary.
+- **Default radius, fixed for now.** A proximity radius of roughly 100 metres is applied to every resolved place, with no vocabulary to change it — the platform's own geofencing floor makes anything tighter unreliable. Confirmed with Ken 2026-09-09: ship it fixed, and if it ever chafes, a per-place radius becomes its own small feature with its own keyword rather than being guessed at now.
 - **The personal place names are exactly Home, Work, and School.** These are the labels the contact card itself uses. Matching is case-insensitive.
-- **The permission notice is per-command, not once-ever.** It prints on each command that sets a location alarm. Suppressing it after the first time would require persisting per-person notice state, which the suite has no mechanism for and which the constitution's consent/config rules would drag into scope.
+- **The permission notice is shown once, then remembered.** It prints the first time a location alarm is set and is suppressed thereafter via a flag in `~/.config/get-clear/config.toml` — the file the constitution already designates for per-person settings. This is the first use of that file for something other than telemetry consent, so the plan should confirm its shape and extend it rather than inventing a second settings mechanism.
 - **Ambiguity is resolved by re-running with a more specific place string**, matching the suite's existing multi-match pattern (spec 009): list the candidates, change nothing, exit. There is no interactive prompt and no numbered selection — the suite's commands are non-interactive outside `setup`.
 - **Address lookup happens over the network.** A place cannot be resolved offline; that failure surfaces as a resolution failure with a message saying so.
 - **The alarm's behaviour once set is the operating system's.** Whether and when it fires depends on the person's devices and their Reminders location permission. This feature is responsible for recording the alarm correctly and saying what is required for it to fire — not for the firing itself.
