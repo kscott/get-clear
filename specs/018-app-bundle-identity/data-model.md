@@ -25,7 +25,8 @@ How a command reaches the stores.
 ### `HelperFailure`
 - `.accessDenied(StoreKind)` — maps to FR-005's message
 - `.versionMismatch(helperProtocol: Int, helperApp: String)` — client restarts the helper and retries once
-- `.storeError(message: String)` — a boundary error, carried as its `localizedDescription` and rethrown unchanged on the client, so stderr wording stays byte-identical (FR-014)
+- `.toolError(Data)` — the Lib's own store error (`ReminderStoreError`, `CalendarStoreError`, `ContactStoreError`, each gaining `Codable`), rethrown on the client as the same typed value, so handlers' `catch let err as ReminderStoreError` arms still match
+- `.storeError(message: String)` — any other boundary error, carried as its `localizedDescription` and rethrown on the client as an error with that exact description, so stderr wording stays byte-identical (FR-014)
 - `.badRequest(String)` — undecodable or unknown request (a defect, never user-caused)
 
 ### `StoreKind`
@@ -70,7 +71,11 @@ Each method encodes its request, calls `transport`, and decodes the reply or thr
 
 ## get-clear's own access (`Sources/GetClear`)
 
-`recap` and `setup` call EventKit directly today (#203). For FR-002 they move onto `CalendarStore` / `ReminderStore` through the same factories. This is the minimum seam #210 needs. #203's wider extraction stays #203's job.
+`recap` and `setup` call EventKit directly today (#203). For FR-002 they move onto `CalendarStore` / `ReminderStore` through the same factories. This is the minimum seam #210 needs. #203's wider extraction stays #203's job. What it takes:
+- `ReminderStore` gains `fetchCompleted(in: DateInterval) -> [ReminderItem]` (recap's "tasks completed"; today an inline `EKReminder` filter). That makes 22 store methods, and `ReminderHelperRequest` gains the case.
+- `CalendarItem` carries whether it's user-owned (local/CalDAV/Exchange), so recap's default calendar filter runs over value types.
+- `RecapAggregator` / `RecapFormatter` take `EventItem` / `ReminderItem` instead of `EKEvent` / `EKReminder`.
+- The reminders and calendar factories move out of their executable targets into library targets (`ReminderStoreFactory`, `CalendarStoreFactory`), mirroring `ContactStoreFactory`, so `get-clear` can import them.
 
 ## State transitions — helper lifecycle
 

@@ -62,7 +62,7 @@ anchor apple generic and certificate leaf[subject.OU] = "6Q96Q79QN8"
 
 ## R7. Wire format and versioning
 
-**Decision**: `HelperEnvelope { protocolVersion: Int, appVersion: String, request: HelperRequest }` / `HelperReply { result | error }`, JSON-encoded. `HelperRequest` is an enum with one case per store method (21 today) plus `requestAccess(Store)` and `ping`. On `protocolVersion` or `appVersion` mismatch the helper replies `.versionMismatch(helper:)`; the client runs `launchctl kickstart -k gui/<uid>/com.kenscott.get-clear.helper` and retries once.
+**Decision**: `HelperEnvelope { protocolVersion, appVersion, tool, request: Data }` / `HelperReply { success(Data) | failure(HelperFailure) }`, JSON-encoded (shapes in data-model.md). Each Lib owns its request enum, one case per store method, so a tool's wire types sit next to its protocol. GetClearKit owns a small control request (`ping`, `requestAccess(StoreKind)`). On `protocolVersion` or `appVersion` mismatch the helper replies `.versionMismatch(helper:)`; the client runs `launchctl kickstart -k gui/<uid>/com.kenscott.get-clear.helper` and retries once.
 
 **Rationale**: FR-019 and the version-skew edge case. JSON so a failing exchange is readable in a log.
 
@@ -96,7 +96,7 @@ When the app's directory is not writable, fall back to today's PKG download-and-
 
 ## R11. App assembly without Xcode
 
-**Decision**: `scripts/build-app` creates `Get Clear.app` from `swift build -c release` output: the main executable (new `GetClearApp` target) goes in `Contents/MacOS/Get Clear`, the six CLIs in `Contents/Helpers/<tool>`, plus `Info.plist`, the agent plist, the icon, and zsh completions in `Contents/Resources`. Signing is inside-out: each helper (`--identifier com.kenscott.get-clear.<tool>`), then the app with its entitlements. Hardened runtime and a timestamp on all. CI and local builds use the same script.
+**Decision**: `scripts/build-app` creates `Get Clear.app` from `swift build -c release` output: the main executable (new `GetClearApp` target) goes in `Contents/MacOS/Get Clear`, the six CLIs in `Contents/Helpers/<tool>`, plus `Info.plist`, the agent plist, the icon, and zsh completions in `Contents/Resources`. Signing is inside-out: each CLI first, then the app with its entitlements. Each CLI keeps **the signing identifier it has in 1.3.x** (check with `codesign -dv` on a 1.3.5 install; `codesign` defaults it to the build product name, e.g. `mail-bin`). `mail` keeps its Fastmail token in the Keychain, and the item's access list trusts the binary's designated requirement. Changing the identifier would trigger a Keychain access prompt after the upgrade. Hardened runtime and a timestamp on all. CI and local builds use the same script.
 
 **Rationale**: SwiftPM builds executables, not bundles. One script means CI and local builds can't drift.
 

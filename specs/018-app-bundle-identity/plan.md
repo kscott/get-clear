@@ -86,10 +86,10 @@ Sources/
 └── ContactStoreFactory/StoreFactory.swift   # CHANGED: AccessRoute → remote or direct
 reminders-cli/Sources/
 ├── RemindersLib/{ReminderHelperRequest,RemoteReminderStore,ReminderDispatch}.swift   # NEW pure
-└── RemindersCLI/StoreFactory.swift                                                   # CHANGED
+└── ReminderStoreFactory/StoreFactory.swift   # MOVED from RemindersCLI (library target, importable by get-clear)
 calendar-cli/Sources/
 ├── CalendarLib/{CalendarHelperRequest,RemoteCalendarStore,CalendarDispatch}.swift    # NEW pure
-└── CalendarCLI/StoreFactory.swift                                                    # CHANGED
+└── CalendarStoreFactory/StoreFactory.swift   # MOVED from CalendarCLI
 text-cli/Sources/
 ├── TextLib/{MessageHelperRequest,RemoteMessageSender,MessageDispatch}.swift          # NEW pure
 └── TextCLI/StoreFactory.swift                                                        # CHANGED
