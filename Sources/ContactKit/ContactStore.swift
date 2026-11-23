@@ -4,7 +4,7 @@
 
 import Foundation
 
-public enum ContactStoreError: Error {
+public enum ContactStoreError: Error, Equatable, Codable {
     case notFound(String)
     case ambiguous([Contact])
     case groupNotFound(String)

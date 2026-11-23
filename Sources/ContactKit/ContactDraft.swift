@@ -1,4 +1,4 @@
-public struct ContactDraft: Equatable, Sendable {
+public struct ContactDraft: Equatable, Sendable, Codable {
     public let name: String
     public let emails: [String]
     public let phones: [String]

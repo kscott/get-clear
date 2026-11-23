@@ -1,6 +1,6 @@
 import GetClearKit
 
-public struct ContactChanges: Equatable {
+public struct ContactChanges: Equatable, Sendable, Codable {
     public let email: ValueChange<String>
     public let phone: ValueChange<String>
     public let company: ValueChange<String>

@@ -2,7 +2,7 @@
 
 import Foundation
 
-public enum CalendarStoreError: Error, Equatable {
+public enum CalendarStoreError: Error, Equatable, Codable {
     case notFound(String)
     case ambiguous([EventItem])
     case noDefaultCalendar

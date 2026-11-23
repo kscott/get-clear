@@ -3,7 +3,7 @@
 
 import Foundation
 
-public struct EventItem: Equatable {
+public struct EventItem: Equatable, Codable, Sendable {
     public let identifier: String
     public let title: String
     public let startDate: Date
@@ -46,7 +46,7 @@ public struct EventItem: Equatable {
     }
 }
 
-public struct AttendeeItem: Equatable {
+public struct AttendeeItem: Equatable, Codable, Sendable {
     public let name: String
     public let status: String // "accepted", "declined", "tentative", "invited"
 
@@ -56,7 +56,7 @@ public struct AttendeeItem: Equatable {
     }
 }
 
-public struct CalendarItem: Equatable {
+public struct CalendarItem: Equatable, Codable, Sendable {
     public let identifier: String
     public let title: String
     public let color: String? // 6-char uppercase hex, nil for backends without color

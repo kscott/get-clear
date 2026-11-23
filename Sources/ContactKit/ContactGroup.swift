@@ -1,4 +1,4 @@
-public struct ContactGroup: Equatable, Sendable {
+public struct ContactGroup: Equatable, Sendable, Codable {
     public let identifier: String
     public let name: String
 

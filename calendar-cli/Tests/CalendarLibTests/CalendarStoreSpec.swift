@@ -61,3 +61,26 @@ struct CalendarStoreTests {
         }
     }
 }
+
+@Suite("CalendarStoreError coding")
+struct CalendarStoreErrorCodingTests {
+    private func roundTrip(_ error: CalendarStoreError) throws -> CalendarStoreError {
+        try JSONDecoder().decode(CalendarStoreError.self, from: JSONEncoder().encode(error))
+    }
+
+    @Test("not-found keeps its title through a JSON round trip")
+    func notFound() throws {
+        #expect(try roundTrip(.notFound("All Hands")) == .notFound("All Hands"))
+    }
+
+    @Test("ambiguous keeps its matches through a JSON round trip")
+    func ambiguous() throws {
+        let error = CalendarStoreError.ambiguous(ambiguousEvents())
+        #expect(try roundTrip(error) == error)
+    }
+
+    @Test("no-default-calendar survives a JSON round trip")
+    func noDefaultCalendar() throws {
+        #expect(try roundTrip(.noDefaultCalendar) == .noDefaultCalendar)
+    }
+}

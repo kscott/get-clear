@@ -4,7 +4,7 @@
 
 import Foundation
 
-public struct ContactField: Equatable, Hashable, Sendable {
+public struct ContactField: Equatable, Hashable, Sendable, Codable {
     public let label: String
     public let value: String
 
@@ -19,7 +19,7 @@ public extension ContactField {
     static let defaultPhoneLabel = "mobile"
 }
 
-public struct Contact: Equatable, Sendable {
+public struct Contact: Equatable, Sendable, Codable {
     public let identifier: String
     public let name: String
     public let emails: [ContactField]
