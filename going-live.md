@@ -172,7 +172,7 @@ Surfaced during post-#157 DoD critique. These are pre-launch quality items — t
 ### 12. Bundle Claude Code skills — #30
 **Depends on:** nothing (independent)
 
-Can be worked in parallel with any of the above. Skills are the Claude integration layer — without them, new users have no Claude-first experience out of the box. One skill file per tool, installed to `~/.claude/skills/` by both PKG and curl installer.
+Can be worked in parallel with any of the above. Skills are the Claude integration layer — without them, new users have no Claude-first experience out of the box. One skill file per tool, installed to `~/.claude/skills/` by the PKG installer.
 
 ---
 

@@ -58,6 +58,14 @@ The threshold: if exercising a branch requires a permission dialog or a file to 
 
 ## Decision log
 
+### 2026-11-23 — PKG is the only install method; curl installer removed (#46)
+
+**Decision:** `install.sh` is deleted. The signed, notarized PKG is the only supported way to install Get Clear. CLAUDE.md, going-live.md, and spec 005's status now say so; specs 002 and 007 still mention the curl installer as history and are not rewritten.
+
+**Why:** Decided in April (#46; going-live.md, `30ede99`: "PKG is the only install path for the target audience") but never carried out, so the script and the docs describing it stayed. They kept leading Claude to treat curl as a live path, most recently drafting it into spec 018 as a supported installer. The script was also already wrong: `release.yml` publishes only `get-clear.pkg`, while `install.sh` downloaded from the archived per-tool repos (`kscott/<tool>-cli/releases/latest`), so at best it installed stale pre-monorepo binaries.
+
+**Kept, contrary to #46's original text:** `scripts/uninstall`. The PKG ships it as `/usr/local/share/get-clear/uninstall.sh` (spec 005 FR-008, README), and it already handles only the PKG layout. #29 (uninstall: add curl install path) is closed as won't do.
+
 ### 2026-09-04 — get-clear adopts the argument-shape rule (#202)
 
 **Decision:** The sixth binary — `get-clear` itself (`Sources/GetClear/`), never covered by any Phase 2 issue — now goes through `parseCommand` via a new `GetClearCommandShapes.swift`. `recap` gets the same bare-range shape as calendar's `list`/`today`/`week`; `setup`/`update`/`check-update` get the same zero-argument stray-token guard the other five tools' no-arg commands already have, via a shared `validateNoArguments(_:shape:)` helper. `what` is deliberately untouched — consolidating it is #197's job, not this issue's.

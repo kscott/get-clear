@@ -2,7 +2,7 @@
 
 **Feature Branch**: `main` (multiple commits, 2026-03-14)
 **Created**: 2026-03-14
-**Status**: Shipped (Phase 0 complete 2026-03-14; PKG live at github.com/kscott/get-clear/releases; curl installer live)
+**Status**: Shipped (Phase 0 complete 2026-03-14; PKG live at github.com/kscott/get-clear/releases). **Superseded in part (2026-11-23, #46):** the curl installer (User Story 2, FR-005, FR-006, SC-004) was removed. The PKG is the only install method. The rest of this spec stands as written.
 **Input**: Five tools were built and tested locally but had no distribution story. Sharing required copying binaries manually. macOS Gatekeeper would quarantine unsigned binaries from the internet. A real distribution pipeline required: Developer ID signing, notarization, a PKG installer, a curl installer, and an uninstaller.
 
 ## User Scenarios & Testing *(mandatory)*

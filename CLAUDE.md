@@ -47,7 +47,7 @@ Test framework is **Swift Testing** (`import Testing`), run via `swift test`. It
 
 ## What this project is
 
-Get Clear is a suite of five Swift CLIs connecting Claude to Apple Reminders, Calendar, Contacts, Mail, and Messages. It ships as a signed, notarized PKG installer and a curl one-liner.
+Get Clear is a suite of five Swift CLIs connecting Claude to Apple Reminders, Calendar, Contacts, Mail, and Messages. It ships as a signed, notarized PKG installer. The PKG is the only install method. There is no curl one-liner or install script (removed in #46); don't propose, document, or build one.
 
 Everything lives in this monorepo (migration #34 complete). Tool source lives under `<tool>-cli/Sources/` subdirectories. All standalone repos are archived. All issues tracked here.
 
@@ -99,7 +99,7 @@ Remaining, in priority order:
 - **#53, #80, #68** — Feature additions: `calendar change`, move reminder to list, multi-recipient text
 - **#40** — GetClearKit shared utilities (what command, multi-match, field updates, error type)
 - **#41–45** — Test coverage for each tool's Lib targets
-- **#30** — Bundle Claude Code skills with PKG/curl installer (independent)
+- **#30** — Bundle Claude Code skills with the PKG installer (independent)
 - **#135** — Smoke tests: --version and --help for all five binaries
 
 ## Versioning
