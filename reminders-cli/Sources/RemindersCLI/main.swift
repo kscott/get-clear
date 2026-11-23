@@ -4,6 +4,7 @@
 import AppKit
 import GetClearKit
 import RemindersLib
+import ReminderStoreFactory
 
 let args = Array(CommandLine.arguments.dropFirst())
 

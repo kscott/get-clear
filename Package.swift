@@ -84,7 +84,7 @@ let package = Package(
 
         .target(
             name: "ContactStoreFactory",
-            dependencies: ["ContactKit", "AppleContactKit", "GetClearKit"],
+            dependencies: ["ContactKit", "AppleContactKit", "GetClearKit", "HelperXPC"],
             path: "Sources/ContactStoreFactory",
             linkerSettings: [.linkedFramework("Contacts")]
         ),
@@ -142,9 +142,15 @@ let package = Package(
             dependencies: ["RemindersLib", "GetClearKit", "AppleEventKitSupport"],
             path: "reminders-cli/Sources/RemindersEventKit"
         ),
+        .target(
+            name: "ReminderStoreFactory",
+            dependencies: ["RemindersLib", "RemindersEventKit", "GetClearKit", "HelperXPC"],
+            path: "reminders-cli/Sources/ReminderStoreFactory",
+            linkerSettings: [.linkedFramework("EventKit")]
+        ),
         .executableTarget(
             name: "reminders-bin",
-            dependencies: ["RemindersEventKit", "GetClearKit"],
+            dependencies: ["ReminderStoreFactory", "RemindersEventKit", "GetClearKit"],
             path: "reminders-cli/Sources/RemindersCLI",
             linkerSettings: [
                 .linkedFramework("EventKit"),
@@ -172,9 +178,15 @@ let package = Package(
             dependencies: ["CalendarLib", "GetClearKit", "AppleEventKitSupport"],
             path: "calendar-cli/Sources/CalendarEventKit"
         ),
+        .target(
+            name: "CalendarStoreFactory",
+            dependencies: ["CalendarLib", "CalendarEventKit", "GetClearKit", "HelperXPC"],
+            path: "calendar-cli/Sources/CalendarStoreFactory",
+            linkerSettings: [.linkedFramework("EventKit")]
+        ),
         .executableTarget(
             name: "calendar-bin",
-            dependencies: ["CalendarEventKit", "CalendarLib", "GetClearKit"],
+            dependencies: ["CalendarStoreFactory", "CalendarEventKit", "CalendarLib", "GetClearKit"],
             path: "calendar-cli/Sources/CalendarCLI",
             linkerSettings: [
                 .linkedFramework("EventKit"),
@@ -258,7 +270,7 @@ let package = Package(
         ),
         .executableTarget(
             name: "text-bin",
-            dependencies: ["TextMessages", "TextLib", "ContactStoreFactory", "GetClearKit"],
+            dependencies: ["TextMessages", "TextLib", "ContactStoreFactory", "GetClearKit", "HelperXPC"],
             path: "text-cli/Sources/TextCLI",
             linkerSettings: [
                 .linkedFramework("AppKit")

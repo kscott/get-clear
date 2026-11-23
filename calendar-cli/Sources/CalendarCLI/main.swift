@@ -4,6 +4,7 @@
 import AppKit
 import CalendarEventKit
 import CalendarLib
+import CalendarStoreFactory
 import GetClearKit
 
 var args = Array(CommandLine.arguments.dropFirst())

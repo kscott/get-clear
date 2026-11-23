@@ -60,13 +60,18 @@ enum HelperRouting {
 
     /// Liveness and permission checks that belong to no tool.
     private static func control(_ request: Data) async -> HelperReply {
-        await HelperResponder.respond(to: request, as: HelperControlRequest.self, encodeToolError: { _ in nil }) { request in
-            switch request {
-            case .ping:
-                try HelperCoding.encode(HelperNoResult())
-            case let .requestAccess(kind):
-                try await HelperCoding.encode(StoreAccess.granted(kind))
+        await HelperResponder.respond(
+            to: request,
+            as: HelperControlRequest.self,
+            encodeToolError: { _ in nil },
+            handle: { request in
+                switch request {
+                case .ping:
+                    try HelperCoding.encode(HelperNoResult())
+                case let .requestAccess(kind):
+                    try await HelperCoding.encode(StoreAccess.granted(kind))
+                }
             }
-        }
+        )
     }
 }
