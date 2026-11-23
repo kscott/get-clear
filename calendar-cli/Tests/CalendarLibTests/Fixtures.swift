@@ -75,13 +75,15 @@ final class SpyCalendarStore: CalendarStore {
 
     var addedItems: [EventItem] = []
     var removedIds: [String] = []
+    var eventQueries: [(range: DateInterval, calendarIdentifiers: [String]?)] = []
 
     func fetchCalendars() async throws -> [CalendarItem] {
         calendars
     }
 
     func fetchEvents(in range: DateInterval, calendarIdentifiers: [String]?) async throws -> [EventItem] {
-        events
+        eventQueries.append((range, calendarIdentifiers))
+        return events
     }
 
     func add(_ item: EventItem) async throws -> EventItem {

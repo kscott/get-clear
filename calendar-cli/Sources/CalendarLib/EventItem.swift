@@ -56,20 +56,41 @@ public struct AttendeeItem: Equatable, Codable, Sendable {
     }
 }
 
+/// Where a calendar's events come from.
+public enum CalendarKind: String, Equatable, Codable, Sendable {
+    case local
+    case calDAV
+    case exchange
+    case subscription
+    case birthday
+    case other
+
+    /// Calendars the user keeps themselves, as opposed to subscribed feeds and the
+    /// generated Birthdays calendar. Recap's default scope.
+    public var isUserOwned: Bool {
+        switch self {
+        case .local, .calDAV, .exchange: true
+        case .subscription, .birthday, .other: false
+        }
+    }
+}
+
 public struct CalendarItem: Equatable, Codable, Sendable {
     public let identifier: String
     public let title: String
     public let color: String? // 6-char uppercase hex, nil for backends without color
     public let source: String? // account name
     public let isModifiable: Bool
+    public let kind: CalendarKind
 
     public init(identifier: String, title: String, color: String? = nil,
-                source: String? = nil, isModifiable: Bool = true)
+                source: String? = nil, isModifiable: Bool = true, kind: CalendarKind = .local)
     {
         self.identifier = identifier
         self.title = title
         self.color = color
         self.source = source
         self.isModifiable = isModifiable
+        self.kind = kind
     }
 }

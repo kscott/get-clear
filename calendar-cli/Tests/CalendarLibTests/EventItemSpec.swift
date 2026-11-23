@@ -45,7 +45,27 @@ struct EventItemCodingTests {
 struct CalendarItemCodingTests {
     @Test("a calendar with every field set survives a JSON round trip")
     func everyField() throws {
-        let calendar = CalendarItem(identifier: "id-work", title: "Work", color: "00FF00", source: "iCloud", isModifiable: false)
+        let calendar = CalendarItem(
+            identifier: "id-work", title: "Work", color: "00FF00", source: "iCloud", isModifiable: false, kind: .exchange
+        )
         #expect(try roundTrip(calendar) == calendar)
+    }
+}
+
+@Suite("CalendarKind.isUserOwned")
+struct CalendarKindTests {
+    @Test("local, CalDAV, and Exchange calendars are the user's own", arguments: [CalendarKind.local, .calDAV, .exchange])
+    func userOwned(kind: CalendarKind) {
+        #expect(kind.isUserOwned)
+    }
+
+    @Test("subscribed, birthday, and unknown calendars are not", arguments: [CalendarKind.subscription, .birthday, .other])
+    func notUserOwned(kind: CalendarKind) {
+        #expect(!kind.isUserOwned)
+    }
+
+    @Test("a calendar is local unless the store says otherwise")
+    func defaultsToLocal() {
+        #expect(CalendarItem(identifier: "c", title: "Home").kind == .local)
     }
 }

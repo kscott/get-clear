@@ -101,8 +101,22 @@ private extension CalendarItem {
             title: cal.title,
             color: hexColor(from: cal.cgColor),
             source: cal.source.title,
-            isModifiable: cal.allowsContentModifications
+            isModifiable: cal.allowsContentModifications,
+            kind: CalendarKind(cal.type)
         )
+    }
+}
+
+private extension CalendarKind {
+    init(_ type: EKCalendarType) {
+        self = switch type {
+        case .local: .local
+        case .calDAV: .calDAV
+        case .exchange: .exchange
+        case .subscription: .subscription
+        case .birthday: .birthday
+        @unknown default: .other
+        }
     }
 }
 
