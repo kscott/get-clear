@@ -12,6 +12,8 @@ public protocol ReminderStore {
     func fetchLists() async throws -> [ReminderList]
     func defaultList() async throws -> ReminderList
     func fetchIncomplete(in list: ReminderList?) async throws -> [ReminderItem]
+    /// Reminders in any list whose completion date falls within `range`.
+    func fetchCompleted(in range: DateInterval) async throws -> [ReminderItem]
     func add(_ item: ReminderItem) async throws -> ReminderItem
     func update(identifier: String, changes: ReminderChanges) async throws
     func complete(identifier: String) async throws

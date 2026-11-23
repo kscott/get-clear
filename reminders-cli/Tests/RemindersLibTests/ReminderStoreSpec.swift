@@ -23,6 +23,10 @@ private final class MockStore: ReminderStore {
         items
     }
 
+    func fetchCompleted(in range: DateInterval) async throws -> [ReminderItem] {
+        []
+    }
+
     func add(_ item: ReminderItem) async throws -> ReminderItem {
         item
     }

@@ -16,6 +16,8 @@ public struct ReminderItem: Equatable, Codable, Sendable {
     public let notes: String?
     public let url: URL?
     public let creationDate: Date?
+    /// When the reminder was marked done; nil while incomplete.
+    public let completionDate: Date?
 
     public var hasRecurrenceRules: Bool {
         recurrenceDescription != nil
@@ -31,7 +33,8 @@ public struct ReminderItem: Equatable, Codable, Sendable {
         priority: Int = 0,
         notes: String? = nil,
         url: URL? = nil,
-        creationDate: Date? = nil
+        creationDate: Date? = nil,
+        completionDate: Date? = nil
     ) {
         self.identifier = identifier
         self.title = title
@@ -43,5 +46,6 @@ public struct ReminderItem: Equatable, Codable, Sendable {
         self.notes = notes
         self.url = url
         self.creationDate = creationDate
+        self.completionDate = completionDate
     }
 }

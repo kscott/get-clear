@@ -9,6 +9,8 @@ import RemindersLib
 final class SpyStore: ReminderStore {
     var lists: [ReminderList] = []
     var items: [ReminderItem] = []
+    var completed: [ReminderItem] = []
+    var completedRanges: [DateInterval] = []
 
     var addedItems: [ReminderItem] = []
     var completedIds: [String] = []
@@ -26,6 +28,11 @@ final class SpyStore: ReminderStore {
 
     func fetchIncomplete(in list: ReminderList?) async throws -> [ReminderItem] {
         items
+    }
+
+    func fetchCompleted(in range: DateInterval) async throws -> [ReminderItem] {
+        completedRanges.append(range)
+        return completed
     }
 
     func add(_ item: ReminderItem) async throws -> ReminderItem {

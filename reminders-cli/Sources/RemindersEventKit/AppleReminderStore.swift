@@ -54,6 +54,17 @@ public final class AppleReminderStore: ReminderStore {
         }
     }
 
+    public func fetchCompleted(in range: DateInterval) async throws -> [ReminderItem] {
+        let predicate = ek.predicateForCompletedReminders(
+            withCompletionDateStarting: range.start, ending: range.end, calendars: nil
+        )
+        return await withCheckedContinuation { continuation in
+            ek.fetchReminders(matching: predicate) {
+                continuation.resume(returning: ($0 ?? []).map(ReminderItem.init))
+            }
+        }
+    }
+
     public func add(_ item: ReminderItem) async throws -> ReminderItem {
         guard let cal = calendar(for: item.list) else {
             throw AppleStoreError.listNotFound(item.list.title)
@@ -128,7 +139,8 @@ extension ReminderItem {
             priority: r.priority,
             notes: r.notes,
             url: r.url,
-            creationDate: r.creationDate
+            creationDate: r.creationDate,
+            completionDate: r.completionDate
         )
     }
 }

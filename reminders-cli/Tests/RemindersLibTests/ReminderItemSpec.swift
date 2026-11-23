@@ -35,7 +35,8 @@ struct ReminderItemTests {
                 priority: 1,
                 notes: "landlord's account",
                 url: URL(string: "https://example.com/pay"),
-                creationDate: Date(timeIntervalSince1970: 1_790_000_000)
+                creationDate: Date(timeIntervalSince1970: 1_790_000_000),
+                completionDate: Date(timeIntervalSince1970: 1_790_086_400)
             )
             #expect(try jsonRoundTrip(item) == item)
         }
