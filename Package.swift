@@ -240,7 +240,8 @@ let package = Package(
             name: "TextLibTests",
             dependencies: [
                 "TextLib",
-                "ContactKit"
+                "ContactKit",
+                "GetClearKit"
             ],
             path: "text-cli/Tests/TextLibTests"
         )

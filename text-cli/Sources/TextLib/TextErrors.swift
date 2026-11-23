@@ -4,7 +4,7 @@
 
 import Foundation
 
-public enum TextError: Error, LocalizedError, Equatable {
+public enum TextError: Error, LocalizedError, Equatable, Codable {
     case sendFailed(String)
     case notFound(String)
     case ambiguous(String)
