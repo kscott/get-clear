@@ -123,6 +123,19 @@ When the app's directory is not writable, fall back to today's PKG download-and-
 
 **Work Mac run waived by Ken.** The terminal can't affect attribution: launchd starts the agent, so no terminal is in the chain (the procinfo result). The residual risk is the managed work Mac: MDM can require approval for, or block, background items, or deny privacy services. `profiles show -type configuration` on that Mac shows whether either is managed. The client's `.requiresApproval` path (contract) covers the approval case.
 
+## Local acceptance (2026-11-23, primo, T032)
+
+Real `Get Clear.app` built by `scripts/build-app`, installed by `scripts/build-pkg`'s PKG (`sudo installer`), commands run through the `/usr/local/bin` links:
+
+| Check | Result |
+|---|---|
+| PKG payload | App in `/Applications`, six links into `Contents/Helpers`, postinstall registered the helper |
+| `reminders lists`, `calendar today`, `contacts lists`, `text send` | All correct; each first use prompted once, naming Get Clear; Privacy & Security → Calendars lists "Get Clear" with its icon, Full Access |
+| `get-clear recap yesterday` / `last week` | stdout byte-identical to the previous build, direct and through the helper (FR-014) |
+| SC-006, helper cold / warm | `reminders lists` 0.12 s / 0.06 s; `calendar today` 0.15 s / 0.05 s |
+
+**launchd throttle.** launchd delays relaunching a job that exited less than 10 s after it started (its default `ThrottleInterval`). Killing the helper and calling it again immediately cost 6 s. Normal use never hits this: the helper idles 60 s before exiting. The version-mismatch path uses `kickstart -k`, which restarts at once.
+
 ## Sources
 
 - [Apple Developer Forums 732291 — Signing ID of command-line helpers](https://developer.apple.com/forums/thread/732291)
