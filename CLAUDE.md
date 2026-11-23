@@ -117,6 +117,7 @@ Use `scripts/bump-version <suite-version> [tool:version ...]` to bump. Never edi
 - GetClearKit, ContactKit, AppleContactKit, ContactStoreFactory — shared suite and contact layers
 - Contacts framework access via AppleContactKit boundary only; no writes
 - Shared CLI argument parser in GetClearKit (`CommandArguments.swift`, spec 015) — per-command `CommandShape`; tools declare shapes, not parsers
+- Spec 018 (planned): `Get Clear.app` whose main executable is an `SMAppService` launchd agent holding the privacy identity; CLIs reach it over XPC (`HelperXPC` boundary). ServiceManagement only in `GetClearApp`, Security (`SecStaticCode`) only in the self-update boundary
 
 ## Recent Changes
 - 015-argument-shape: Added Swift 6.0 (swift-tools-version: 6.0, language mode v5) + GetClearKit (new parser lives here); Swift Testing (toolchain-bundled)
