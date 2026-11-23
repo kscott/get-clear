@@ -105,10 +105,10 @@ public func parseRecurrence(_ s: String) -> RecurrenceSpec? {
 
     // 3. Day of month: "the 15th", "on the 1st", "2nd of the month", "on the 22nd", etc.
     //    Matched after ordinal weekday checks so "2nd wednesday" is never treated as day 2.
-    if let m = dayOfMonthRegex?.firstMatch(in: lower, range: NSRange(lower.startIndex..., in: lower)) {
-        if let day = Int((lower as NSString).substring(with: m.range(at: 1))), (1 ... 31).contains(day) {
-            return RecurrenceSpec(frequency: .monthly, interval: 1, dayOfMonth: day)
-        }
+    if let m = dayOfMonthRegex?.firstMatch(in: lower, range: NSRange(lower.startIndex..., in: lower)),
+       let day = Int((lower as NSString).substring(with: m.range(at: 1))), (1 ... 31).contains(day)
+    {
+        return RecurrenceSpec(frequency: .monthly, interval: 1, dayOfMonth: day)
     }
 
     // 4. Interval: "every 2 weeks", "every 3 months", etc.

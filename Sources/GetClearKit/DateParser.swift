@@ -59,11 +59,7 @@ public func parseDate(_ input: String) -> ParsedDate? {
     components.minute = extracted.minute
 
     let dayTrimmed = dayPart.trimmingCharacters(in: .whitespaces)
-    guard applyDayPart(dayTrimmed, now: now, cal: cal, components: &components) else {
-        return nil
-    }
-
-    guard let date = cal.date(from: components) else { return nil }
+    guard applyDayPart(dayTrimmed, now: now, cal: cal, components: &components), let date = cal.date(from: components) else { return nil }
     return ParsedDate(date: date, hasTime: timePart != nil, hasDate: !dayTrimmed.isEmpty)
 }
 
