@@ -1,0 +1,57 @@
+#!/usr/bin/env bash
+# build-app — build and sign Get Clear.app (spec 018). Used by CI and locally.
+#
+# Layout:
+#   Get Clear.app/Contents/MacOS/Get Clear          the helper (GetClearApp target)
+#   Get Clear.app/Contents/Helpers/<tool>           the six commands
+#   Get Clear.app/Contents/Library/LaunchAgents/    the helper's launchd plist
+#   Get Clear.app/Contents/Resources/               icon, zsh completions
+#
+# Signing is inside-out: each command, then the app. Each command keeps the signing identifier
+# 1.3.x gave it (codesign's default: the build product name). mail's Keychain item trusts that
+# identity, so changing it would prompt for Keychain access after the upgrade (research R11).
+#
+# Usage: ./scripts/build-app            → .build/Get Clear.app
+# Env:   SIGN_IDENTITY (default: the Developer ID Application certificate)
+
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+identity="${SIGN_IDENTITY:-Developer ID Application: Kenneth Scott (6Q96Q79QN8)}"
+version=$(<VERSION)
+app=".build/Get Clear.app"
+contents="$app/Contents"
+
+swift build -c release --arch arm64
+bin=$(swift build -c release --arch arm64 --show-bin-path)
+
+rm -rf "$app"
+mkdir -p "$contents/MacOS" "$contents/Helpers" "$contents/Library/LaunchAgents" "$contents/Resources/completions"
+
+cp "$bin/get-clear-app" "$contents/MacOS/Get Clear"
+cp "$bin/get-clear" "$contents/Helpers/get-clear"
+for tool in reminders calendar contacts mail text; do
+    cp "$bin/$tool-bin" "$contents/Helpers/$tool"
+done
+
+plist="$contents/Info.plist"
+cp Sources/GetClearApp/Info.plist "$plist"
+/usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $version" -c "Set :CFBundleVersion $version" "$plist"
+cp Sources/GetClearApp/com.kenscott.get-clear.helper.plist "$contents/Library/LaunchAgents/"
+cp assets/GetClear.icns "$contents/Resources/GetClear.icns"
+cp completions/_* "$contents/Resources/completions/"
+
+sign() {
+    codesign --force --sign "$identity" --options runtime --timestamp "$@"
+}
+
+# 1.3.x identifiers, unchanged.
+sign --identifier get-clear --entitlements Sources/GetClear/get-clear.entitlements "$contents/Helpers/get-clear"
+for tool in reminders calendar contacts mail text; do
+    sign --identifier "$tool-bin" "$contents/Helpers/$tool"
+done
+sign --entitlements Sources/GetClearApp/GetClearApp.entitlements "$app"
+
+codesign --verify --deep --strict "$app"
+codesign --verify -R='anchor apple generic and certificate leaf[subject.OU] = "6Q96Q79QN8"' "$app"
+echo "Built $app ($version)"

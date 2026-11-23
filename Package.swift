@@ -11,7 +11,8 @@ let package = Package(
         .executable(name: "calendar-bin", targets: ["calendar-bin"]),
         .executable(name: "contacts-bin", targets: ["contacts-bin"]),
         .executable(name: "mail-bin", targets: ["mail-bin"]),
-        .executable(name: "text-bin", targets: ["text-bin"])
+        .executable(name: "text-bin", targets: ["text-bin"]),
+        .executable(name: "get-clear-app", targets: ["GetClearApp"])
     ],
     targets: [
         // MARK: - GetClearKit
@@ -86,6 +87,33 @@ let package = Package(
             dependencies: ["ContactKit", "AppleContactKit", "GetClearKit"],
             path: "Sources/ContactStoreFactory",
             linkerSettings: [.linkedFramework("Contacts")]
+        ),
+
+        // MARK: - Helper (spec 018: Get Clear.app holds the privacy identity)
+
+        .target(
+            name: "HelperXPC",
+            dependencies: ["GetClearKit"],
+            path: "Sources/HelperXPC"
+        ),
+        .executableTarget(
+            name: "GetClearApp",
+            dependencies: [
+                "HelperXPC", "GetClearKit",
+                "RemindersLib", "RemindersEventKit",
+                "CalendarLib", "CalendarEventKit",
+                "ContactKit", "AppleContactKit",
+                "TextLib", "TextMessages"
+            ],
+            path: "Sources/GetClearApp",
+            exclude: ["Info.plist", "GetClearApp.entitlements", "com.kenscott.get-clear.helper.plist"],
+            linkerSettings: [
+                .linkedFramework("EventKit"),
+                .linkedFramework("Contacts"),
+                .linkedFramework("ServiceManagement"),
+                .linkedFramework("CoreServices"),
+                .linkedFramework("AppKit")
+            ]
         ),
 
         // MARK: - AppleEventKitSupport (shared CoreGraphics utilities for EventKit boundaries)

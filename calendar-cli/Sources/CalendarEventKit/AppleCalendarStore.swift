@@ -24,7 +24,8 @@ enum AppleCalendarStoreError: LocalizedError {
 public final class AppleCalendarStore: CalendarStore {
     private let store: EKEventStore
 
-    private init(_ store: EKEventStore) {
+    /// For a caller that has already secured Calendars access (the Get Clear helper's gate).
+    public init(_ store: EKEventStore) {
         self.store = store
     }
 

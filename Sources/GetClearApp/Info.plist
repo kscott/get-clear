@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleIdentifier</key>
+    <string>com.kenscott.get-clear</string>
+    <key>CFBundleName</key>
+    <string>Get Clear</string>
+    <key>CFBundleDisplayName</key>
+    <string>Get Clear</string>
+    <key>CFBundleExecutable</key>
+    <string>Get Clear</string>
+    <key>CFBundleIconFile</key>
+    <string>GetClear</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+    <key>CFBundleShortVersionString</key>
+    <string>__VERSION__</string>
+    <key>CFBundleVersion</key>
+    <string>__VERSION__</string>
+    <key>LSMinimumSystemVersion</key>
+    <string>14.0</string>
+    <key>LSUIElement</key>
+    <true/>
+    <key>NSHumanReadableCopyright</key>
+    <string>© Kenneth Scott</string>
+    <key>NSRemindersFullAccessUsageDescription</key>
+    <string>Get Clear reads, adds, changes, and completes your reminders when you run the reminders command or ask Claude to.</string>
+    <key>NSCalendarsFullAccessUsageDescription</key>
+    <string>Get Clear reads and adds calendar events when you run the calendar command, get-clear recap, or ask Claude to.</string>
+    <key>NSContactsUsageDescription</key>
+    <string>Get Clear looks up and manages your contacts when you run the contacts command, and finds people by name when you send mail or texts.</string>
+    <key>NSAppleEventsUsageDescription</key>
+    <string>Get Clear sends your texts through Messages when you run the text command or ask Claude to.</string>
+</dict>
+</plist>
