@@ -1,11 +1,26 @@
 #!/bin/bash
-# Post-install: open the Get Clear setup guide in the user's browser.
-# Runs as root; use sudo -u to open under the actual user's session.
+# Post-install: register Get Clear's background helper for the logged-in user, then open the
+# setup guide in their browser. Runs as root, so both happen in the console user's session.
+#
+# Registering here is a head start, not a requirement: if it fails, the first command that
+# needs the helper registers it itself. So a failure is logged and never fails the install.
 
-if [[ -n "${INSTALLER_USER:-}" ]]; then
-    sudo -u "$INSTALLER_USER" open "https://github.com/kscott/get-clear#get-started" 2>/dev/null || true
-elif [[ -n "${USER:-}" && "$USER" != "root" ]]; then
-    sudo -u "$USER" open "https://github.com/kscott/get-clear#get-started" 2>/dev/null || true
+app="/Applications/Get Clear.app"
+label="com.kenscott.get-clear.helper"
+
+user="${INSTALLER_USER:-}"
+if [[ -z "$user" || "$user" == "root" ]]; then
+    user=$(stat -f%Su /dev/console)
+fi
+
+if [[ -n "$user" && "$user" != "root" ]]; then
+    uid=$(id -u "$user")
+    if ! launchctl asuser "$uid" sudo -u "$user" "$app/Contents/MacOS/Get Clear" register; then
+        echo "Get Clear: helper not registered now; the first command will register it."
+    fi
+    # On an upgrade, stop the previous version's helper so the next command starts this one.
+    launchctl asuser "$uid" launchctl kill TERM "gui/$uid/$label" 2>/dev/null || true
+    sudo -u "$user" open "https://github.com/kscott/get-clear#get-started" 2>/dev/null || true
 fi
 
 exit 0

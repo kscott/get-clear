@@ -1,4 +1,5 @@
 .build/
+get-clear-unsigned.pkg
 mcp/__pycache__/
 mcp/.venv/
 .claude/settings.local.json

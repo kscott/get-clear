@@ -6,6 +6,11 @@ on:
 permissions:
   contents: write
 
+env:
+  RELEASE_NOTES: >-
+    Installs Get Clear.app and its six commands (get-clear, reminders, calendar, contacts, mail, text).
+    Double-click get-clear.pkg to install. Already installed? Run get-clear update.
+
 jobs:
   test:
     runs-on: macos-latest
@@ -45,56 +50,27 @@ jobs:
           rm /tmp/installer.p12
           security set-key-partition-list -S apple-tool:,apple: -s -k "" $KEYCHAIN
 
-      - name: Build all binaries
-        run: swift build -c release --arch arm64
+      - name: Build and sign Get Clear.app
+        run: ./scripts/build-app
 
-      - name: Sign binaries
+      - name: Notarize and staple the app
+        env:
+          NOTARYTOOL_APPLE_ID: ${{ secrets.NOTARYTOOL_APPLE_ID }}
+          NOTARYTOOL_PASSWORD: ${{ secrets.NOTARYTOOL_PASSWORD }}
+          NOTARYTOOL_TEAM_ID: ${{ secrets.NOTARYTOOL_TEAM_ID }}
         run: |
-          codesign --sign "Developer ID Application: Kenneth Scott (6Q96Q79QN8)" \
-            --entitlements Sources/GetClear/get-clear.entitlements \
-            --options runtime \
-            --timestamp \
-            .build/release/get-clear
-          for tool in reminders calendar contacts mail text; do
-            codesign --sign "Developer ID Application: Kenneth Scott (6Q96Q79QN8)" \
-              --options runtime \
-              --timestamp \
-              .build/release/${tool}-bin
-          done
+          ditto -c -k --keepParent ".build/Get Clear.app" app-notarize.zip
+          xcrun notarytool submit app-notarize.zip \
+            --apple-id "$NOTARYTOOL_APPLE_ID" \
+            --password "$NOTARYTOOL_PASSWORD" \
+            --team-id "$NOTARYTOOL_TEAM_ID" \
+            --wait
+          xcrun stapler staple ".build/Get Clear.app"
+          # The self-update asset: the stapled app, zipped (spec 018 R8).
+          ditto -c -k --keepParent ".build/Get Clear.app" Get-Clear.zip
 
-      - name: Assemble payload
-        run: |
-          mkdir -p payload/usr/local/bin
-          cp .build/release/get-clear payload/usr/local/bin/get-clear
-          for tool in reminders calendar contacts mail text; do
-            cp .build/release/${tool}-bin payload/usr/local/bin/${tool}
-          done
-          chmod +x payload/usr/local/bin/*
-          mkdir -p payload/usr/local/share/get-clear
-          cp scripts/uninstall payload/usr/local/share/get-clear/uninstall.sh
-          chmod +x payload/usr/local/share/get-clear/uninstall.sh
-          mkdir -p payload/usr/local/share/zsh/site-functions
-          cp completions/_get-clear completions/_reminders completions/_calendar \
-             completions/_contacts completions/_mail completions/_text \
-             payload/usr/local/share/zsh/site-functions/
-
-      - name: Build component package
-        run: |
-          arch -arm64 pkgbuild \
-            --root payload \
-            --scripts pkg/scripts \
-            --identifier com.kenscott.get-clear \
-            --version "$VERSION" \
-            --install-location / \
-            get-clear-component.pkg
-
-      - name: Build distribution package
-        run: |
-          arch -arm64 productbuild \
-            --distribution pkg/distribution.xml \
-            --resources pkg/resources \
-            --package-path . \
-            get-clear-unsigned.pkg
+      - name: Build the installer package
+        run: ./scripts/build-pkg
 
       - name: Sign package
         run: |
@@ -123,13 +99,13 @@ jobs:
           if gh release view "v$VERSION" > /dev/null 2>&1; then
             gh release edit "v$VERSION" \
               --title "Get Clear $VERSION" \
-              --notes "Installs all five Get Clear tools to /usr/local/bin. Double-click get-clear.pkg to install." \
+              --notes "$RELEASE_NOTES" \
               --latest
-            gh release upload "v$VERSION" get-clear.pkg --clobber
+            gh release upload "v$VERSION" get-clear.pkg Get-Clear.zip --clobber
           else
-            gh release create "v$VERSION" get-clear.pkg \
+            gh release create "v$VERSION" get-clear.pkg Get-Clear.zip \
               --title "Get Clear $VERSION" \
-              --notes "Installs all five Get Clear tools to /usr/local/bin. Double-click get-clear.pkg to install." \
+              --notes "$RELEASE_NOTES" \
               --latest
           fi
 
@@ -137,10 +113,10 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release upload latest get-clear.pkg --clobber
+          gh release upload latest get-clear.pkg Get-Clear.zip --clobber
           gh release edit latest \
             --title "Get Clear $VERSION" \
-            --notes "Installs all five Get Clear tools to /usr/local/bin. Double-click get-clear.pkg to install."
+            --notes "$RELEASE_NOTES"
 
   smoke-test:
     runs-on: macos-latest
@@ -158,6 +134,16 @@ jobs:
 
       - name: Install PKG
         run: sudo installer -pkg get-clear.pkg -target /
+
+      - name: Smoke test — app and links
+        run: |
+          codesign --verify --deep --strict "/Applications/Get Clear.app"
+          spctl -a -vv "/Applications/Get Clear.app"
+          for tool in get-clear reminders calendar contacts mail text; do
+            target=$(readlink "/usr/local/bin/$tool")
+            [[ "$target" == "/Applications/Get Clear.app/Contents/Helpers/$tool" ]] \
+              || { echo "/usr/local/bin/$tool -> '$target', expected a link into the app"; exit 1; }
+          done
 
       - name: Smoke test — version flags
         run: |

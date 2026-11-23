@@ -1,0 +1,57 @@
+#!/usr/bin/env bash
+# build-pkg — build the Get Clear installer from a built .build/Get Clear.app (spec 018).
+# Used by CI (after notarizing the app) and locally. Signing the PKG is CI's job.
+#
+# Payload:
+#   /Applications/Get Clear.app
+#   /usr/local/bin/<tool>  → links into the app, so a self-update never touches PATH
+#   /usr/local/share/get-clear/uninstall.sh
+#   /usr/local/share/zsh/site-functions/_<tool>
+#
+# Usage: ./scripts/build-app && ./scripts/build-pkg   → get-clear-unsigned.pkg
+
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+app=".build/Get Clear.app"
+[[ -d "$app" ]] || { echo "No $app — run ./scripts/build-app first"; exit 1; }
+version=$(<VERSION)
+work=$(mktemp -d)
+trap 'rm -rf "$work"' EXIT
+payload="$work/payload"
+
+mkdir -p "$payload/Applications"
+ditto "$app" "$payload/Applications/Get Clear.app"
+
+mkdir -p "$payload/usr/local/bin"
+for tool in get-clear reminders calendar contacts mail text; do
+    ln -s "/Applications/Get Clear.app/Contents/Helpers/$tool" "$payload/usr/local/bin/$tool"
+done
+
+mkdir -p "$payload/usr/local/share/get-clear"
+cp scripts/uninstall "$payload/usr/local/share/get-clear/uninstall.sh"
+chmod +x "$payload/usr/local/share/get-clear/uninstall.sh"
+
+mkdir -p "$payload/usr/local/share/zsh/site-functions"
+cp completions/_* "$payload/usr/local/share/zsh/site-functions/"
+
+# Install the app at /Applications, never "upgrading" some other copy Installer finds on disk.
+pkgbuild --analyze --root "$payload" "$work/component.plist" >/dev/null
+plutil -replace 0.BundleIsRelocatable -bool NO "$work/component.plist"
+
+pkgbuild \
+    --root "$payload" \
+    --component-plist "$work/component.plist" \
+    --scripts pkg/scripts \
+    --identifier com.kenscott.get-clear \
+    --version "$version" \
+    --install-location / \
+    "$work/get-clear-component.pkg" >/dev/null
+
+productbuild \
+    --distribution pkg/distribution.xml \
+    --resources pkg/resources \
+    --package-path "$work" \
+    get-clear-unsigned.pkg >/dev/null
+
+echo "Built get-clear-unsigned.pkg ($version)"
