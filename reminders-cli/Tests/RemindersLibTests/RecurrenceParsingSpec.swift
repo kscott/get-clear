@@ -431,3 +431,18 @@ struct DescribeRecurrenceTests {
         }
     }
 }
+
+@Suite("RecurrenceSpec coding")
+struct RecurrenceSpecCodingTests {
+    @Test("an ordinal-weekday rule survives a JSON round trip")
+    func ordinalWeekday() throws {
+        let spec = RecurrenceSpec(frequency: .monthly, interval: 1, ordinalWeekday: .init(weekday: 3, weekNumber: -1))
+        #expect(try jsonRoundTrip(spec) == spec)
+    }
+
+    @Test("a day-of-month rule with an interval survives a JSON round trip")
+    func dayOfMonth() throws {
+        let spec = RecurrenceSpec(frequency: .monthly, interval: 2, dayOfMonth: 15)
+        #expect(try jsonRoundTrip(spec) == spec)
+    }
+}

@@ -3,7 +3,7 @@
 
 import Foundation
 
-public enum ReminderStoreError: Error, Equatable {
+public enum ReminderStoreError: Error, Equatable, Codable {
     case notFound(String)
     case ambiguous([ReminderItem])
 }

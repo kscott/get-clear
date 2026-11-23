@@ -3,7 +3,7 @@
 
 import Foundation
 
-public struct ReminderItem: Equatable {
+public struct ReminderItem: Equatable, Codable, Sendable {
     public let identifier: String
     public let title: String
     public let list: ReminderList

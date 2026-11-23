@@ -458,3 +458,19 @@ struct ParseReminderChangesTests {
         }
     }
 }
+
+@Suite("ReminderChanges coding")
+struct ReminderChangesCodingTests {
+    @Test("changes to every field survive a JSON round trip")
+    func roundTrips() throws {
+        var opts = ParsedOptions()
+        opts.date = "march 1"
+        opts.recurrence = "every 2 weeks"
+        opts.priority = "high"
+        opts.note = "buy milk"
+        opts.url = "https://example.com"
+        opts.list = "Bills"
+        let changes = try parseReminderChanges(opts, existingItem: noItem)
+        #expect(try jsonRoundTrip(changes) == changes)
+    }
+}

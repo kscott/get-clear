@@ -50,6 +50,12 @@ final class SpyStore: ReminderStore {
     }
 }
 
+// MARK: - JSON round trip (spec 018: values crossing the helper connection)
+
+func jsonRoundTrip<T: Codable>(_ value: T) throws -> T {
+    try JSONDecoder().decode(T.self, from: JSONEncoder().encode(value))
+}
+
 // MARK: - Shared list constants
 
 let testList = ReminderList(title: "Test")

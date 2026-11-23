@@ -33,3 +33,12 @@ struct ReminderListTests {
         }
     }
 }
+
+@Suite("ReminderList coding")
+struct ReminderListCodingTests {
+    @Test("a list with every field set survives a JSON round trip")
+    func roundTrips() throws {
+        let list = ReminderList(identifier: "abc", title: "Bills", color: "FF5733", source: "iCloud", isModifiable: false)
+        #expect(try jsonRoundTrip(list) == list)
+    }
+}

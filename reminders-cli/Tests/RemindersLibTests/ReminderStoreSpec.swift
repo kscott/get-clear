@@ -94,3 +94,17 @@ struct ReminderStoreTests {
         }
     }
 }
+
+@Suite("ReminderStoreError coding")
+struct ReminderStoreErrorCodingTests {
+    @Test("not-found keeps its title through a JSON round trip")
+    func notFound() throws {
+        #expect(try jsonRoundTrip(ReminderStoreError.notFound("Pay rent")) == .notFound("Pay rent"))
+    }
+
+    @Test("ambiguous keeps its matches through a JSON round trip")
+    func ambiguous() throws {
+        let error = ReminderStoreError.ambiguous(ambiguousItems())
+        #expect(try jsonRoundTrip(error) == error)
+    }
+}

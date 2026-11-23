@@ -6,7 +6,7 @@ import Foundation
 import GetClearKit
 
 /// The resolved set of changes to apply to a reminder.
-public struct ReminderChanges {
+public struct ReminderChanges: Equatable, Codable, Sendable {
     /// Due date as DateComponents ready to assign to EKReminder.dueDateComponents, or cleared/unchanged.
     public let due: ValueChange<DateComponents>
     public let recurrence: ValueChange<RecurrenceSpec>

@@ -14,11 +14,11 @@
 
 import Foundation
 
-public enum RecurrenceFrequency: Equatable {
+public enum RecurrenceFrequency: Equatable, Codable, Sendable {
     case daily, weekly, monthly, yearly
 }
 
-public struct RecurrenceSpec: Equatable {
+public struct RecurrenceSpec: Equatable, Codable, Sendable {
     public let frequency: RecurrenceFrequency
     public let interval: Int
     /// Non-nil for ordinal weekday-of-month rules (e.g. "last tuesday", "2nd friday").
@@ -35,7 +35,7 @@ public struct RecurrenceSpec: Equatable {
         self.dayOfMonth = dayOfMonth
     }
 
-    public struct OrdinalWeekday: Equatable {
+    public struct OrdinalWeekday: Equatable, Codable, Sendable {
         /// 1=Sun, 2=Mon, 3=Tue, 4=Wed, 5=Thu, 6=Fri, 7=Sat  (matches EKWeekday raw values)
         public let weekday: Int
         /// 1=first, 2=second, 3=third, 4=fourth, -1=last

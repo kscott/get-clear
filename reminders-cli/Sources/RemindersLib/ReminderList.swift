@@ -1,7 +1,7 @@
 // ReminderList.swift
 // A pure value type representing a reminder list, independent of EventKit.
 
-public struct ReminderList: Equatable {
+public struct ReminderList: Equatable, Codable, Sendable {
     public let identifier: String
     public let title: String
     /// Hex color string (e.g. "FF5733"), nil for backends without per-list color (Google Tasks).
