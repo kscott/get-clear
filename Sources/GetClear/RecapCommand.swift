@@ -1,9 +1,10 @@
 // RecapCommand.swift
 // Displays a recap of what happened across all Get Clear tools.
 
-import EventKit
+import CalendarStoreFactory
 import Foundation
 import GetClearKit
+import ReminderStoreFactory
 
 func handleRecap(args: [String]) async throws {
     var config = loadGetClearConfig()
@@ -41,9 +42,11 @@ func handleRecap(args: [String]) async throws {
         }
     }
 
-    let store = EKEventStore()
-    let result = await RecapAggregator.fetch(in: effectiveRange, store: store,
-                                             calendarNames: config.recapCalendars)
+    let calendars = try? await makeCalendarStore()
+    let reminders = await makeReminderStore()
+    let result = await RecapAggregator.fetch(
+        in: effectiveRange, calendars: calendars, reminders: reminders, calendarNames: config.recapCalendars
+    )
     print(formatRecap(result, range: range, rangeStr: rangeStr,
                       isToday: isToday, dateUsed: dateUsed))
 }

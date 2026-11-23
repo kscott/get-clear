@@ -1,6 +1,7 @@
-import EventKit
+import CalendarLib
 import Foundation
 import GetClearKit
+import RemindersLib
 
 // MARK: - Types
 
@@ -10,8 +11,8 @@ public struct TimespanResult {
 }
 
 public enum RecapGroup {
-    case fromCalendar([EKEvent])
-    case tasksCompleted([EKReminder])
+    case fromCalendar([EventItem])
+    case tasksCompleted([ReminderItem])
     case sent([ActivityLogEntry])
 
     public var isEmpty: Bool {
@@ -35,17 +36,18 @@ public struct RecapResult {
 // MARK: - Aggregator
 
 public enum RecapAggregator {
-    /// Fetches the recap for the given date range.
-    /// Requests EventKit access internally.
-    /// - Parameter calendarNames: Calendar names to include. nil = all non-system calendars.
-    public static func fetch(
+    /// Fetches the recap for the given date range. A store that is nil or can't be read
+    /// contributes nothing, as before.
+    /// - Parameter calendarNames: Calendar names to include. nil = the user's own calendars.
+    static func fetch(
         in range: ClosedRange<Date>,
-        store: EKEventStore,
+        calendars: (any CalendarStore)?,
+        reminders: (any ReminderStore)?,
         calendarNames: [String]?,
         baseDirectory: URL? = nil
     ) async -> RecapResult {
-        async let calendarEvents = fetchCalendarEvents(in: range, store: store, calendarNames: calendarNames)
-        async let completedReminders = fetchCompletedReminders(in: range, store: store)
+        async let calendarEvents = fetchCalendarEvents(in: range, store: calendars, calendarNames: calendarNames)
+        async let completedReminders = fetchCompletedReminders(in: range, store: reminders)
 
         let (events, reminders) = await (calendarEvents, completedReminders)
 
@@ -69,82 +71,25 @@ public enum RecapAggregator {
         return RecapResult(groups: groups, timespan: timespanResult)
     }
 
+    /// Past events from the recap's calendars. The store returns them sorted and de-duplicated.
     private static func fetchCalendarEvents(
         in range: ClosedRange<Date>,
-        store: EKEventStore,
+        store: (any CalendarStore)?,
         calendarNames: [String]?
-    ) async -> [EKEvent] {
-        guard await (try? store.requestFullAccessToEvents()) == true else { return [] }
-        let calendars = resolveCalendars(names: calendarNames, store: store)
-        return fetchPastEvents(in: range, store: store, calendars: calendars)
+    ) async -> [EventItem] {
+        guard let store, let calendars = try? await store.fetchCalendars() else { return [] }
+        let ids = recapCalendarIDs(names: calendarNames, from: calendars)
+        let interval = DateInterval(start: range.lowerBound, end: range.upperBound)
+        guard let events = try? await store.fetchEvents(in: interval, calendarIdentifiers: ids) else { return [] }
+        return pastEvents(events, in: range, now: Date(), calendar: .current)
     }
 
     private static func fetchCompletedReminders(
         in range: ClosedRange<Date>,
-        store: EKEventStore
-    ) async -> [EKReminder] {
-        guard await (try? store.requestFullAccessToReminders()) == true else { return [] }
-        let pred = store.predicateForReminders(in: nil)
-        let all: [EKReminder] = await withCheckedContinuation { continuation in
-            store.fetchReminders(matching: pred) { continuation.resume(returning: $0 ?? []) }
-        }
-        return all.filter { rem in
-            guard rem.isCompleted, let cd = rem.completionDate else { return false }
-            return cd >= range.lowerBound && cd <= range.upperBound
-        }
-    }
-
-    // MARK: - Private
-
-    /// Resolves calendar names to EKCalendar objects.
-    /// If names is nil, returns all user calendars (local/CalDAV/Exchange — excludes Birthdays, Holidays).
-    private static func resolveCalendars(names: [String]?, store: EKEventStore) -> [EKCalendar]? {
-        let all = store.calendars(for: .event)
-        guard let names else {
-            // Default: all user-owned calendars (excludes birthday and subscription calendars)
-            let user = all.filter {
-                switch $0.type {
-                case .local, .calDAV, .exchange: true
-                default: false
-                }
-            }
-            return user.isEmpty ? nil : user
-        }
-        let matched = all.filter { names.contains($0.title) }
-        return matched.isEmpty ? nil : matched
-    }
-
-    /// Queries past calendar events per FR-015:
-    /// - Timed events:   include if endDate <= now
-    /// - All-day events: include if startDate's calendar date falls within range
-    /// Deduplicates by eventIdentifier (matches calendar-cli's fetchEvents behaviour).
-    private static func fetchPastEvents(
-        in range: ClosedRange<Date>,
-        store: EKEventStore,
-        calendars: [EKCalendar]?
-    ) -> [EKEvent] {
-        let now = Date()
-        let cal = Calendar.current
-        let pred = store.predicateForEvents(
-            withStart: range.lowerBound,
-            end: range.upperBound,
-            calendars: calendars
-        )
-        let sorted = store.events(matching: pred).sorted { $0.startDate < $1.startDate }
-
-        // Deduplicate by eventIdentifier — same logic as calendar-cli's fetchEvents
-        var seen = Set<String>()
-        let deduped = sorted.filter { seen.insert($0.eventIdentifier).inserted }
-
-        return deduped.filter { event in
-            if event.isAllDay {
-                let eventDay = cal.startOfDay(for: event.startDate)
-                let rangeStart = cal.startOfDay(for: range.lowerBound)
-                let rangeEnd = cal.startOfDay(for: range.upperBound)
-                return eventDay >= rangeStart && eventDay <= rangeEnd
-            } else {
-                return event.endDate <= now
-            }
-        }
+        store: (any ReminderStore)?
+    ) async -> [ReminderItem] {
+        guard let store else { return [] }
+        let interval = DateInterval(start: range.lowerBound, end: range.upperBound)
+        return await (try? store.fetchCompleted(in: interval)) ?? []
     }
 }

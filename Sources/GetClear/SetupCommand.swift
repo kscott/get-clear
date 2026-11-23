@@ -1,7 +1,8 @@
 // SetupCommand.swift
 // handleSetup() dispatches the setup command; pickAndSaveCalendars() runs the interactive picker.
 
-import EventKit
+import CalendarLib
+import CalendarStoreFactory
 import Foundation
 import GetClearKit
 
@@ -17,14 +18,15 @@ func pickAndSaveCalendars() async -> Bool {
     // Install SIGINT handler here rather than at the call site — setup is the only command
     // that blocks on user input, so this is the only place where Ctrl-C needs clean handling.
     installCancelOnInterrupt()
-    let store = EKEventStore()
-
-    guard await (try? store.requestFullAccessToEvents()) == true else {
+    let all: [CalendarItem]
+    do {
+        all = try await makeCalendarStore().fetchCalendars()
+    } catch let error as HelperCallError {
+        fail(error.localizedDescription)
+    } catch {
         fail("Calendar access required for setup")
     }
-
-    let all = store.calendars(for: .event)
-    let grouped = Dictionary(grouping: all) { $0.source.title }
+    let grouped = Dictionary(grouping: all) { $0.source ?? "" }
 
     let configURL = getClearConfigURL
     if FileManager.default.fileExists(atPath: configURL.path) {
@@ -37,7 +39,7 @@ func pickAndSaveCalendars() async -> Bool {
     for source in grouped.keys.sorted() {
         print("  \(source)")
         for cal in (grouped[source] ?? []).sorted(by: { $0.title < $1.title }) {
-            print(String(format: "    %2d  \(calendarDot(cal))\(cal.title)", n))
+            print(String(format: "    %2d  \(calendarDot(hex: cal.color))\(cal.title)", n))
             numbered.append((number: n, title: cal.title))
             n += 1
         }

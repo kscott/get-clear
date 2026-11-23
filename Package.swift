@@ -23,7 +23,11 @@ let package = Package(
         ),
         .executableTarget(
             name: "GetClear",
-            dependencies: ["GetClearKit", "AppleEventKitSupport"],
+            dependencies: [
+                "GetClearKit",
+                "CalendarLib", "CalendarStoreFactory",
+                "RemindersLib", "ReminderStoreFactory"
+            ],
             path: "Sources/GetClear",
             exclude: ["get-clear.entitlements"]
         ),
@@ -37,7 +41,8 @@ let package = Package(
         .testTarget(
             name: "GetClearTests",
             dependencies: [
-                "GetClear"
+                "GetClear",
+                "CalendarLib"
             ],
             path: "Tests/GetClearTests"
         ),

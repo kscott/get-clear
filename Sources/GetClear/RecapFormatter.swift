@@ -1,17 +1,8 @@
 // RecapFormatter.swift
 // Formats recap output for terminal display.
 
-import AppleEventKitSupport
-import EventKit
 import Foundation
 import GetClearKit
-
-// MARK: - Calendar dot
-
-func calendarDot(_ calendar: EKCalendar) -> String {
-    guard ANSI.enabled, let (r, g, b) = rgbComponents(from: calendar.cgColor) else { return "  " }
-    return "\u{001B}[38;2;\(r);\(g);\(b)m●\u{001B}[0m "
-}
 
 // MARK: - Group and recap formatting
 
@@ -38,13 +29,12 @@ func formatRecapGroups(_ groups: [RecapGroup]) -> [String] {
         switch group {
         case let .fromCalendar(events):
             label = "From your calendar"
-            items = events.map { $0.title ?? "(no title)" }
+            items = events.map(\.title)
         case let .tasksCompleted(reminders):
             label = "Tasks completed"
             items = reminders.map { rem in
-                let title = rem.title ?? "(no title)"
-                if let list = rem.calendar?.title { return "\(title) [\(list)]" }
-                return title
+                let title = rem.title.isEmpty ? "(no title)" : rem.title
+                return "\(title) [\(rem.list.title)]"
             }
         case let .sent(entries):
             label = "Sent"
