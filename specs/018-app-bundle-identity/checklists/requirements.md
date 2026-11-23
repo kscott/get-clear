@@ -31,5 +31,5 @@
 
 ## Notes
 
-- Install locations (`/usr/local/bin`, `/Applications`, `~/Applications`), the PKG, and the curl installer are named because they are the user-visible distribution surface already established in spec 005, not implementation choices. The mechanism for the helper (how commands reach it, how it is registered) is deliberately left to the plan.
-- No clarifications needed: the decisions (single app, helper owns access, self-update with PKG fallback, curl installs get the app, dev builds fall back to direct access) were settled with Ken on 2026-11-23 before the spec was written.
+- Install locations (`/usr/local/bin`, `/Applications`) and the PKG are named because they are the user-visible distribution surface already established in spec 005, not implementation choices. The mechanism for the helper (how commands reach it, how it is registered) is deliberately left to the plan.
+- No clarifications needed: the decisions (single app, helper owns access, self-update with PKG fallback, PKG the only install method per #46, dev builds fall back to direct access) were settled with Ken on 2026-11-23 before the spec was written.
