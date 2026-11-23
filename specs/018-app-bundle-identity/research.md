@@ -2,7 +2,7 @@
 
 **Feature**: 018-app-bundle-identity | **Date**: 2026-11-23
 
-Each entry: **Decision**, **Rationale**, **Alternatives considered**. Entries marked **VERIFY IN SPIKE** rest on Apple forum guidance, not a guarantee, and are confirmed or overturned by task 0 (the spike) before anything else is built.
+Each entry: **Decision**, **Rationale**, **Alternatives considered**. Entries marked **Verified in spike (see Spike results)** rest on Apple forum guidance, not a guarantee, and are confirmed or overturned by task 0 (the spike) before anything else is built.
 
 ---
 
@@ -10,7 +10,7 @@ Each entry: **Decision**, **Rationale**, **Alternatives considered**. Entries ma
 
 **Decision**: A launchd **agent registered with `SMAppService`**, whose program is the main executable of `Get Clear.app`, performs all protected-store access. The CLIs ask it over XPC.
 
-**Rationale**: TCC attributes a request to the *responsible code*. A tool run from a terminal makes the terminal responsible; a process launched by launchd is responsible for itself; and for an agent installed through `SMAppService`, Apple DTS says the containing app becomes the responsible code, so the prompt and the stored decision belong to the app (bundle ID, name, icon, usage strings). An agent installed by other means needs `AssociatedBundleIdentifiers` and has reportedly behaved inconsistently across macOS versions. **VERIFY IN SPIKE** on macOS 27.2: `launchctl procinfo <helper pid>` shows `Get Clear.app` as responsible; the prompt names "Get Clear"; Privacy & Security lists "Get Clear".
+**Rationale**: TCC attributes a request to the *responsible code*. A tool run from a terminal makes the terminal responsible; a process launched by launchd is responsible for itself; and for an agent installed through `SMAppService`, Apple DTS says the containing app becomes the responsible code, so the prompt and the stored decision belong to the app (bundle ID, name, icon, usage strings). An agent installed by other means needs `AssociatedBundleIdentifiers` and has reportedly behaved inconsistently across macOS versions. **Verified in spike (see Spike results)** on macOS 27.2: `launchctl procinfo <helper pid>` shows `Get Clear.app` as responsible; the prompt names "Get Clear"; Privacy & Security lists "Get Clear".
 
 **Alternatives considered**:
 - *Self-disclaiming relaunch* (`responsibility_spawnattrs_setdisclaim`): one process, no IPC, but private SPI with no stability promise. Rejected 2026-11-23 in favor of the supported design.
@@ -32,7 +32,7 @@ Each entry: **Decision**, **Rationale**, **Alternatives considered**. Entries ma
 - **Self-heal**: when a CLI inside the app can't reach the helper, it runs `Get Clear register` once and retries (constitution: tools handle what they can). Covers a skipped postinstall, a reset, or a user who removed the background item.
 - If `SMAppService.status` is `.requiresApproval`, the CLI fails with a message naming System Settings → General → Login Items & Extensions and opens it (`SMAppService.openSystemSettingsLoginItems()`). This is an OS security boundary, which the constitution allows.
 
-**Rationale**: `BundleProgram` is only honored for `SMAppService`-installed plists, and the plist is inside the bundle, so self-update replaces it with the app. **VERIFY IN SPIKE**: the registration survives replacing the bundle at the same path; whether registration posts a "Background item added" notification or needs approval on 27.2.
+**Rationale**: `BundleProgram` is only honored for `SMAppService`-installed plists, and the plist is inside the bundle, so self-update replaces it with the app. **Verified in spike (see Spike results)**: the registration survives replacing the bundle at the same path; whether registration posts a "Background item added" notification or needs approval on 27.2.
 
 ## R4. Transport and peer validation
 
@@ -52,7 +52,7 @@ anchor apple generic and certificate leaf[subject.OU] = "6Q96Q79QN8"
 
 **Decision**: Unchanged `osascript` dispatch, run by the helper. The app is signed with the hardened runtime and the `com.apple.security.automation.apple-events` entitlement; `Info.plist` carries `NSAppleEventsUsageDescription`.
 
-**Rationale**: `osascript` launched by the helper has the helper as responsible code, so the Automation prompt names Get Clear. Under the hardened runtime, sending Apple Events requires that entitlement. **VERIFY IN SPIKE** (Automation is a separate TCC service from the other three).
+**Rationale**: `osascript` launched by the helper has the helper as responsible code, so the Automation prompt names Get Clear. Under the hardened runtime, sending Apple Events requires that entitlement. **Verified in spike (see Spike results)** (Automation is a separate TCC service from the other three).
 
 ## R6. Usage descriptions and entitlements
 
@@ -107,6 +107,21 @@ When the app's directory is not writable, fall back to today's PKG download-and-
 ## App icon (resolved)
 
 - `assets/GetClear.svg` is the source: a white cloud with a check, on a steel blue-gray gradient. `scripts/build-icon` renders it into `assets/GetClear.icns` with `rsvg-convert` (`brew install librsvg`) and `iconutil`. The `.icns` is committed, so `scripts/build-app` and CI don't need librsvg.
+
+## Spike results (2026-11-23, primo, macOS 27.2.1 build 26B131)
+
+`Spike.app` was a throwaway with the planned shape: main executable as an `SMAppService` agent (`BundleProgram`, `MachServices`), a client in `Contents/Helpers`, Developer ID signed, hardened runtime, `personal-information.reminders` and `automation.apple-events` entitlements.
+
+| Check | Result |
+|---|---|
+| `register` | `SMAppService.status` → `enabled` immediately; no Login Items approval needed |
+| XPC with `setCodeSigningRequirement` (quoted Team ID) on both sides | Works |
+| Reminders prompt | Names **Spike** (R1 ✓) |
+| Responsible process (`launchctl procinfo`) | `/Applications/Spike.app/Contents/MacOS/Spike` (R1 ✓) |
+| Bundle replaced by `renamex_np(RENAME_SWAP)` + `kickstart -k`, twice (1.0 → 1.1 → 1.2) | Grant kept, registration kept, no new prompt, new helper reports the new version (R3, R8 ✓) |
+| Automation → Messages | Prompt names **Spike** and shows the app's `NSAppleEventsUsageDescription` (R5 ✓). `tell application "Messages" to get name` does *not* prompt: AppleScript answers it locally, so Automation tests must send a real event |
+
+**Work Mac run waived by Ken.** The terminal can't affect attribution: launchd starts the agent, so no terminal is in the chain (the procinfo result). The residual risk is the managed work Mac: MDM can require approval for, or block, background items, or deny privacy services. `profiles show -type configuration` on that Mac shows whether either is managed. The client's `.requiresApproval` path (contract) covers the approval case.
 
 ## Sources
 
