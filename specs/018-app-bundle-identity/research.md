@@ -104,9 +104,9 @@ When the app's directory is not writable, fall back to today's PKG download-and-
 
 **Decision**: The PKG payload carries `/Applications/Get Clear.app` and six symlinks `/usr/local/bin/<tool> → /Applications/Get Clear.app/Contents/Helpers/<tool>`. Installing the payload over 1.3.x replaces the old binaries at those paths. `scripts/uninstall` runs `Get Clear unregister`, then removes the app, the symlinks, the completions and the receipt. It ends by printing `tccutil reset All com.kenscott.get-clear` as the way to clear privacy decisions (FR-024).
 
-## Open dependency
+## App icon (resolved)
 
-- **App icon**: the repo has none. The plan needs a `.icns` before the app ships (FR-001 scenario 5 shows the icon). A plain placeholder is enough to unblock the spike and implementation.
+- `assets/GetClear.svg` is the source: a white cloud with a check, on a steel blue-gray gradient. `scripts/build-icon` renders it into `assets/GetClear.icns` with `rsvg-convert` (`brew install librsvg`) and `iconutil`. The `.icns` is committed, so `scripts/build-app` and CI don't need librsvg.
 
 ## Sources
 

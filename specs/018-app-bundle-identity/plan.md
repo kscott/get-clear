@@ -98,7 +98,8 @@ scripts/build-app                    # NEW: assemble + sign Get Clear.app (local
 scripts/uninstall                    # CHANGED: unregister, remove app + symlinks
 pkg/scripts/postinstall              # CHANGED: register helper in the console user's session
 .github/workflows/release.yml        # CHANGED: build-app, notarize + staple app, zip, PKG with app + symlinks
-assets/GetClear.icns                 # NEW (placeholder acceptable; see research "Open dependency")
+assets/GetClear.svg, GetClear.icns   # DONE: icon source + generated .icns
+scripts/build-icon                   # DONE: SVG → .icns (rsvg-convert + iconutil)
 ```
 
 **Structure Decision**: Follow the existing three-tier layout. Each pure wire type sits next to the protocol it mirrors (in the Lib), so a future backend or store method changes one Lib. XPC and ServiceManagement are framework code, so they get their own boundary target (`HelperXPC`) and the app target, keeping GetClearKit Foundation-only and framework-free in the sense the layer model means. `mail` gains nothing new. Its Contacts lookups go through `ContactStoreFactory`, which routes them automatically.
