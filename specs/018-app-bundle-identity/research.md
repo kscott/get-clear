@@ -136,6 +136,13 @@ Real `Get Clear.app` built by `scripts/build-app`, installed by `scripts/build-p
 
 **Self-update (T037), PKG-installed app owned by the user:** a validly signed but un-notarized 9.9.9 archive and a tampered one were both refused with the contract's message, exit 1, version unchanged, no staging left; an up-to-date cache prints "Already on the latest version (1.3.5)."; the update hint reads the app's version. The accept path needs a notarized archive, so the pre-release run (T042) covers it.
 
+**Pre-release run (T042), v1.4.0 published as a GitHub pre-release by CI:**
+- `/releases/latest` stayed at v1.3.5, so no 1.3.x install saw it.
+- Both assets are notarized Developer ID, and Gatekeeper accepts them.
+- On primo, installing the 1.3.5 PKG and then the 1.4.0 PKG over it left six links into the app, `--version` reporting 1.4.0, the app owned by the user, and `mail` (still `mail-bin`) reading its Keychain token with no prompt. Reminders, calendar, and contacts worked with no new prompt.
+- **Self-update accept path:** from a 1.3.5 app, `get-clear update` downloaded the real notarized `Get-Clear.zip`, verified it, swapped it in, and restarted the helper in 10 s, with no window and no password. The installed app is then the notarized build, and commands work with no prompt (FR-016, FR-020).
+- Not exercised: 1.3.5's own `get-clear update` fetching 1.4.0. That only happens once 1.4.0 is `latest`, and it downloads and opens the same PKG tested above.
+
 **launchd throttle.** launchd delays relaunching a job that exited less than 10 s after it started (its default `ThrottleInterval`). Killing the helper and calling it again immediately cost 6 s. Normal use never hits this: the helper idles 60 s before exiting. The version-mismatch path uses `kickstart -k`, which restarts at once.
 
 ## Sources
