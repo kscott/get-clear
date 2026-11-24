@@ -54,7 +54,8 @@ VERSION_HEADER="// Generated — do not edit manually. Use scripts/bump-version 
 # ── Update GetClearKit suite version ──────────────────────────────────────────
 
 echo "$NEW_SUITE" > VERSION
-printf "%s\npublic let suiteVersion = \"%s\"\n" \
+# A doc comment (///): SwiftFormat's docComments rule wants one on a public declaration.
+printf "/%s\npublic let suiteVersion = \"%s\"\n" \
   "$VERSION_HEADER" "$NEW_SUITE" \
   > Sources/GetClearKit/SuiteVersion.swift
 echo "suiteVersion: $OLD_SUITE → $NEW_SUITE"
@@ -64,6 +65,7 @@ echo "suiteVersion: $OLD_SUITE → $NEW_SUITE"
 cat > Sources/GetClear/Version.swift << SWIFT
 $VERSION_HEADER
 import GetClearKit
+
 let builtVersion = "$NEW_SUITE"
 let identity = ToolIdentity(
     tool: "get-clear",
@@ -92,6 +94,7 @@ for i in "${!TOOL_NAMES[@]}"; do
   cat > "$version_file" << SWIFT
 $VERSION_HEADER
 import GetClearKit
+
 let builtVersion = "$new_built"
 let identity = ToolIdentity(
     tool: "$name",
