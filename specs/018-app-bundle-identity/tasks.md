@@ -144,7 +144,7 @@
 - [X] T047 [P] Update `README.md` install and permissions text: install from the PKG; the first command for each of Reminders, Calendars, Contacts, and Messages asks once for **Get Clear**; how to change it later in Privacy & Security; updates via `get-clear update` need no password.
 - [X] T048 [P] Update `CLAUDE.md` "Active Technologies" (spec 018 from planned to shipped) and the Build section (`./scripts/build-app`, `./scripts/build-icon`). Run `.specify/scripts/bash/update-agent-context.sh claude` and keep house style.
 - [X] T049 Run `swift build -c release` (zero new warnings), `./scripts/test` (report the count against T001's baseline), `./scripts/lint`.
-- [ ] T050 Merge to `main` per the repo workflow, confirm CI green, bump the suite version with `scripts/bump-version`, dispatch the release workflow, and confirm both assets on the `vX.Y.Z` and `latest` releases. Confirm a 1.3.5 install's hint appears within the check interval. Then close #210 (last).
+- [X] T050 Merge to `main` per the repo workflow, confirm CI green, bump the suite version with `scripts/bump-version`, dispatch the release workflow, and confirm both assets on the `vX.Y.Z` and `latest` releases. Confirm a 1.3.5 install's hint appears within the check interval. Then close #210 (last).
 
 ---
 
