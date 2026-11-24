@@ -134,6 +134,8 @@ Real `Get Clear.app` built by `scripts/build-app`, installed by `scripts/build-p
 | `get-clear recap yesterday` / `last week` | stdout byte-identical to the previous build, direct and through the helper (FR-014) |
 | SC-006, helper cold / warm | `reminders lists` 0.12 s / 0.06 s; `calendar today` 0.15 s / 0.05 s |
 
+**Self-update (T037), PKG-installed app owned by the user:** a validly signed but un-notarized 9.9.9 archive and a tampered one were both refused with the contract's message, exit 1, version unchanged, no staging left; an up-to-date cache prints "Already on the latest version (1.3.5)."; the update hint reads the app's version. The accept path needs a notarized archive, so the pre-release run (T042) covers it.
+
 **launchd throttle.** launchd delays relaunching a job that exited less than 10 s after it started (its default `ThrottleInterval`). Killing the helper and calling it again immediately cost 6 s. Normal use never hits this: the helper idles 60 s before exiting. The version-mismatch path uses `kickstart -k`, which restarts at once.
 
 ## Sources

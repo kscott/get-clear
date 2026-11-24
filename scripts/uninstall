@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
 # Get Clear — uninstaller
 #
-# Removes all five Get Clear tools from /usr/local/bin and forgets the PKG receipt.
-# Optionally removes configuration files and saved credentials.
+# Stops and unregisters Get Clear's background helper, removes Get Clear.app, the six commands
+# in /usr/local/bin (links into the app, or a 1.3.x install's plain binaries), their zsh
+# completions, and the PKG receipt. Optionally removes configuration files and saved credentials.
+# Privacy decisions belong to the user; it says how to reset them (spec 018 FR-023, FR-024).
 #
 # Usage:
 #   ~/dev/get-clear/scripts/uninstall           # prompts about config/credentials
@@ -25,22 +27,45 @@ if [[ "$EUID" -ne 0 ]]; then
   exec sudo "$0" "$@"
 fi
 
-TOOLS=(reminders calendar contacts mail text)
+TOOLS=(get-clear reminders calendar contacts mail text)
 BIN_DIR="/usr/local/bin"
+APP="/Applications/Get Clear.app"
+COMPLETIONS_DIR="/usr/local/share/zsh/site-functions"
 
 echo "Uninstalling Get Clear..."
 echo ""
 
-# Remove binaries
+# Stop and unregister the helper first, in the user's own session, while the app still exists
+if [[ -x "$APP/Contents/MacOS/Get Clear" ]]; then
+  if launchctl asuser "$(id -u "$REAL_USER")" sudo -u "$REAL_USER" "$APP/Contents/MacOS/Get Clear" unregister; then
+    echo "  stopped and unregistered the background helper"
+  else
+    echo "  couldn't unregister the background helper; remove Get Clear in System Settings → General → Login Items"
+  fi
+fi
+
+# Remove the commands: links into the app, or a 1.3.x install's plain binaries
 for tool in "${TOOLS[@]}"; do
   target="$BIN_DIR/$tool"
-  if [[ -f "$target" ]]; then
+  if [[ -e "$target" || -L "$target" ]]; then
     rm "$target"
     echo "  removed $target"
   else
     echo "  not found: $target"
   fi
 done
+
+# Remove the app
+if [[ -d "$APP" ]]; then
+  rm -rf "$APP"
+  echo "  removed $APP"
+fi
+
+# Remove zsh completions
+for tool in "${TOOLS[@]}"; do
+  rm -f "$COMPLETIONS_DIR/_$tool"
+done
+echo "  removed zsh completions"
 
 # Remove the shared directory (includes this uninstall script if run from PKG install)
 if [[ -d "/usr/local/share/get-clear" ]]; then
@@ -94,3 +119,6 @@ fi
 
 echo ""
 echo "Done. Get Clear uninstalled."
+echo ""
+echo "macOS keeps the permissions you gave Get Clear. To clear them too, run:"
+echo "  tccutil reset All com.kenscott.get-clear"
