@@ -83,8 +83,12 @@ fi
 if [[ "$PURGE" == false ]]; then
   echo ""
   printf "  Remove configuration files and saved credentials? [y/N] "
-  read -r answer < /dev/tty
-  [[ "$answer" =~ ^[Yy]$ ]] && PURGE=true
+  # No terminal to ask (run by a script or by Claude): keep them, the safe answer.
+  if { read -r answer < /dev/tty; } 2>/dev/null; then
+    [[ "$answer" =~ ^[Yy]$ ]] && PURGE=true
+  else
+    echo "no terminal to ask — keeping them"
+  fi
 fi
 
 if [[ "$PURGE" == true ]]; then
