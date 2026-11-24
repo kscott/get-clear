@@ -126,7 +126,7 @@
 **Independent Test**: install, run a command so the helper is up, run the uninstaller; `launchctl print gui/$UID/com.kenscott.get-clear.helper` → not found; `which reminders` → nothing; no app, no receipt.
 
 - [X] T043 [US4] Update `scripts/uninstall`: run `"/Applications/Get Clear.app/Contents/MacOS/Get Clear" unregister` (as the user) before removal; remove `/Applications/Get Clear.app`, the six `/usr/local/bin` symlinks, completions, and the receipt (`pkgutil --forget com.kenscott.get-clear`); keep today's config and Keychain prompts; end by printing `tccutil reset All com.kenscott.get-clear` as the way to clear privacy decisions (FR-024). Also remove a 1.3.x layout (plain binaries) if found.
-- [ ] T044 [US4] Acceptance (quickstart §2 US4) on primo, then reinstall.
+- [X] T044 [US4] Acceptance (quickstart §2 US4) on primo, then reinstall.
 
 ---
 
@@ -134,15 +134,15 @@
 
 **Goal**: `swift build` binaries run from iTerm exactly as today.
 
-- [ ] T045 [US5] Acceptance (quickstart §2 US5): with no app installed, `swift build` and run `.build/debug/reminders-bin lists` from iTerm. Expect today's behavior, prompts attributed to iTerm, and no added output. Covered at the unit level by T011's `.direct` cases.
+- [X] T045 [US5] Acceptance (quickstart §2 US5): with no app installed, `swift build` and run `.build/debug/reminders-bin lists` from iTerm. Expect today's behavior, prompts attributed to iTerm, and no added output. Covered at the unit level by T011's `.direct` cases.
 
 ---
 
 ## Phase 8: Polish, docs, and ship
 
-- [ ] T046 [P] Add `ARCHITECTURE.md` decision-log entries: the helper model (app main executable as `SMAppService` agent, why: research R1–R2), the wire format (per-Lib request enums, opaque `Data` XPC method, typed tool errors), self-update (zip + `SecStaticCode` + `RENAME_SWAP`), the factory targets move, and `fetchCompleted` on `ReminderStore`. Add the new targets to the structure section.
-- [ ] T047 [P] Update `README.md` install and permissions text: install from the PKG; the first command for each of Reminders, Calendars, Contacts, and Messages asks once for **Get Clear**; how to change it later in Privacy & Security; updates via `get-clear update` need no password.
-- [ ] T048 [P] Update `CLAUDE.md` "Active Technologies" (spec 018 from planned to shipped) and the Build section (`./scripts/build-app`, `./scripts/build-icon`). Run `.specify/scripts/bash/update-agent-context.sh claude` and keep house style.
+- [X] T046 [P] Add `ARCHITECTURE.md` decision-log entries: the helper model (app main executable as `SMAppService` agent, why: research R1–R2), the wire format (per-Lib request enums, opaque `Data` XPC method, typed tool errors), self-update (zip + `SecStaticCode` + `RENAME_SWAP`), the factory targets move, and `fetchCompleted` on `ReminderStore`. Add the new targets to the structure section.
+- [X] T047 [P] Update `README.md` install and permissions text: install from the PKG; the first command for each of Reminders, Calendars, Contacts, and Messages asks once for **Get Clear**; how to change it later in Privacy & Security; updates via `get-clear update` need no password.
+- [X] T048 [P] Update `CLAUDE.md` "Active Technologies" (spec 018 from planned to shipped) and the Build section (`./scripts/build-app`, `./scripts/build-icon`). Run `.specify/scripts/bash/update-agent-context.sh claude` and keep house style.
 - [ ] T049 Run `swift build -c release` (zero new warnings), `./scripts/test` (report the count against T001's baseline), `./scripts/lint`.
 - [ ] T050 Merge to `main` per the repo workflow, confirm CI green, bump the suite version with `scripts/bump-version`, dispatch the release workflow, and confirm both assets on the `vX.Y.Z` and `latest` releases. Confirm a 1.3.5 install's hint appears within the check interval. Then close #210 (last).
 

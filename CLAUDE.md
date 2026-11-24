@@ -71,10 +71,19 @@ gh issue close 37              # close LAST — not until everything is merged, 
 # All tests (run from monorepo root)
 cd ~/dev/get-clear && swift test
 
-# Build release and install a specific tool
+# Build release and install a specific tool (dev build: direct store access, terminal's permissions)
 cd ~/dev/get-clear && swift build -c release
 cp .build/release/<tool>-bin ~/.local/bin/<tool>
+
+# Build the signed app and the installer, as CI does
+./scripts/build-app && ./scripts/build-pkg     # → .build/Get Clear.app, get-clear-unsigned.pkg
+sudo installer -pkg get-clear-unsigned.pkg -target /
+
+# Re-render the app icon after editing assets/GetClear.svg (needs brew install librsvg)
+./scripts/build-icon
 ```
+
+Version bumps: only `./scripts/bump-version <suite-version>`. Never edit `VERSION` or `Version.swift` by hand.
 
 ## Key files
 
@@ -117,7 +126,7 @@ Use `scripts/bump-version <suite-version> [tool:version ...]` to bump. Never edi
 - GetClearKit, ContactKit, AppleContactKit, ContactStoreFactory — shared suite and contact layers
 - Contacts framework access via AppleContactKit boundary only; no writes
 - Shared CLI argument parser in GetClearKit (`CommandArguments.swift`, spec 015) — per-command `CommandShape`; tools declare shapes, not parsers
-- Spec 018 (planned): `Get Clear.app` whose main executable is an `SMAppService` launchd agent holding the privacy identity; CLIs reach it over XPC (`HelperXPC` boundary). ServiceManagement only in `GetClearApp`, Security (`SecStaticCode`) only in the self-update boundary
+- Spec 018: `Get Clear.app` whose main executable is an `SMAppService` launchd agent holding the privacy identity; commands inside the app reach it over XPC (`HelperXPC`), dev builds access stores directly (`AccessRoute`). ServiceManagement only in `GetClearApp`, Security (`SecStaticCode`) only in `get-clear`'s `SelfUpdater`. New store method = enum case in the Lib's `*HelperRequest` + `Remote*Store` + `dispatch*Request`
 
 ## Recent Changes
 - 015-argument-shape: Added Swift 6.0 (swift-tools-version: 6.0, language mode v5) + GetClearKit (new parser lives here); Swift Testing (toolchain-bundled)

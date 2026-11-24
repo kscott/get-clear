@@ -146,20 +146,22 @@ Signed, notarized, double-click to install:
 
 [Download get-clear.pkg](https://github.com/kscott/get-clear/releases/latest/download/get-clear.pkg)
 
-Tab completion is included — commands, list names, and calendar subsets.
+It installs one app, **Get Clear**, in your Applications folder, and puts its commands on your PATH. Tab completion is included — commands, list names, and calendar subsets.
+
+**Updates** — when a new version is out, any command mentions it once. Run `get-clear update`: it downloads the new version, checks that it's genuinely signed by Get Clear's developer, and replaces the app. No installer, no password.
 
 ---
 
 ## Setup
 
-**Permissions** — on first use, each tool will ask for access to the relevant app. Just approve the prompt.
+**Permissions** — the first time a command needs your reminders, calendars, contacts, or Messages, macOS asks once whether **Get Clear** may use them. Allow each one. The permission belongs to Get Clear, not to your terminal, so it works the same from any terminal and from Claude. Change it any time in System Settings → Privacy & Security.
 
-| Tool | First-run prompt |
+| Command | First-run prompt |
 |---|---|
-| `reminders list` | Reminders access |
-| `calendar today` | Calendar access |
-| `contacts lists` | Contacts access |
-| `text open` | Messages automation |
+| `reminders list` | Reminders |
+| `calendar today` | Calendars |
+| `contacts lists` | Contacts |
+| `text send …` | Automation → Messages |
 
 **Mail** — run setup once for your provider:
 
@@ -191,7 +193,7 @@ This walks you through creating a config file. After setup, `calendar work today
 /usr/local/share/get-clear/uninstall.sh
 ```
 
-Removes all five tools and prompts to clean up config and credentials.
+Removes the app, its commands, and its background helper, and prompts to clean up config and credentials. macOS keeps the permissions you granted; the uninstaller shows how to reset them.
 
 ---
 

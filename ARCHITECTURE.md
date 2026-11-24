@@ -58,6 +58,24 @@ The threshold: if exercising a branch requires a permission dialog or a file to 
 
 ## Decision log
 
+### 2026-11-23 — Get Clear.app owns the privacy identity; self-update (#210, spec 018)
+
+**Decision:** The suite ships as one signed, notarized `Get Clear.app`. Its main executable (`GetClearApp` target) is a launchd agent registered with `SMAppService`; the six commands live in `Contents/Helpers/`, on PATH as `/usr/local/bin` links. Inside the app, every Reminders / Calendars / Contacts / Messages call goes to the helper over XPC; a development build (no app around it) keeps direct, terminal-attributed access. Full rationale and spike results: `specs/018-app-bundle-identity/research.md`.
+
+**Why:** macOS charges a permission request to the *responsible process*. Run from a terminal, that's the terminal, so under a terminal with no privacy usage strings (Tecolot) every request was silently denied with no prompt and nothing to enable. A launchd agent is responsible for itself, and with `SMAppService` the containing app is the identity (verified on 27.2.1: `launchctl procinfo`, prompts, and Privacy & Security all say Get Clear).
+
+**Wire format:** one `@objc perform(Data) -> Data` method that never changes. Everything inside is plain `Codable` values: `HelperEnvelope` / `HelperReply` / `HelperFailure` and `HelperGate` (GetClearKit), and per tool a `*HelperRequest` enum (one case per store method), a `Remote*Store`, and a `dispatch*Request` function (each Lib). Encoding and error mapping exist once, in `HelperCaller` / `HelperResponder`. A tool's own store error travels typed, so handlers' `catch let e as ReminderStoreError` still match. Any other error travels as its exact text (stdout and stderr unchanged). Adding a store method means adding one enum case, one remote method, and one dispatch case.
+
+**Boundaries:** XPC lives in `HelperXPC`; `SMAppService` and the permission requests live in `GetClearApp`; `Security` (`SecStaticCode`) lives in `get-clear`'s `SelfUpdater`. GetClearKit stays Foundation-only. `makeReminderStore` and `makeCalendarStore` moved into `ReminderStoreFactory` / `CalendarStoreFactory` library targets (like `ContactStoreFactory`) so `get-clear recap` / `setup` use them; that dropped `get-clear`'s last EventKit use and gave recap its first spec (`RecapSelection`). Part of #203.
+
+**Self-update:** each release publishes `get-clear.pkg` and `Get-Clear.zip` (the notarized app). `get-clear update` downloads the zip beside the app, verifies identifier + team + notarized with `SecStaticCodeCheckValidity`, swaps with `renamex_np(RENAME_SWAP)`, and restarts the helper. It falls back to the PKG when the app isn't writable. Grants survive because the designated requirement doesn't change. The installed version is the app's `CFBundleShortVersionString`, not the PKG receipt. Postinstall gives the app to the user so the swap needs no password.
+
+**Build:** `scripts/build-app` (assemble + sign inside-out; the commands keep their 1.3.x signing identifiers, e.g. `mail-bin`, so mail's Keychain item doesn't prompt) and `scripts/build-pkg` (payload, non-relocatable app) are shared by CI and local builds. `scripts/build-icon` renders `assets/GetClear.svg`.
+
+**Noticed, not acted on:**
+- On primo's Command Line Tools 27.2, about half of `scripts/test` builds fail with "plugin for module 'TestingMacros' not found", and a rerun passes. That's a toolchain problem, not the code; CI uses full Xcode.
+- Releases 1.3.2–1.3.5 were bumped by editing `VERSION` alone, so `--version` still reported Get Clear 1.3.1. Bump only with `scripts/bump-version`.
+
 ### 2026-11-23 — PKG is the only install method; curl installer removed (#46)
 
 **Decision:** `install.sh` is deleted. The signed, notarized PKG is the only supported way to install Get Clear. CLAUDE.md, going-live.md, and spec 005's status now say so; specs 002 and 007 still mention the curl installer as history and are not rewritten.
