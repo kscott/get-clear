@@ -71,9 +71,11 @@ gh issue close 37              # close LAST — not until everything is merged, 
 # All tests (run from monorepo root)
 cd ~/dev/get-clear && swift test
 
-# Build release and install a specific tool (dev build: direct store access, terminal's permissions)
-cd ~/dev/get-clear && swift build -c release
-cp .build/release/<tool>-bin ~/.local/bin/<tool>
+# Run a dev build in place (direct store access, the terminal's permissions)
+cd ~/dev/get-clear && swift build
+.build/debug/<tool>-bin <args>
+# Never copy a dev build onto PATH (~/.local/bin, ~/bin): Ken runs the released app's commands;
+# a copy there shadows /usr/local/bin and silently runs stale code.
 
 # Build the signed app and the installer, as CI does
 ./scripts/build-app && ./scripts/build-pkg     # → .build/Get Clear.app, get-clear-unsigned.pkg
