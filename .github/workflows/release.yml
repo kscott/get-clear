@@ -2,6 +2,11 @@ name: Build and Release PKG
 
 on:
   workflow_dispatch:
+    inputs:
+      prerelease:
+        description: "Publish as a pre-release: not 'latest', not the rolling release, invisible to the update check"
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -95,21 +100,28 @@ jobs:
       - name: Create versioned release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PRERELEASE: ${{ inputs.prerelease }}
         run: |
+          if [[ "$PRERELEASE" == "true" ]]; then
+            status=(--prerelease)
+          else
+            status=(--prerelease=false --latest)
+          fi
           if gh release view "v$VERSION" > /dev/null 2>&1; then
             gh release edit "v$VERSION" \
               --title "Get Clear $VERSION" \
               --notes "$RELEASE_NOTES" \
-              --latest
+              "${status[@]}"
             gh release upload "v$VERSION" get-clear.pkg Get-Clear.zip --clobber
           else
             gh release create "v$VERSION" get-clear.pkg Get-Clear.zip \
               --title "Get Clear $VERSION" \
               --notes "$RELEASE_NOTES" \
-              --latest
+              "${status[@]}"
           fi
 
       - name: Update rolling release
+        if: ${{ !inputs.prerelease }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -119,6 +131,7 @@ jobs:
             --notes "$RELEASE_NOTES"
 
   smoke-test:
+    if: ${{ !inputs.prerelease }}
     runs-on: macos-latest
     needs: build
 
