@@ -29,7 +29,8 @@ let package = Package(
                 "RemindersLib", "ReminderStoreFactory"
             ],
             path: "Sources/GetClear",
-            exclude: ["get-clear.entitlements"]
+            exclude: ["get-clear.entitlements"],
+            linkerSettings: [.linkedFramework("Security")]
         ),
         .testTarget(
             name: "GetClearKitTests",

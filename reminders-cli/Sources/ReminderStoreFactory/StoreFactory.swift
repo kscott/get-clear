@@ -11,7 +11,7 @@ import RemindersEventKit
 import RemindersLib
 
 public func makeReminderStore() async -> any ReminderStore {
-    switch AccessRoute.decide(resolvedExecutable: HelperClient.resolvedExecutableURL()) {
+    switch AccessRoute.current {
     case let .helper(appURL):
         return RemoteReminderStore(transport: HelperClient.transport(appURL: appURL), appVersion: suiteVersion)
     case .direct:

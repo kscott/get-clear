@@ -11,7 +11,7 @@ import GetClearKit
 import HelperXPC
 
 public func makeContactStore() async -> any ContactStore {
-    switch AccessRoute.decide(resolvedExecutable: HelperClient.resolvedExecutableURL()) {
+    switch AccessRoute.current {
     case let .helper(appURL):
         return RemoteContactStore(transport: HelperClient.transport(appURL: appURL), appVersion: suiteVersion)
     case .direct:

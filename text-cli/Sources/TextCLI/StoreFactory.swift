@@ -11,7 +11,7 @@ import TextLib
 import TextMessages
 
 func makeMessageSender() async -> any MessageSender {
-    switch AccessRoute.decide(resolvedExecutable: HelperClient.resolvedExecutableURL()) {
+    switch AccessRoute.current {
     case let .helper(appURL):
         RemoteMessageSender(transport: HelperClient.transport(appURL: appURL), appVersion: suiteVersion)
     case .direct:

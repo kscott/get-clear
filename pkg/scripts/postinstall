@@ -15,6 +15,9 @@ fi
 
 if [[ -n "$user" && "$user" != "root" ]]; then
     uid=$(id -u "$user")
+    # Hand the app to the user, as dragging it into Applications would, so `get-clear update`
+    # can replace it later with no password (spec 018 R8).
+    chown -R "$user:admin" "$app"
     if ! launchctl asuser "$uid" sudo -u "$user" "$app/Contents/MacOS/Get Clear" register; then
         echo "Get Clear: helper not registered now; the first command will register it."
     fi

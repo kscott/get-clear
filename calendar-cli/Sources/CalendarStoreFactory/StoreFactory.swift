@@ -10,7 +10,7 @@ import GetClearKit
 import HelperXPC
 
 public func makeCalendarStore() async throws -> any CalendarStore {
-    switch AccessRoute.decide(resolvedExecutable: HelperClient.resolvedExecutableURL()) {
+    switch AccessRoute.current {
     case let .helper(appURL):
         RemoteCalendarStore(transport: HelperClient.transport(appURL: appURL), appVersion: suiteVersion)
     case .direct:

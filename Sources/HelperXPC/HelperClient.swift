@@ -3,7 +3,7 @@
 // The command side of the helper connection: a HelperTransport over NSXPCConnection that heals
 // the two recoverable states before giving up (contract "Client behavior"): a helper that isn't
 // registered is registered and retried once; a helper from another build is restarted and
-// retried once. Also resolves the running command's real path for AccessRoute.
+// retried once.
 
 import Darwin
 import Foundation
@@ -28,20 +28,6 @@ public enum HelperClient {
     /// The transport every remote store uses when the command runs from inside `appURL`.
     public static func transport(appURL: URL) -> HelperTransport {
         { envelope in try await send(envelope, appURL: appURL) }
-    }
-
-    /// The running executable's path with symlinks resolved, so `/usr/local/bin/reminders`
-    /// arrives as the path inside the app.
-    public static func resolvedExecutableURL() -> URL {
-        var size: UInt32 = 0
-        _NSGetExecutablePath(nil, &size)
-        var path = [CChar](repeating: 0, count: Int(size))
-        _NSGetExecutablePath(&path, &size)
-        var resolved = [CChar](repeating: 0, count: Int(PATH_MAX))
-        guard realpath(path, &resolved) != nil else {
-            return URL(fileURLWithPath: String(cString: path))
-        }
-        return URL(fileURLWithPath: String(cString: resolved))
     }
 
     static func send(_ envelope: HelperEnvelope, appURL: URL) async throws -> HelperReply {
