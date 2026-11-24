@@ -117,7 +117,7 @@ Two constants in each tool's `Version.swift`:
 - `builtVersion` — this tool's semver
 - `suiteVersion` — the PKG release version
 
-Display: `reminders 1.3.1 (Get Clear 1.3.1)` — current suite version is 1.3.1
+Display: `reminders 1.4.0 (Get Clear 1.4.0)` — current suite version is 1.4.0
 
 Use `scripts/bump-version <suite-version> [tool:version ...]` to bump. Never edit version constants by hand.
 
